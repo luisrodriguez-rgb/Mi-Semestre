@@ -58,7 +58,7 @@ export function ProfileModal({ onProfileUpdated }: ProfileModalProps) {
     await profileRepository.setActiveProfile(id);
     await loadProfileData();
     onProfileUpdated?.();
-    window.location.reload();
+    window.dispatchEvent(new CustomEvent('semester-data-updated'));
   };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -81,6 +81,7 @@ export function ProfileModal({ onProfileUpdated }: ProfileModalProps) {
     setIsNewUser(false);
     await loadProfileData();
     onProfileUpdated?.();
+    window.dispatchEvent(new CustomEvent('semester-data-updated'));
 
     setTimeout(() => {
       setSavedSuccess(false);

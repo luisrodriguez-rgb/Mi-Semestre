@@ -9,8 +9,10 @@ import {
   AttendanceRecord,
   FixedRoutine,
   Semester,
+  Profile,
 } from '@/types';
 import {
+  profileRepository,
   semesterRepository,
   subjectRepository,
   scheduleRepository,
@@ -22,6 +24,7 @@ import {
 import { seedDatabaseIfEmpty } from '@/lib/mockData';
 
 export function useSemesterData() {
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [semester, setSemester] = useState<Semester | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [scheduleBlocks, setScheduleBlocks] = useState<ScheduleBlock[]>([]);
@@ -37,6 +40,7 @@ export function useSemesterData() {
       await seedDatabaseIfEmpty();
 
       const [
+        activeProfile,
         activeSem,
         allSubjects,
         allSchedule,
@@ -45,6 +49,7 @@ export function useSemesterData() {
         allAttendance,
         allRoutines,
       ] = await Promise.all([
+        profileRepository.getActiveProfile(),
         semesterRepository.getActive(),
         subjectRepository.getAll(),
         scheduleRepository.getAll(),
@@ -54,6 +59,7 @@ export function useSemesterData() {
         routineRepository.getAll(),
       ]);
 
+      setProfile(activeProfile || null);
       setSemester(activeSem || null);
       setSubjects(allSubjects);
       setScheduleBlocks(allSchedule);
@@ -70,6 +76,15 @@ export function useSemesterData() {
 
   useEffect(() => {
     loadData();
+
+    const handleDataUpdated = () => {
+      loadData();
+    };
+
+    window.addEventListener('semester-data-updated', handleDataUpdated);
+    return () => {
+      window.removeEventListener('semester-data-updated', handleDataUpdated);
+    };
   }, [loadData]);
 
   // Subjects map by ID for O(1) lookups
@@ -79,6 +94,7 @@ export function useSemesterData() {
   }, {});
 
   return {
+    profile,
     semester,
     subjects,
     subjectsMap,
