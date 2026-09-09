@@ -11,6 +11,7 @@ export interface Profile {
   semesterNumber: number;
   gpa?: number; // Promedio acumulado, ej. 4.3
   cohort?: string; // ej. 202510
+  avatarUrl?: string;
 }
 
 export interface Semester {
