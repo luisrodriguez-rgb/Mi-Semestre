@@ -447,6 +447,10 @@ export const mockPendingCourses: PendingCourse[] = [
 ];
 
 export async function seedDatabaseIfEmpty(): Promise<boolean> {
+  if (typeof window !== 'undefined' && localStorage.getItem('mi_semestre_user_configured_v1') === 'true') {
+    return false;
+  }
+
   const existingProfiles = await profileRepository.getAll();
   if (existingProfiles.length === 0) {
     await profileRepository.save(defaultProfile);
