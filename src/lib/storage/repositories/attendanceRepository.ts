@@ -1,5 +1,5 @@
 import { db } from '../database';
-import { AttendanceRecord, FixedRoutine } from '@/types';
+import { AttendanceRecord } from '@/types';
 
 export const attendanceRepository = {
   async getAll(): Promise<AttendanceRecord[]> {
@@ -21,24 +21,5 @@ export const attendanceRepository = {
 
   async delete(id: string): Promise<void> {
     await db.attendance.delete(id);
-  },
-};
-
-export const routineRepository = {
-  async getAll(): Promise<FixedRoutine[]> {
-    return await db.routines.toArray();
-  },
-
-  async save(routine: FixedRoutine): Promise<string> {
-    await db.routines.put(routine);
-    return routine.id;
-  },
-
-  async bulkSave(routines: FixedRoutine[]): Promise<void> {
-    await db.routines.bulkPut(routines);
-  },
-
-  async delete(id: string): Promise<void> {
-    await db.routines.delete(id);
   },
 };

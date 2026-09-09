@@ -7,3 +7,4 @@ export * from './repositories/assignmentRepository';
 export * from './repositories/examRepository';
 export * from './repositories/attendanceRepository';
 export * from './repositories/studySessionRepository';
+export * from './repositories/routineRepository';
