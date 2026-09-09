@@ -1,25 +1,56 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Subject, ScheduleBlock, FixedRoutine, DayOfWeek } from '@/types';
-import { calculateFreeSlots, detectConflicts, formatMinutesHuman } from '@/lib/academic-engine';
+import { useState, useMemo } from 'react';
+import { ScheduleBlock, Subject, DayOfWeek, FixedRoutine } from '@/types';
+import { calculateFreeSlots } from '@/lib/academic-engine/schedule/calculateFreeSlots';
+import { detectConflicts } from '@/lib/academic-engine/schedule/detectConflicts';
+import { formatMinutesHuman, timeToMinutes } from '@/lib/academic-engine/utils/timeHelpers';
 import { useUIStore } from '@/stores/uiStore';
-import { AlertCircle, MapPin, Sparkles, Filter, Plus } from 'lucide-react';
+import {
+  Clock,
+  Sparkles,
+  MapPin,
+  AlertCircle,
+  Calendar,
+  Filter,
+  Plus,
+  Pencil,
+  UserCheck,
+} from 'lucide-react';
 
 interface SmartTimetableProps {
   classes: ScheduleBlock[];
   subjectsMap: Record<string, Subject>;
-  routines: FixedRoutine[];
+  routines?: FixedRoutine[];
+  onSlotClick?: (startTime: string, endTime: string, day: DayOfWeek) => void;
 }
 
 export function SmartTimetable({
   classes,
   subjectsMap,
-  routines,
+  routines = [],
+  onSlotClick,
 }: SmartTimetableProps) {
-  const { startFocusSession, openImporter } = useUIStore();
+  const {
+    openImporter,
+    startFocusSession,
+    openEditClass,
+    openAttendanceModal,
+    openRoutineModal,
+  } = useUIStore();
+
   const [selectedSubjectFilter, setSelectedSubjectFilter] = useState<string>('all');
   const [showSaturday, setShowSaturday] = useState<boolean>(false);
+  const [mobileDay, setMobileDay] = useState<DayOfWeek>(1);
+  const [mobileViewMode, setMobileViewMode] = useState<'single' | 'full'>('full');
+
+  // Detectar conflictos automáticamente
+  const conflicts = useMemo(() => {
+    return detectConflicts({ classes, subjectsMap });
+  }, [classes, subjectsMap]);
+
+  // Horas del día (07:00 a 21:00)
+  const hours = Array.from({ length: 15 }, (_, i) => i + 7); // 7 to 21
 
   const days: { day: DayOfWeek; name: string }[] = useMemo(() => {
     const list: { day: DayOfWeek; name: string }[] = [
@@ -35,71 +66,40 @@ export function SmartTimetable({
     return list;
   }, [showSaturday]);
 
-  // Detectar conflictos
-  const conflicts = useMemo(() => {
-    return detectConflicts({ classes, subjectsMap, routines });
-  }, [classes, subjectsMap, routines]);
+  // Filtrar clases si hay filtro activo
+  const filteredClasses = useMemo(() => {
+    if (selectedSubjectFilter === 'all') return classes;
+    return classes.filter((c) => c.subjectId === selectedSubjectFilter);
+  }, [classes, selectedSubjectFilter]);
 
-  // Horas del día a mostrar: 07:00 a 20:00
-  const hours = [
-    '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
-    '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00',
-  ];
-
-  // Calcular huecos libres por día
-  const dailyFreeSlots = useMemo(() => {
-    const map: Record<DayOfWeek, ReturnType<typeof calculateFreeSlots>> = {
-      1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [],
-    };
-    days.forEach(({ day }) => {
-      map[day] = calculateFreeSlots({
-        dayOfWeek: day,
-        classes,
-        routines,
-        dayStart: '07:00',
-        dayEnd: '20:00',
-      });
-    });
-    return map;
-  }, [days, classes, routines]);
-
-  const baseMinutes = 7 * 60; // 420 min
-  const totalMinutes = 13 * 60; // 780 min
-
+  // Helper para posicionar bloques en el grid relativo a 07:00 - 21:00
   const getTopAndHeight = (startTime: string, endTime: string) => {
-    const [sh, sm] = startTime.split(':').map(Number);
-    const [eh, em] = endTime.split(':').map(Number);
-    const startM = sh * 60 + sm;
-    const endM = eh * 60 + em;
+    const startMins = timeToMinutes(startTime);
+    const endMins = timeToMinutes(endTime);
+    const dayStartMins = 7 * 60; // 07:00
+    const dayTotalMins = 14 * 60; // 14 hours
 
-    const topPercent = ((startM - baseMinutes) / totalMinutes) * 100;
-    const heightPercent = ((endM - startM) / totalMinutes) * 100;
-
-    return {
-      top: `${Math.max(0, topPercent)}%`,
-      height: `${Math.max(2, heightPercent)}%`,
-    };
+    const top = `${Math.max(0, ((startMins - dayStartMins) / dayTotalMins) * 100)}%`;
+    const height = `${Math.max(3, ((endMins - startMins) / dayTotalMins) * 100)}%`;
+    return { top, height };
   };
 
-  const handleStudyInGap = (gapDuration: number) => {
-    startFocusSession('Aprovechar hueco para repasar', 'Autoestudio', gapDuration);
+  const handleStudyInGap = (minutes: number) => {
+    startFocusSession('Estudio en hueco de horario', 'Auto-enfoque', minutes);
   };
-
-  const [mobileDay, setMobileDay] = useState<DayOfWeek>(1);
-  const [mobileViewMode, setMobileViewMode] = useState<'single' | 'full'>('single');
 
   return (
     <div className="space-y-4">
-      {/* Alerta de Conflictos si existen */}
+      {/* Alerta si hay conflictos */}
       {conflicts.length > 0 && (
-        <div className="rounded-2xl border border-[#fecaca] bg-[#fef2f2] p-4 text-[#dc2626] text-xs flex items-start gap-3 shadow-sm">
-          <AlertCircle className="w-5 h-5 text-[#dc2626] shrink-0 mt-0.5" />
+        <div className="p-4 rounded-2xl bg-[#fee2e2] dark:bg-[#390909]/40 border border-[#fecaca] dark:border-[#7f1d1d] flex items-start gap-3 text-xs text-[#dc2626] dark:text-[#f87171]">
+          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
           <div>
-            <span className="font-bold uppercase tracking-wider block font-mono">
-              ¡Conflicto de Horario Detectado!
+            <span className="font-bold block text-sm">
+              Conflicto de Horario Detectado ({conflicts.length}):
             </span>
             {conflicts.map((c) => (
-              <p key={c.id} className="mt-1 text-[#7a7890]">
+              <p key={c.id} className="mt-1 text-[var(--ink-secondary)]">
                 {c.description}
               </p>
             ))}
@@ -108,14 +108,14 @@ export function SmartTimetable({
       )}
 
       {/* Controles de Filtros y Configuración */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-[#e0dff0] shadow-sm">
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-[#3b3abf]" />
-          <span className="text-xs text-[#7a7890] font-medium">Filtrar por Materia:</span>
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-[var(--surface)] p-3.5 rounded-2xl border border-[var(--border)] shadow-sm transition-colors">
+        <div className="flex flex-wrap items-center gap-2">
+          <Filter className="w-4 h-4 text-[#3b3abf] dark:text-[#a0a0ff]" />
+          <span className="text-xs text-[var(--muted)] font-medium">Filtrar:</span>
           <select
             value={selectedSubjectFilter}
             onChange={(e) => setSelectedSubjectFilter(e.target.value)}
-            className="bg-[#f5f5ff] border border-[#e0dff0] text-[#0d0d14] rounded-xl px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-[#3b3abf]"
+            className="bg-[var(--paper)] border border-[var(--border)] text-[var(--ink)] rounded-xl px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-[#3b3abf]"
           >
             <option value="all">Todas las materias ({Object.keys(subjectsMap).length})</option>
             {Object.values(subjectsMap).map((sub) => (
@@ -124,59 +124,79 @@ export function SmartTimetable({
               </option>
             ))}
           </select>
+
+          <label className="flex items-center gap-1.5 text-[var(--ink)] text-xs font-medium cursor-pointer ml-2">
+            <input
+              type="checkbox"
+              checked={showSaturday}
+              onChange={(e) => setShowSaturday(e.target.checked)}
+              className="rounded bg-[var(--paper)] border-[var(--border)] text-[#3b3abf] focus:ring-0"
+            />
+            <span>Sábado</span>
+          </label>
         </div>
 
-        <div className="flex items-center gap-4 text-xs">
+        {/* Botones de acción directa sobre el horario */}
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <button
+            onClick={() => openEditClass()}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#3b3abf] hover:bg-[#2828a8] text-white font-bold transition-all shadow-xs cursor-pointer"
+            title="Añadir nueva clase al horario"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>+ Clase</span>
+          </button>
+
+          <button
+            onClick={openRoutineModal}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[var(--paper)] hover:bg-[var(--surface-raised)] text-[var(--ink)] border border-[var(--border)] font-bold transition-all cursor-pointer"
+            title="Añadir tiempos fijos (almuerzo, transporte, etc.)"
+          >
+            <Clock className="w-3.5 h-3.5 text-amber-500" />
+            <span>+ Tiempo Fijo</span>
+          </button>
+
+          <button
+            onClick={openAttendanceModal}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[var(--paper)] hover:bg-[var(--surface-raised)] text-[var(--ink)] border border-[var(--border)] font-bold transition-all cursor-pointer"
+            title="Control de asistencias y faltas"
+          >
+            <UserCheck className="w-3.5 h-3.5 text-emerald-500" />
+            <span>Asistencias</span>
+          </button>
+
           {/* Mobile view switch pills */}
-          <div className="flex sm:hidden items-center p-1 rounded-xl bg-[#f0f0ff] border border-[#e0dff0]">
+          <div className="flex sm:hidden items-center p-1 rounded-xl bg-[var(--paper)] border border-[var(--border)]">
             <button
               onClick={() => setMobileViewMode('single')}
-              className={`px-2 py-1 rounded-lg text-[11px] font-bold ${
-                mobileViewMode === 'single' ? 'bg-[#3b3abf] text-white' : 'text-[#7a7890]'
+              className={`px-2 py-1 rounded-lg text-[11px] font-bold cursor-pointer ${
+                mobileViewMode === 'single' ? 'bg-[#3b3abf] text-white' : 'text-[var(--muted)]'
               }`}
             >
-              Por Día
+              Día
             </button>
             <button
               onClick={() => setMobileViewMode('full')}
-              className={`px-2 py-1 rounded-lg text-[11px] font-bold ${
-                mobileViewMode === 'full' ? 'bg-[#3b3abf] text-white' : 'text-[#7a7890]'
+              className={`px-2 py-1 rounded-lg text-[11px] font-bold cursor-pointer ${
+                mobileViewMode === 'full' ? 'bg-[#3b3abf] text-white' : 'text-[var(--muted)]'
               }`}
             >
               Semana
             </button>
           </div>
-
-          <label className="flex items-center gap-2 text-[#0d0d14] font-medium cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showSaturday}
-              onChange={(e) => setShowSaturday(e.target.checked)}
-              className="rounded bg-[#f5f5ff] border-[#e0dff0] text-[#3b3abf] focus:ring-0"
-            />
-            <span>Sábado</span>
-          </label>
-
-          <button
-            onClick={openImporter}
-            className="hidden sm:flex items-center gap-1.5 text-[#3b3abf] hover:text-[#1e1e8a] font-bold"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Editar o Reimportar</span>
-          </button>
         </div>
       </div>
 
       {/* Selector de Días en móviles cuando viewMode === 'single' */}
-      <div className="flex sm:hidden overflow-x-auto gap-1.5 p-1 rounded-2xl bg-white border border-[#e0dff0] shadow-sm">
+      <div className="flex sm:hidden overflow-x-auto gap-1.5 p-1 rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-sm">
         {days.map(({ day, name }) => (
           <button
             key={day}
             onClick={() => setMobileDay(day)}
-            className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold text-center transition-all ${
+            className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold text-center transition-all cursor-pointer ${
               mobileDay === day && mobileViewMode === 'single'
                 ? 'bg-[#3b3abf] text-white shadow-sm'
-                : 'text-[#7a7890] hover:bg-[#f5f5ff]'
+                : 'text-[var(--muted)] hover:bg-[var(--paper)]'
             }`}
           >
             {name.slice(0, 3)}
@@ -184,146 +204,171 @@ export function SmartTimetable({
         ))}
       </div>
 
-      {/* Cuadrícula del Horario Semanal con soporte de desplazamiento horizontal en móviles */}
-      <div className="card-cambas overflow-hidden bg-white">
+      {/* Cuadrícula del Horario Semanal */}
+      <div className="card-cambas overflow-hidden bg-[var(--surface)] border border-[var(--border)] transition-colors">
         <div className="overflow-x-auto">
           <div className="min-w-[650px] sm:min-w-full">
-            {/* Cabecera de Días estilo CAMBAS+ */}
+            {/* Header de Columnas de Días */}
             <div
-              className="grid border-b border-[#e0dff0] bg-[#f5f5ff] text-center text-xs font-bold text-[#0d0d14]"
-              style={{ gridTemplateColumns: `65px repeat(${days.length}, minmax(0, 1fr))` }}
+              className="grid border-b border-[var(--border)] bg-[var(--paper)] text-center text-xs font-bold text-[var(--ink)]"
+              style={{
+                gridTemplateColumns: `64px repeat(${
+                  mobileViewMode === 'single' ? 1 : days.length
+                }, 1fr)`,
+              }}
             >
-              <div className="p-3.5 text-[#7a7890] font-mono border-r border-[#e0dff0]">Hora</div>
-              {days.map(({ day, name }) => (
-                <div
-                  key={day}
-                  className="p-3.5 text-[#0d0d14] border-r border-[#e0dff0] last:border-r-0 font-mono font-bold"
-                >
-                  <span>{name}</span>
-                </div>
-              ))}
+              <div className="p-3.5 text-[var(--muted)] border-r border-[var(--border)] font-mono text-[11px]">
+                Hora
+              </div>
+              {(mobileViewMode === 'single' ? days.filter((d) => d.day === mobileDay) : days).map(
+                ({ day, name }) => (
+                  <div
+                    key={day}
+                    className="p-3.5 text-[var(--ink)] border-r border-[var(--border)] last:border-r-0 font-mono font-bold"
+                  >
+                    {name}
+                  </div>
+                )
+              )}
             </div>
 
-        {/* Cuerpo del Horario: Columnas y Líneas horarias */}
-        <div
-          className="relative grid bg-white"
-          style={{ gridTemplateColumns: `65px repeat(${days.length}, minmax(0, 1fr))`, height: '760px' }}
-        >
-          {/* Columna lateral de Horas */}
-          <div className="relative border-r border-[#e0dff0] text-[11px] font-mono text-[#7a7890] select-none bg-[#fafaff]">
-            {hours.map((h, i) => (
-              <div
-                key={h}
-                className="absolute w-full text-right pr-2.5 -translate-y-2 font-medium"
-                style={{ top: `${(i / (hours.length - 1)) * 100}%` }}
-              >
-                {h}
-              </div>
-            ))}
-          </div>
-
-          {/* Columnas por Día */}
-          {days.map(({ day }) => {
-            const dayClasses = classes.filter((c) => {
-              if (c.dayOfWeek !== day) return false;
-              if (selectedSubjectFilter !== 'all' && c.subjectId !== selectedSubjectFilter) return false;
-              return true;
-            });
-
-            const daySlots = dailyFreeSlots[day] || [];
-            const usableGaps = daySlots.filter((s) => s.category === 'USABLE');
-
-            return (
-              <div key={day} className="relative border-r border-[#e0dff0] last:border-r-0 bg-white">
-                {/* Líneas horizontales de guía */}
-                {hours.map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-full border-b border-[#f0f0ff]"
-                    style={{ top: `${(i / (hours.length - 1)) * 100}%` }}
-                  />
+            {/* Cuerpo del Calendario con Horas y Bloques */}
+            <div
+              className="relative grid bg-[var(--surface)] transition-colors"
+              style={{
+                gridTemplateColumns: `64px repeat(${
+                  mobileViewMode === 'single' ? 1 : days.length
+                }, 1fr)`,
+                height: '750px',
+              }}
+            >
+              {/* Eje de Horas (07:00 a 21:00) */}
+              <div className="border-r border-[var(--border)] bg-[var(--paper)] font-mono text-[10px] text-[var(--muted)] flex flex-col justify-between py-1 select-none">
+                {hours.map((h) => (
+                  <div key={h} className="text-center h-full flex items-start justify-center pt-0.5">
+                    {h.toString().padStart(2, '0')}:00
+                  </div>
                 ))}
-
-                {/* Renderizar HUECOS LIBRES UTILIZABLES (>30 min) */}
-                {usableGaps.map((slot, idx) => {
-                  const { top, height } = getTopAndHeight(slot.startTime, slot.endTime);
-                  return (
-                    <div
-                      key={`gap-${idx}`}
-                      className="absolute inset-x-1.5 rounded-xl border border-dashed border-[#86efac] bg-[#f0fdf4] p-2 flex flex-col justify-between overflow-hidden group transition-all hover:bg-[#dcfce7]/60"
-                      style={{ top, height }}
-                    >
-                      <div>
-                        <div className="flex items-center gap-1 text-[10px] font-mono font-bold text-[#16a34a]">
-                          <Sparkles className="w-3 h-3" />
-                          <span>HUECO: {formatMinutesHuman(slot.durationMinutes)}</span>
-                        </div>
-                        <div className="text-[10px] text-[#7a7890] font-mono">
-                          {slot.startTime} – {slot.endTime}
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => handleStudyInGap(Math.min(60, slot.durationMinutes))}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity self-start mt-1 px-2 py-0.5 rounded bg-white text-[#16a34a] border border-[#86efac] text-[9px] font-bold hover:bg-[#f0fdf4] shadow-xs"
-                      >
-                        Estudiar aquí
-                      </button>
-                    </div>
-                  );
-                })}
-
-                {/* Renderizar BLOQUES DE CLASE */}
-                {dayClasses.map((c) => {
-                  const subject = subjectsMap[c.subjectId];
-                  const { top, height } = getTopAndHeight(c.startTime, c.endTime);
-
-                  return (
-                    <div
-                      key={c.id}
-                      className="absolute inset-x-1.5 rounded-xl p-2.5 shadow-sm border flex flex-col justify-between overflow-hidden transition-all duration-150 hover:z-20 hover:scale-[1.02] hover:shadow-md"
-                      style={{
-                        top,
-                        height,
-                        backgroundColor: '#f5f5ff',
-                        borderColor: '#c5c5ff',
-                        borderLeftWidth: '4px',
-                        borderLeftColor: subject?.color || '#3b3abf',
-                      }}
-                    >
-                      <div>
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono text-[10px] font-bold text-[#3b3abf] uppercase tracking-wide">
-                            {subject?.code || 'CLASE'}
-                          </span>
-                          <span className="font-mono text-[10px] text-[#7a7890] font-semibold">
-                            {c.startTime}
-                          </span>
-                        </div>
-
-                        <div className="font-black text-xs text-[#0d0d14] mt-1 leading-tight truncate">
-                          {subject?.name || 'Materia'}
-                        </div>
-                      </div>
-
-                      <div className="space-y-0.5 text-[10px] text-[#7a7890] font-mono mt-1">
-                        {c.location && (
-                          <div className="flex items-center gap-1 truncate text-[#3e3d52] font-medium">
-                            <MapPin className="w-3 h-3 text-[#7b7bff] shrink-0" />
-                            <span className="truncate">{c.location}</span>
-                          </div>
-                        )}
-                        <div className="text-[#7a7890] text-[9px]">
-                          {c.startTime} – {c.endTime}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
               </div>
-            );
-          })}
-        </div>
+
+              {/* Columnas por Día */}
+              {(mobileViewMode === 'single' ? days.filter((d) => d.day === mobileDay) : days).map(
+                ({ day }) => {
+                  const dayClasses = filteredClasses.filter((c) => c.dayOfWeek === day);
+
+                  // Calcular huecos libres de este día mediante el Motor Académico
+                  const dayFreeSlots = calculateFreeSlots({
+                    dayOfWeek: day,
+                    classes: filteredClasses,
+                    routines,
+                    dayStart: '07:00',
+                    dayEnd: '21:00',
+                  });
+
+                  const usableGaps = dayFreeSlots.filter(
+                    (s) => s.category === 'USABLE' && s.durationMinutes >= 30
+                  );
+
+                  return (
+                    <div
+                      key={day}
+                      className="relative border-r border-[var(--border)] last:border-r-0 bg-[var(--surface)] transition-colors"
+                    >
+                      {/* Líneas horizontales de fondo */}
+                      {hours.map((_, i) => (
+                        <div
+                          key={i}
+                          className="absolute w-full border-b border-[var(--border)]/30 pointer-events-none"
+                          style={{ top: `${(i / (hours.length - 1)) * 100}%` }}
+                        />
+                      ))}
+
+                      {/* Renderizar HUECOS LIBRES UTILIZABLES */}
+                      {usableGaps.map((slot, idx) => {
+                        const { top, height } = getTopAndHeight(slot.startTime, slot.endTime);
+                        return (
+                          <div
+                            key={`gap-${idx}`}
+                            className="absolute inset-x-1.5 rounded-xl border border-dashed border-[#86efac] dark:border-[#166534] bg-[#f0fdf4] dark:bg-[#072714]/40 p-2 flex flex-col justify-between overflow-hidden group transition-all hover:bg-[#dcfce7]/60 dark:hover:bg-[#072714]/70"
+                            style={{ top, height }}
+                          >
+                            <div>
+                              <div className="flex items-center gap-1 text-[10px] font-mono font-bold text-[#16a34a] dark:text-[#4ade80]">
+                                <Sparkles className="w-3 h-3" />
+                                <span>HUECO: {formatMinutesHuman(slot.durationMinutes)}</span>
+                              </div>
+                              <div className="text-[10px] text-[var(--muted)] font-mono">
+                                {slot.startTime} – {slot.endTime}
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={() => handleStudyInGap(Math.min(60, slot.durationMinutes))}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity self-start mt-1 px-2 py-0.5 rounded bg-[var(--surface)] text-[#16a34a] dark:text-[#4ade80] border border-[#86efac] dark:border-[#166534] text-[9px] font-bold hover:bg-[#f0fdf4] shadow-xs cursor-pointer"
+                            >
+                              Estudiar aquí
+                            </button>
+                          </div>
+                        );
+                      })}
+
+                      {/* Renderizar BLOQUES DE CLASE INTERACTIVOS */}
+                      {dayClasses.map((c) => {
+                        const subject = subjectsMap[c.subjectId];
+                        const { top, height } = getTopAndHeight(c.startTime, c.endTime);
+
+                        return (
+                          <div
+                            key={c.id}
+                            onClick={() => openEditClass(c)}
+                            className="absolute inset-x-1.5 rounded-xl p-2.5 shadow-sm border flex flex-col justify-between overflow-hidden transition-all duration-150 hover:z-20 hover:scale-[1.02] hover:shadow-md cursor-pointer group"
+                            style={{
+                              top,
+                              height,
+                              backgroundColor: 'var(--surface)',
+                              borderColor: 'var(--border)',
+                              borderLeftWidth: '4px',
+                              borderLeftColor: subject?.color || '#3b3abf',
+                            }}
+                            title="Clic para editar horario, materia o eliminar clase"
+                          >
+                            <div>
+                              <div className="flex items-center justify-between">
+                                <span className="font-mono text-[10px] font-bold text-[#3b3abf] dark:text-[#a0a0ff] uppercase tracking-wide">
+                                  {subject?.code || 'CLASE'}
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  <span className="font-mono text-[10px] text-[var(--muted)] font-semibold">
+                                    {c.startTime}
+                                  </span>
+                                  <Pencil className="w-3 h-3 text-[var(--muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </div>
+                              </div>
+
+                              <div className="font-black text-xs text-[var(--ink)] mt-1 leading-tight truncate">
+                                {subject?.name || 'Materia'}
+                              </div>
+                            </div>
+
+                            <div className="space-y-0.5 text-[10px] text-[var(--muted)] font-mono mt-1">
+                              {c.location && (
+                                <div className="flex items-center gap-1 truncate text-[var(--ink-secondary)] font-medium">
+                                  <MapPin className="w-3 h-3 text-[#7b7bff] shrink-0" />
+                                  <span className="truncate">{c.location}</span>
+                                </div>
+                              )}
+                              <div className="text-[var(--muted)] text-[9px]">
+                                {c.startTime} – {c.endTime}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                }
+              )}
+            </div>
           </div>
         </div>
       </div>

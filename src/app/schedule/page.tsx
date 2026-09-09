@@ -19,15 +19,15 @@ export default function SchedulePage() {
     <div className="space-y-6 animate-in fade-in duration-300">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-[#3b3abf]">
+          <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-[#3b3abf] dark:text-[#a0a0ff]">
             <Calendar className="w-3.5 h-3.5" />
             <span>Planificación Dinámica</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#0d0d14] tracking-tight mt-1">
+          <h1 className="text-2xl sm:text-3xl font-black text-[var(--ink)] tracking-tight mt-1">
             Horario Semanal Inteligente
           </h1>
-          <p className="text-xs text-[#7a7890] mt-1">
-            Visualiza tus clases universitarias y descubre tus <strong className="text-[#16a34a]">huecos libres</strong> de estudio calculados automáticamente.
+          <p className="text-xs text-[var(--muted)] mt-1">
+            Visualiza tus clases universitarias y descubre tus <strong className="text-[#16a34a] dark:text-[#4ade80]">huecos libres</strong> de estudio calculados automáticamente.
           </p>
         </div>
       </div>
