@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 
-interface FocusSessionState {
+export interface FocusSessionState {
   isActive: boolean;
+  taskId?: string;
   taskTitle: string;
   subjectName?: string;
   totalMinutes: number;
@@ -9,14 +10,25 @@ interface FocusSessionState {
   isPaused: boolean;
 }
 
+export interface FocusCompletionData {
+  taskId?: string;
+  taskTitle: string;
+  subjectName?: string;
+  minutesPlanned: number;
+  minutesElapsed: number;
+}
+
 interface UIState {
   isImporterOpen: boolean;
   isAddTaskOpen: boolean;
   isAddExamOpen: boolean;
   isAddClassOpen: boolean;
+  isProfileOpen: boolean;
+  isFocusCompletionOpen: boolean;
   activeSubjectDetailId: string | null;
 
   focusSession: FocusSessionState;
+  focusCompletionData: FocusCompletionData | null;
 
   openImporter: () => void;
   closeImporter: () => void;
@@ -26,12 +38,22 @@ interface UIState {
   closeAddExam: () => void;
   openAddClass: () => void;
   closeAddClass: () => void;
+  openProfile: () => void;
+  closeProfile: () => void;
   setActiveSubjectDetailId: (id: string | null) => void;
 
-  startFocusSession: (taskTitle: string, subjectName: string, minutes: number) => void;
+  startFocusSession: (
+    taskTitle: string,
+    subjectName: string,
+    minutes: number,
+    taskId?: string
+  ) => void;
   tickFocusSession: () => void;
   togglePauseFocus: () => void;
   stopFocusSession: () => void;
+
+  openFocusCompletion: (data: FocusCompletionData) => void;
+  closeFocusCompletion: () => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -39,16 +61,20 @@ export const useUIStore = create<UIState>((set) => ({
   isAddTaskOpen: false,
   isAddExamOpen: false,
   isAddClassOpen: false,
+  isProfileOpen: false,
+  isFocusCompletionOpen: false,
   activeSubjectDetailId: null,
 
   focusSession: {
     isActive: false,
+    taskId: undefined,
     taskTitle: '',
     subjectName: '',
     totalMinutes: 25,
     secondsRemaining: 25 * 60,
     isPaused: false,
   },
+  focusCompletionData: null,
 
   openImporter: () => set({ isImporterOpen: true }),
   closeImporter: () => set({ isImporterOpen: false }),
@@ -58,12 +84,15 @@ export const useUIStore = create<UIState>((set) => ({
   closeAddExam: () => set({ isAddExamOpen: false }),
   openAddClass: () => set({ isAddClassOpen: true }),
   closeAddClass: () => set({ isAddClassOpen: false }),
+  openProfile: () => set({ isProfileOpen: true }),
+  closeProfile: () => set({ isProfileOpen: false }),
   setActiveSubjectDetailId: (id) => set({ activeSubjectDetailId: id }),
 
-  startFocusSession: (taskTitle, subjectName, minutes) =>
+  startFocusSession: (taskTitle, subjectName, minutes, taskId) =>
     set({
       focusSession: {
         isActive: true,
+        taskId,
         taskTitle,
         subjectName,
         totalMinutes: minutes,
@@ -107,4 +136,16 @@ export const useUIStore = create<UIState>((set) => ({
         isActive: false,
       },
     })),
+
+  openFocusCompletion: (data) =>
+    set({
+      isFocusCompletionOpen: true,
+      focusCompletionData: data,
+    }),
+
+  closeFocusCompletion: () =>
+    set({
+      isFocusCompletionOpen: false,
+      focusCompletionData: null,
+    }),
 }));

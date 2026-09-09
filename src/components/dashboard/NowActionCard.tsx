@@ -8,7 +8,8 @@ import {
   Play,
   Calendar,
   Sparkles,
-  CheckCircle2,
+  ArrowRight,
+  Hourglass,
 } from 'lucide-react';
 import { Subject, ScheduleBlock, Assignment, Exam, FixedRoutine, DayOfWeek } from '@/types';
 import { getCurrentBlock } from '@/lib/academic-engine/schedule/getCurrentBlock';
@@ -115,7 +116,8 @@ export function NowActionCard({
       startFocusSession(
         recommendedTask.task.title,
         recommendedTask.subject?.name || '',
-        recommendedTask.task.estimatedMinutes || 45
+        recommendedTask.task.estimatedMinutes || 45,
+        recommendedTask.task.id
       );
     } else {
       startFocusSession('Sesión de estudio libre', 'General', 30);
@@ -125,29 +127,29 @@ export function NowActionCard({
   const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
   return (
-    <div className="card-cambas p-6 sm:p-8 bg-white relative overflow-hidden">
+    <div className="card-cambas p-6 sm:p-8 bg-[var(--surface)] relative overflow-hidden transition-colors">
       {/* Header bar: Día, Saludo y Simulador temporal */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-6 border-b border-[#e0dff0]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-6 border-b border-[var(--border)]">
         <div>
-          <div className="flex items-center gap-2 text-xs font-mono tracking-wider uppercase text-[#3b3abf] font-bold">
+          <div className="flex items-center gap-2 text-xs font-mono tracking-wider uppercase text-[#3b3abf] dark:text-[#a0a0ff] font-bold">
             <Clock className="w-3.5 h-3.5" />
             <span>{dayNames[todayDayOfWeek - 1]} · Centro de Decisión en Tiempo Real</span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#0d0d14] mt-1">
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--ink)] mt-1">
             ¿Qué hago ahora?
           </h2>
         </div>
 
         {/* Simulador rápido para probar todos los estados */}
-        <div className="flex items-center gap-2 bg-[#f5f5ff] p-1.5 rounded-xl border border-[#e0dff0] text-xs">
-          <span className="text-[#7a7890] pl-2 font-mono text-[11px] font-semibold">Simular Hora:</span>
+        <div className="flex items-center gap-2 bg-[var(--paper)] p-1.5 rounded-xl border border-[var(--border)] text-xs">
+          <span className="text-[var(--muted)] pl-2 font-mono text-[11px] font-semibold">Simular Hora:</span>
           <select
             value={effectiveTime}
             onChange={(e) => {
               setUseRealTime(false);
               setSimulatedTime(e.target.value);
             }}
-            className="bg-white border border-[#e0dff0] text-[#0d0d14] rounded-lg px-2.5 py-1 font-mono text-xs font-semibold focus:outline-none focus:border-[#3b3abf]"
+            className="bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] rounded-lg px-2.5 py-1 font-mono text-xs font-semibold focus:outline-none focus:border-[#3b3abf]"
           >
             <option value="07:30">07:30 (En Clase de Cálculo)</option>
             <option value="09:15">09:15 (Hueco Libre Mañana)</option>
@@ -159,10 +161,10 @@ export function NowActionCard({
           </select>
           <button
             onClick={() => setUseRealTime(!useRealTime)}
-            className={`px-2.5 py-1 rounded-lg font-mono text-[10px] font-bold transition-all ${
+            className={`px-2.5 py-1 rounded-lg font-mono text-[10px] font-bold transition-all cursor-pointer ${
               useRealTime
                 ? 'bg-[#3b3abf] text-white'
-                : 'bg-white text-[#7a7890] hover:text-[#0d0d14] border border-[#e0dff0]'
+                : 'bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--ink)] border border-[var(--border)]'
             }`}
           >
             {useRealTime ? 'Reloj Real ON' : 'Usar Reloj Real'}
@@ -173,27 +175,27 @@ export function NowActionCard({
       {/* Grid de Estado: AHORA | DESPUÉS (Recomendación) | PRÓXIMO */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
         {/* 1. SECCIÓN AHORA */}
-        <div className="flex flex-col justify-between rounded-2xl bg-[#f5f5ff] p-5 border border-[#e0dff0]">
+        <div className="flex flex-col justify-between rounded-2xl bg-[var(--paper)] p-5 border border-[var(--border)]">
           <div>
-            <div className="flex items-center justify-between text-xs font-bold tracking-wide uppercase text-[#7a7890]">
+            <div className="flex items-center justify-between text-xs font-bold tracking-wide uppercase text-[var(--muted)]">
               <span>Estado Actual ({effectiveTime})</span>
               {currentBlockResult.status === 'in_class' && (
-                <span className="px-2.5 py-0.5 rounded-full bg-[#ede9fe] text-[#7c3aed] border border-[#ddd6fe] text-[10px] font-mono font-bold">
+                <span className="px-2.5 py-0.5 rounded-full bg-[#ede9fe] text-[#7c3aed] dark:bg-[#3b0764] dark:text-[#d8b4fe] border border-[#ddd6fe] dark:border-[#581c87] text-[10px] font-mono font-bold">
                   EN CLASE
                 </span>
               )}
               {currentBlockResult.status === 'in_free_slot' && (
-                <span className="px-2.5 py-0.5 rounded-full bg-[#dcfce7] text-[#16a34a] border border-[#bbf7d0] text-[10px] font-mono font-bold">
+                <span className="px-2.5 py-0.5 rounded-full bg-[#dcfce7] text-[#16a34a] dark:bg-[#052e16] dark:text-[#4ade80] border border-[#bbf7d0] dark:border-[#14532d] text-[10px] font-mono font-bold">
                   TIEMPO DISPONIBLE
                 </span>
               )}
               {currentBlockResult.status === 'in_routine' && (
-                <span className="px-2.5 py-0.5 rounded-full bg-[#fef9c3] text-[#ca8a04] border border-[#fef08a] text-[10px] font-mono font-bold">
+                <span className="px-2.5 py-0.5 rounded-full bg-[#fef9c3] text-[#ca8a04] dark:bg-[#422006] dark:text-[#facc15] border border-[#fef08a] dark:border-[#713f12] text-[10px] font-mono font-bold">
                   RUTINA FIJA
                 </span>
               )}
               {currentBlockResult.status === 'off_hours' && (
-                <span className="px-2.5 py-0.5 rounded-full bg-white text-[#7a7890] border border-[#e0dff0] text-[10px] font-mono font-bold">
+                <span className="px-2.5 py-0.5 rounded-full bg-[var(--surface)] text-[var(--muted)] border border-[var(--border)] text-[10px] font-mono font-bold">
                   DESCANSO
                 </span>
               )}
@@ -201,11 +203,11 @@ export function NowActionCard({
 
             {currentBlockResult.status === 'in_class' && currentBlockResult.currentClass && (
               <div className="mt-4">
-                <div className="text-xl font-black text-[#0d0d14] tracking-tight">
+                <div className="text-xl font-black text-[var(--ink)] tracking-tight">
                   {currentBlockResult.currentClass.name}
                 </div>
-                <div className="flex items-center gap-2 text-xs text-[#7a7890] mt-1 font-medium">
-                  <span className="font-mono text-[#3b3abf] font-bold">{currentBlockResult.currentClass.code}</span>
+                <div className="flex items-center gap-2 text-xs text-[var(--muted)] mt-1 font-medium">
+                  <span className="font-mono text-[#3b3abf] dark:text-[#a0a0ff] font-bold">{currentBlockResult.currentClass.code}</span>
                   {currentBlockResult.currentClass.location && (
                     <span className="flex items-center gap-1">
                       · <MapPin className="w-3.5 h-3.5 text-[#a0a0ff]" />
@@ -213,9 +215,9 @@ export function NowActionCard({
                     </span>
                   )}
                 </div>
-                <div className="mt-4 p-3 rounded-xl bg-white border border-[#e0dff0] text-xs flex items-center justify-between font-medium">
-                  <span className="text-[#7a7890]">Termina en:</span>
-                  <span className="font-mono font-bold text-sm text-[#3b3abf]">
+                <div className="mt-4 p-3 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-xs flex items-center justify-between font-medium">
+                  <span className="text-[var(--muted)]">Termina en:</span>
+                  <span className="font-mono font-bold text-sm text-[#3b3abf] dark:text-[#a0a0ff]">
                     {formatMinutesHuman(currentBlockResult.currentClass.remainingMinutes)}
                   </span>
                 </div>
@@ -224,25 +226,56 @@ export function NowActionCard({
 
             {currentBlockResult.status === 'in_free_slot' && currentBlockResult.currentFreeSlot && (
               <div className="mt-4">
-                <div className="text-xl font-black text-[#16a34a] tracking-tight flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-[#16a34a]" />
+                <div className="text-xl font-black text-[#16a34a] dark:text-[#4ade80] tracking-tight flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-[#16a34a] dark:text-[#4ade80]" />
                   <span>{formatMinutesHuman(currentBlockResult.currentFreeSlot.remainingMinutes)} libres</span>
                 </div>
-                <p className="text-xs text-[#7a7890] mt-2">
-                  Ventana disponible hasta las <strong className="text-[#0d0d14]">{currentBlockResult.currentFreeSlot.endTime}</strong>. Momento ideal para avanzar sin interrupciones.
+                <p className="text-xs text-[var(--muted)] mt-1.5">
+                  Ventana hasta las <strong className="text-[var(--ink)]">{currentBlockResult.currentFreeSlot.endTime}</strong> con cálculo de fricción real:
                 </p>
-                <div className="mt-4 p-3 rounded-xl bg-[#f0fdf4] border border-[#dcfce7] text-[#16a34a] text-xs font-semibold">
-                  Hueco utilizable detectado por el motor.
+
+                {/* Desglose de 3 niveles de disponibilidad real */}
+                <div className="mt-3 p-3 rounded-xl bg-[var(--surface)] border border-[var(--border)] space-y-1.5 text-[11px] font-mono">
+                  <div className="flex justify-between text-[var(--muted)]">
+                    <span>1. Hueco Libre Bruto:</span>
+                    <span className="font-bold text-[var(--ink)]">
+                      {formatMinutesHuman(currentBlockResult.currentFreeSlot.durationMinutes)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-[var(--muted)]">
+                    <span>- Traslado y movimiento:</span>
+                    <span className="font-bold text-[#dc2626] dark:text-[#f87171]">
+                      -{currentBlockResult.currentFreeSlot.transitionBufferMinutes || 15}m
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-[var(--muted)]">
+                    <span>- Preparación y setup:</span>
+                    <span className="font-bold text-amber-600 dark:text-amber-400">
+                      -10m
+                    </span>
+                  </div>
+                  <div className="pt-2 border-t border-[var(--border)] flex justify-between text-[#16a34a] dark:text-[#4ade80] font-bold">
+                    <span>2. Tiempo Útil Real:</span>
+                    <span>
+                      {formatMinutesHuman(
+                        Math.max(
+                          20,
+                          (currentBlockResult.currentFreeSlot.effectiveStudyMinutes ||
+                            currentBlockResult.currentFreeSlot.durationMinutes - 25)
+                        )
+                      )}
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
 
             {currentBlockResult.status === 'in_routine' && currentBlockResult.currentRoutine && (
               <div className="mt-4">
-                <div className="text-xl font-black text-[#ca8a04] tracking-tight">
+                <div className="text-xl font-black text-[#ca8a04] dark:text-[#facc15] tracking-tight">
                   {currentBlockResult.currentRoutine.title}
                 </div>
-                <p className="text-xs text-[#7a7890] mt-2">
+                <p className="text-xs text-[var(--muted)] mt-2">
                   Compromiso fijo. Finaliza en {formatMinutesHuman(currentBlockResult.currentRoutine.remainingMinutes)}.
                 </p>
               </div>
@@ -250,10 +283,10 @@ export function NowActionCard({
 
             {currentBlockResult.status === 'off_hours' && (
               <div className="mt-4">
-                <div className="text-xl font-black text-[#0d0d14] tracking-tight">
+                <div className="text-xl font-black text-[var(--ink)] tracking-tight">
                   Fuera de Jornada
                 </div>
-                <p className="text-xs text-[#7a7890] mt-2">
+                <p className="text-xs text-[var(--muted)] mt-2">
                   No hay clases activas en este horario.
                 </p>
               </div>
@@ -261,9 +294,9 @@ export function NowActionCard({
           </div>
 
           {currentBlockResult.nextBlock && (
-            <div className="mt-5 pt-3.5 border-t border-[#e0dff0] text-[11px] text-[#7a7890] flex items-center justify-between">
+            <div className="mt-5 pt-3.5 border-t border-[var(--border)] text-[11px] text-[var(--muted)] flex items-center justify-between">
               <span>Siguiente:</span>
-              <span className="font-bold text-[#0d0d14]">
+              <span className="font-bold text-[var(--ink)]">
                 {currentBlockResult.nextBlock.title} ({currentBlockResult.nextBlock.startTime})
               </span>
             </div>
@@ -271,7 +304,7 @@ export function NowActionCard({
         </div>
 
         {/* 2. SECCIÓN RECOMENDACIÓN PRIORITARIA */}
-        <div className="flex flex-col justify-between rounded-2xl bg-gradient-to-br from-[#1a1a5e] to-[#2828a8] text-white p-5 shadow-lg shadow-[#1a1a5e]/20 relative overflow-hidden">
+        <div className="flex flex-col justify-between rounded-2xl bg-gradient-to-br from-[#1a1a5e] to-[#2828a8] dark:from-[#10122e] dark:to-[#1d2159] text-white p-5 shadow-lg shadow-[#1a1a5e]/20 relative overflow-hidden">
           <div>
             <div className="flex items-center justify-between text-xs font-bold tracking-wide uppercase text-[#c5c5ff]">
               <span className="flex items-center gap-1.5">
@@ -318,51 +351,51 @@ export function NowActionCard({
         </div>
 
         {/* 3. SECCIÓN PRÓXIMO HITO CRÍTICO */}
-        <div className="flex flex-col justify-between rounded-2xl bg-[#f5f5ff] p-5 border border-[#e0dff0]">
+        <div className="flex flex-col justify-between rounded-2xl bg-[var(--paper)] p-5 border border-[var(--border)]">
           <div>
-            <div className="flex items-center justify-between text-xs font-bold tracking-wide uppercase text-[#7a7890]">
+            <div className="flex items-center justify-between text-xs font-bold tracking-wide uppercase text-[var(--muted)]">
               <span className="flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-[#7c3aed]" />
+                <Calendar className="w-3.5 h-3.5 text-[#7c3aed] dark:text-[#a855f7]" />
                 Próximo Parcial Crítico
               </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white text-[#7c3aed] border border-[#ede9fe] font-bold">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[var(--surface)] text-[#7c3aed] dark:text-[#a855f7] border border-[#ede9fe] dark:border-[#581c87] font-bold">
                 Evaluación
               </span>
             </div>
 
             {nearestExam ? (
               <div className="mt-4">
-                <div className="text-xs font-mono font-bold text-[#7c3aed]">
+                <div className="text-xs font-mono font-bold text-[#7c3aed] dark:text-[#a855f7]">
                   {subjectsMap[nearestExam.exam.subjectId]?.name || 'Materia'}
                 </div>
-                <div className="text-base font-bold text-[#0d0d14] tracking-tight mt-1">
+                <div className="text-base font-bold text-[var(--ink)] tracking-tight mt-1">
                   {nearestExam.exam.title}
                 </div>
                 <div className="mt-3 flex items-center gap-2">
-                  <span className="text-xs px-2.5 py-1 rounded-md font-mono font-bold bg-[#fee2e2] text-[#dc2626] border border-[#fecaca]">
+                  <span className="text-xs px-2.5 py-1 rounded-md font-mono font-bold bg-[#fee2e2] text-[#dc2626] dark:bg-[#390909] dark:text-[#f87171] border border-[#fecaca] dark:border-[#7f1d1d]">
                     En {nearestExam.diffDays === 0 ? 'hoy' : `${nearestExam.diffDays} días`}
                   </span>
-                  <span className="text-xs text-[#7a7890] font-mono">
+                  <span className="text-xs text-[var(--muted)] font-mono">
                     Ponderación: {nearestExam.exam.weight}%
                   </span>
                 </div>
                 {nearestExam.exam.topics && nearestExam.exam.topics.length > 0 && (
-                  <div className="mt-3 text-[11px] text-[#7a7890]">
-                    <span className="font-bold text-[#0d0d14]">Temas: </span>
+                  <div className="mt-3 text-[11px] text-[var(--muted)]">
+                    <span className="font-bold text-[var(--ink)]">Temas: </span>
                     {nearestExam.exam.topics.slice(0, 2).join(', ')}
                   </div>
                 )}
               </div>
             ) : (
-              <div className="mt-4 text-xs text-[#7a7890]">
+              <div className="mt-4 text-xs text-[var(--muted)]">
                 No hay exámenes agendados a corto plazo.
               </div>
             )}
           </div>
 
-          <div className="mt-5 pt-3.5 border-t border-[#e0dff0] text-[11px] text-[#3b3abf] flex items-center justify-between font-semibold">
+          <div className="mt-5 pt-3.5 border-t border-[var(--border)] text-[11px] text-[#3b3abf] dark:text-[#a0a0ff] flex items-center justify-between font-semibold">
             <span>Preparación recomendada:</span>
-            <span className="text-[#0d0d14]">4 horas de estudio previo</span>
+            <span className="text-[var(--ink)]">4 horas de estudio previo</span>
           </div>
         </div>
       </div>
