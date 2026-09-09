@@ -144,35 +144,26 @@ export function TopHeader() {
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           {/* Theme Toggle */}
           <ThemeToggle />
 
           <button
             onClick={openAddTask}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--surface)] hover:bg-[var(--paper)] text-[#1e1e8a] dark:text-[#a0a0ff] border border-[var(--border)] text-xs font-bold transition-all shadow-xs cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#1e1e8a] hover:bg-[#2828a8] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
             title="Añadir Tarea"
           >
-            <PlusCircle className="w-3.5 h-3.5 text-[#3b3abf]" />
-            <span className="hidden sm:inline">+ Tarea</span>
-          </button>
-
-          <button
-            onClick={openAddExam}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--surface)] hover:bg-[var(--paper)] text-[#1e1e8a] dark:text-[#a0a0ff] border border-[var(--border)] text-xs font-bold transition-all shadow-xs cursor-pointer"
-            title="Añadir Parcial"
-          >
-            <Calendar className="w-3.5 h-3.5 text-[#7c3aed]" />
-            <span className="hidden sm:inline">+ Parcial</span>
+            <PlusCircle className="w-3.5 h-3.5" />
+            <span>+ Tarea</span>
           </button>
 
           <button
             onClick={openOnboarding}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#3b3abf] to-[#7c3aed] hover:opacity-95 text-white text-xs font-extrabold shadow-md shadow-[#3b3abf]/30 transition-all cursor-pointer"
-            title="Asistente de Configuración Inteligente (IA / Plantillas / Desde Cero)"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--surface)] hover:bg-[var(--paper)] text-[var(--ink)] border border-[var(--border)] text-xs font-bold transition-all shadow-xs cursor-pointer"
+            title="Configurar Semestre (IA / Plantillas / Cero)"
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            <span className="hidden sm:inline">Configurar Semestre</span>
+            <Sparkles className="w-3.5 h-3.5 text-[#1e1e8a] dark:text-[#a0a0ff]" />
+            <span>Configurar</span>
           </button>
         </div>
       </div>

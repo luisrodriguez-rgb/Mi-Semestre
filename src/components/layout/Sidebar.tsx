@@ -8,12 +8,13 @@ import {
   AlertTriangle,
   Layers,
   Sparkles,
-  LogOut,
-  Upload,
   PlusCircle,
   RotateCcw,
   User,
   GraduationCap,
+  Award,
+  CheckSquare,
+  Settings,
 } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { useSemesterData } from '@/hooks/useSemesterData';
@@ -21,16 +22,8 @@ import { resetDatabaseToDemo } from '@/lib/mockData';
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { openImporter, openOnboarding, openAddTask, openAddExam, openProfile } = useUIStore();
+  const { openOnboarding, openAddTask, openAddExam, openProfile } = useUIStore();
   const { profile, semester, refreshData } = useSemesterData();
-
-  const navItems = [
-    { href: '/dashboard', label: '¿Qué hago ahora?', icon: Clock },
-    { href: '/schedule', label: 'Horario Semanal', icon: Calendar },
-    { href: '/radar', label: 'Radar de Riesgo', icon: AlertTriangle },
-    { href: '/timeline', label: 'Línea de Semanas', icon: Layers },
-    { href: '/balance', label: 'Balance Académico', icon: GraduationCap },
-  ];
 
   const handleReset = async () => {
     if (confirm('¿Restablecer datos del semestre al estado inicial de demostración?')) {
@@ -40,109 +33,163 @@ export function Sidebar() {
     }
   };
 
+  const isDashboard = pathname === '/dashboard' || pathname === '/';
+
   return (
     <aside className="hidden md:flex w-64 shrink-0 bg-[#16164f] dark:bg-[#0b0c1b] text-white flex-col justify-between border-r border-[#26266f] dark:border-[#1d1f3b] h-screen sticky top-0 overflow-y-auto transition-colors z-40">
       {/* Top Header & Brand */}
       <div>
-        <div className="p-6 border-b border-[#252570]/60">
+        <div className="p-5 border-b border-[#252570]/60">
           <Link href="/dashboard" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#3b3abf] to-[#5b5be8] flex items-center justify-center shadow-lg shadow-[#1a1a5e]/50 group-hover:scale-105 transition-transform">
-              <Sparkles className="w-5 h-5 text-white" />
+            <div className="w-9 h-9 rounded-xl bg-[#3b3abf] flex items-center justify-center shadow-md shadow-black/20 group-hover:scale-105 transition-transform">
+              <span className="font-black text-xs text-white">MS</span>
             </div>
             <div>
-              <div className="font-extrabold text-lg tracking-tight text-white flex items-center gap-1">
-                MI SEMESTRE<span className="text-[#a0a0ff] font-black">+</span>
+              <div className="font-black text-sm tracking-tight text-white flex items-center gap-1">
+                MI SEMESTRE<span className="text-[#a0a0ff]">+</span>
               </div>
-              <div className="text-[11px] text-[#a0a0ff] font-medium">
+              <div className="text-[10px] text-[#a0a0ff] font-mono truncate max-w-[150px]">
                 {semester?.name || 'Icesi · Semestre 2026-2'}
               </div>
             </div>
           </Link>
         </div>
 
-        {/* Navigation Links */}
-        <div className="px-4 py-6 space-y-1">
-          <div className="px-3 pb-2 text-[10px] font-mono uppercase tracking-wider text-[#7a7890] font-semibold">
-            Navegación
-          </div>
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive =
-              pathname === item.href || (pathname === '/' && item.href === '/dashboard');
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                  isActive
-                    ? 'bg-[#3b3abf] text-white shadow-md shadow-[#1a1a5e]/40'
-                    : 'text-[#a0a0ff] hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-[#7b7bff]'}`} />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </div>
-
-        {/* Action Shortcuts */}
-        <div className="px-4 pt-2 space-y-1">
-          <div className="px-3 pb-2 text-[10px] font-mono uppercase tracking-wider text-[#7a7890] font-semibold">
-            Acciones Rápidas
-          </div>
-          <button
-            onClick={openOnboarding}
-            className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#3b3abf]/60 to-[#7c3aed]/60 hover:from-[#3b3abf] hover:to-[#7c3aed] border border-[#7b7bff]/30 transition-all text-left shadow-sm cursor-pointer"
-          >
-            <div className="flex items-center gap-2.5">
-              <Sparkles className="w-4 h-4 text-amber-300" />
-              <span>Configurar Semestre</span>
+        {/* ══════════════════════════════════════════════════════════
+            NAVEGACIÓN CATEGORIZADA: CENTRO · ORGANIZAR · ENTENDER
+           ══════════════════════════════════════════════════════════ */}
+        <div className="px-3 py-4 space-y-4">
+          {/* SECCIÓN 1: CENTRO */}
+          <div>
+            <div className="px-3 pb-1.5 text-[9px] font-mono uppercase tracking-widest text-[#7a7890] font-bold">
+              Centro
             </div>
-            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/20 text-white font-bold">
-              IA
-            </span>
-          </button>
-          <button
-            onClick={openAddTask}
-            className="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium text-[#c5c5ff] hover:text-white hover:bg-white/5 transition-all text-left cursor-pointer"
-          >
-            <PlusCircle className="w-4 h-4 text-[#7b7bff]" />
-            <span>Nueva Tarea</span>
-          </button>
-          <button
-            onClick={openAddExam}
-            className="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium text-[#c5c5ff] hover:text-white hover:bg-white/5 transition-all text-left cursor-pointer"
-          >
-            <Calendar className="w-4 h-4 text-[#7b7bff]" />
-            <span>Nuevo Parcial</span>
-          </button>
-          <button
-            onClick={openImporter}
-            className="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium text-[#c5c5ff] hover:text-white hover:bg-white/5 transition-all text-left cursor-pointer"
-          >
-            <Upload className="w-4 h-4 text-[#7b7bff]" />
-            <span>Importar Horario</span>
-          </button>
+            <Link
+              href="/dashboard"
+              className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                isDashboard
+                  ? 'bg-[#3b3abf] text-white shadow-md shadow-[#1a1a5e]/40'
+                  : 'text-[#c5c5ff] hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Clock className={`w-4 h-4 ${isDashboard ? 'text-white' : 'text-[#7b7bff]'}`} />
+              <span>¿Qué hago ahora?</span>
+            </Link>
+          </div>
+
+          {/* SECCIÓN 2: ORGANIZAR */}
+          <div className="space-y-0.5">
+            <div className="px-3 pb-1.5 text-[9px] font-mono uppercase tracking-widest text-[#7a7890] font-bold">
+              Organizar
+            </div>
+            <Link
+              href="/schedule"
+              className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                pathname === '/schedule'
+                  ? 'bg-[#3b3abf] text-white shadow-md shadow-[#1a1a5e]/40'
+                  : 'text-[#c5c5ff] hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Calendar className={`w-4 h-4 ${pathname === '/schedule' ? 'text-white' : 'text-[#7b7bff]'}`} />
+              <span>Horario Semanal</span>
+            </Link>
+
+            <button
+              onClick={openAddTask}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-[#c5c5ff] hover:text-white hover:bg-white/5 transition-all text-left cursor-pointer"
+            >
+              <CheckSquare className="w-4 h-4 text-[#7b7bff]" />
+              <span>+ Nueva Tarea</span>
+            </button>
+
+            <button
+              onClick={openAddExam}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-[#c5c5ff] hover:text-white hover:bg-white/5 transition-all text-left cursor-pointer"
+            >
+              <Award className="w-4 h-4 text-[#7b7bff]" />
+              <span>+ Nuevo Parcial</span>
+            </button>
+          </div>
+
+          {/* SECCIÓN 3: ENTENDER */}
+          <div className="space-y-0.5">
+            <div className="px-3 pb-1.5 text-[9px] font-mono uppercase tracking-widest text-[#7a7890] font-bold">
+              Entender
+            </div>
+            <Link
+              href="/radar"
+              className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                pathname === '/radar'
+                  ? 'bg-[#3b3abf] text-white shadow-md shadow-[#1a1a5e]/40'
+                  : 'text-[#c5c5ff] hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <AlertTriangle className={`w-4 h-4 ${pathname === '/radar' ? 'text-white' : 'text-[#7b7bff]'}`} />
+              <span>Radar de Riesgo</span>
+            </Link>
+
+            <Link
+              href="/timeline"
+              className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                pathname === '/timeline'
+                  ? 'bg-[#3b3abf] text-white shadow-md shadow-[#1a1a5e]/40'
+                  : 'text-[#c5c5ff] hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Layers className={`w-4 h-4 ${pathname === '/timeline' ? 'text-white' : 'text-[#7b7bff]'}`} />
+              <span>Línea de Semanas</span>
+            </Link>
+
+            <Link
+              href="/balance"
+              className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                pathname === '/balance'
+                  ? 'bg-[#3b3abf] text-white shadow-md shadow-[#1a1a5e]/40'
+                  : 'text-[#c5c5ff] hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <GraduationCap className={`w-4 h-4 ${pathname === '/balance' ? 'text-white' : 'text-[#7b7bff]'}`} />
+              <span>Balance Académico</span>
+            </Link>
+          </div>
+
+          {/* SECCIÓN 4: CONFIGURAR */}
+          <div className="space-y-0.5">
+            <div className="px-3 pb-1.5 text-[9px] font-mono uppercase tracking-widest text-[#7a7890] font-bold">
+              Configurar
+            </div>
+            <button
+              onClick={openOnboarding}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-left cursor-pointer"
+            >
+              <div className="flex items-center gap-2.5">
+                <Sparkles className="w-4 h-4 text-amber-300" />
+                <span>Asistente IA</span>
+              </div>
+              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-[#3b3abf] text-white font-bold">
+                SETUP
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* User Card & Reset Footer */}
-      <div className="p-4 border-t border-[#252570]/60 space-y-3">
+      <div className="p-3 border-t border-[#252570]/60 space-y-2">
         <button
           onClick={handleReset}
-          className="w-full flex items-center justify-center gap-2 py-1.5 px-3 rounded-lg text-[11px] text-[#7a7890] hover:text-[#c5c5ff] hover:bg-white/5 transition-all"
+          className="w-full flex items-center justify-center gap-1.5 py-1 px-2 rounded-lg text-[10px] font-mono text-[#7a7890] hover:text-[#c5c5ff] hover:bg-white/5 transition-all"
         >
           <RotateCcw className="w-3 h-3" />
-          <span>Restablecer Datos Demo</span>
+          <span>Restablecer Demo</span>
         </button>
 
         <button
           onClick={openProfile}
-          className="w-full text-left flex items-center justify-between p-2.5 rounded-xl bg-[#1e1e8a]/40 hover:bg-[#1e1e8a]/70 border border-[#3b3abf]/30 transition-all group cursor-pointer"
+          className="w-full text-left flex items-center justify-between p-2 rounded-xl bg-[#1e1e8a]/30 hover:bg-[#1e1e8a]/60 border border-[#3b3abf]/30 transition-all group cursor-pointer"
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-[#3b3abf] text-white font-black text-xs flex items-center justify-center shadow-sm shrink-0">
+            <div className="w-7 h-7 rounded-lg bg-[#3b3abf] text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0">
               {(profile?.name || 'Luis Felipe')
                 .split(' ')
                 .slice(0, 2)
@@ -158,7 +205,7 @@ export function Sidebar() {
               </div>
             </div>
           </div>
-          <User className="w-4 h-4 text-[#7a7890] group-hover:text-white transition-colors shrink-0 ml-1" />
+          <User className="w-3.5 h-3.5 text-[#7b7bff] group-hover:text-white shrink-0" />
         </button>
       </div>
     </aside>
