@@ -1,5 +1,6 @@
 import Dexie, { Table } from 'dexie';
 import {
+  Profile,
   Semester,
   Subject,
   ScheduleBlock,
@@ -12,6 +13,7 @@ import {
 } from '@/types';
 
 export class SemesterDatabase extends Dexie {
+  profiles!: Table<Profile, string>;
   semesters!: Table<Semester, string>;
   subjects!: Table<Subject, string>;
   scheduleBlocks!: Table<ScheduleBlock, string>;
@@ -25,7 +27,8 @@ export class SemesterDatabase extends Dexie {
   constructor() {
     super('MiSemestreDB');
 
-    this.version(1).stores({
+    this.version(2).stores({
+      profiles: 'id, studentCode, university',
       semesters: 'id, userId, isActive',
       subjects: 'id, semesterId, code',
       scheduleBlocks: 'id, subjectId, dayOfWeek, startTime',

@@ -3,15 +3,20 @@ export type DayOfWeek = 1 | 2 | 3 | 4 | 5 | 6 | 7; // 1 = Lunes, 7 = Domingo
 export interface Profile {
   id: string;
   name: string;
+  email?: string;
+  studentCode: string;
+  documentId?: string;
   university: string;
   program: string;
   semesterNumber: number;
+  gpa?: number; // Promedio acumulado, ej. 4.3
+  cohort?: string; // ej. 202510
 }
 
 export interface Semester {
   id: string;
   userId: string;
-  name: string; // ej. "2026-1"
+  name: string; // ej. "Segundo Semestre De 2026 - PRE"
   startDate: string; // YYYY-MM-DD
   endDate: string; // YYYY-MM-DD
   isActive: boolean;
@@ -23,12 +28,27 @@ export interface Subject {
   semesterId: string;
   name: string;
   code: string;
+  nrc?: string;
   professor?: string;
   credits: number;
-  color: string; // Hex o clase Tailwind (ej. #6366f1)
-  maxAbsences: number; // Límite de faltas antes de perder la materia
-  passingGrade: number; // ej. 3.0
-  currentGrade?: number; // ej. 4.1
+  color: string;
+  maxAbsences: number;
+  passingGrade: number;
+  currentGrade?: number;
+}
+
+export interface CourseHistory {
+  code: string;
+  name: string;
+  period: string;
+  credits: number;
+  grade: number | string; // 4.3 o "Aprobado"
+}
+
+export interface PendingCourse {
+  code: string;
+  name: string;
+  semester: number;
 }
 
 export interface ScheduleBlock {
@@ -127,7 +147,9 @@ export type AvailabilityCategory = 'FREE' | 'USABLE' | 'BLOCKED';
 export interface TimeSlot {
   startTime: string; // "10:00"
   endTime: string;   // "12:00"
-  durationMinutes: number;
+  durationMinutes: number; // Tiempo libre bruto (raw)
+  transitionBufferMinutes: number; // Margen de traslado/preparación (ej. 15m)
+  effectiveStudyMinutes: number; // Tiempo útil efectivo para estudio
   category: AvailabilityCategory;
   reason?: string; // ej. "Hueco entre clases", "Transporte hacia campus"
   dayOfWeek?: DayOfWeek;
