@@ -100,17 +100,17 @@ export default function DashboardPage() {
       {/* Grid de 2 Columnas: Tareas Pendientes y Resumen del Radar */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Columna Izquierda: Tareas Pendientes (2 cols) */}
-        <div className="lg:col-span-2 card-cambas p-6">
-          <div className="flex items-center justify-between pb-4 border-b border-[#e0dff0]">
+        <div className="lg:col-span-2 card-cambas p-6 bg-[var(--surface)] border border-[var(--border)] transition-colors">
+          <div className="flex items-center justify-between pb-4 border-b border-[var(--border)]">
             <div>
-              <h3 className="text-base font-bold text-[#0d0d14]">
+              <h3 className="text-base font-bold text-[var(--ink)]">
                 Entregas y Tareas Pendientes
               </h3>
-              <p className="text-xs text-[#7a7890] mt-0.5">
+              <p className="text-xs text-[var(--muted)] mt-0.5">
                 Haz clic en el círculo para marcar como completada
               </p>
             </div>
-            <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-[#f0f0ff] text-[#3b3abf] border border-[#e0dff0]">
+            <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-[#f0f0ff] dark:bg-[#1c1e38] text-[#3b3abf] dark:text-[#a0a0ff] border border-[var(--border)]">
               {pendingAssignments.length} pendientes
             </span>
           </div>
@@ -122,21 +122,21 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={task.id}
-                    className="p-4 rounded-xl bg-[#f5f5ff] border border-[#e0dff0] flex items-center justify-between gap-4 transition-all hover:border-[#a0a0ff]"
+                    className="p-4 rounded-xl bg-[var(--paper)] border border-[var(--border)] flex items-center justify-between gap-4 transition-all hover:border-[#a0a0ff]"
                   >
                     <div className="flex items-start gap-3">
                       <button
                         onClick={() => handleToggleTask(task.id)}
-                        className="mt-0.5 text-[#7a7890] hover:text-[#16a34a] transition-colors"
+                        className="mt-0.5 text-[var(--muted)] hover:text-[#16a34a] transition-colors cursor-pointer"
                         title="Marcar como completada"
                       >
                         <Circle className="w-5 h-5" />
                       </button>
                       <div>
-                        <div className="text-xs font-bold text-[#0d0d14]">
+                        <div className="text-xs font-bold text-[var(--ink)]">
                           {task.title}
                         </div>
-                        <div className="flex items-center gap-2 text-[11px] text-[#7a7890] mt-1">
+                        <div className="flex items-center gap-2 text-[11px] text-[var(--muted)] mt-1">
                           <span
                             className="font-bold font-mono px-1.5 py-0.5 rounded text-[10px]"
                             style={{
@@ -157,8 +157,8 @@ export default function DashboardPage() {
                     <span
                       className={`text-[10px] font-bold font-mono px-2.5 py-1 rounded uppercase ${
                         task.priority === 'high'
-                          ? 'bg-[#fee2e2] text-[#dc2626] border border-[#fecaca]'
-                          : 'bg-[#fef9c3] text-[#ca8a04] border border-[#fef08a]'
+                          ? 'bg-[#fee2e2] dark:bg-[#390909] text-[#dc2626] dark:text-[#f87171] border border-[#fecaca] dark:border-[#7f1d1d]'
+                          : 'bg-[#fef9c3] dark:bg-[#351a04] text-[#ca8a04] dark:text-[#facc15] border border-[#fef08a] dark:border-[#713f12]'
                       }`}
                     >
                       {task.priority === 'high' ? 'Alta' : 'Media'}
@@ -167,7 +167,7 @@ export default function DashboardPage() {
                 );
               })
             ) : (
-              <div className="p-8 text-center text-[#7a7890] text-xs">
+              <div className="p-8 text-center text-[var(--muted)] text-xs">
                 <CheckCircle2 className="w-8 h-8 text-[#16a34a] mx-auto mb-2 opacity-80" />
                 ¡Todas tus tareas están al día! Excelente ritmo académico.
               </div>
@@ -176,20 +176,20 @@ export default function DashboardPage() {
         </div>
 
         {/* Columna Derecha: Resumen Rápido del Radar de Salud */}
-        <div className="card-cambas p-6 flex flex-col justify-between">
+        <div className="card-cambas p-6 flex flex-col justify-between bg-[var(--surface)] border border-[var(--border)] transition-colors">
           <div>
-            <div className="flex items-center justify-between pb-4 border-b border-[#e0dff0]">
+            <div className="flex items-center justify-between pb-4 border-b border-[var(--border)]">
               <div>
-                <h3 className="text-base font-bold text-[#0d0d14]">
+                <h3 className="text-base font-bold text-[var(--ink)]">
                   Diagnóstico Rápido
                 </h3>
-                <p className="text-xs text-[#7a7890] mt-0.5">
+                <p className="text-xs text-[var(--muted)] mt-0.5">
                   Estado general de las materias
                 </p>
               </div>
               <Link
                 href="/radar"
-                className="text-xs text-[#3b3abf] font-bold hover:underline"
+                className="text-xs text-[#3b3abf] dark:text-[#a0a0ff] font-bold hover:underline"
               >
                 Ver todo →
               </Link>
@@ -197,59 +197,59 @@ export default function DashboardPage() {
 
             <div className="mt-4 space-y-3">
               {/* Cálculo en riesgo */}
-              <div className="p-3.5 rounded-xl bg-[#fef2f2] border border-[#fee2e2]">
+              <div className="p-3.5 rounded-xl bg-[#fef2f2] dark:bg-[#390909]/40 border border-[#fee2e2] dark:border-[#7f1d1d]">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#dc2626] uppercase font-mono">
+                  <span className="text-xs font-bold text-[#dc2626] dark:text-[#f87171] uppercase font-mono">
                     CRÍTICO
                   </span>
-                  <span className="text-[10px] font-mono text-[#7a7890]">Parcial en 4d</span>
+                  <span className="text-[10px] font-mono text-[var(--muted)]">Parcial en 4d</span>
                 </div>
-                <div className="text-xs font-bold text-[#0d0d14] mt-1">
+                <div className="text-xs font-bold text-[var(--ink)] mt-1">
                   Cálculo Multivariado
                 </div>
-                <div className="text-[11px] text-[#7a7890] mt-0.5">
+                <div className="text-[11px] text-[var(--muted)] mt-0.5">
                   Examen próximo y 3 tareas acumuladas.
                 </div>
               </div>
 
               {/* Física en atención */}
-              <div className="p-3.5 rounded-xl bg-[#fefce8] border border-[#fef9c3]">
+              <div className="p-3.5 rounded-xl bg-[#fefce8] dark:bg-[#351a04]/40 border border-[#fef9c3] dark:border-[#713f12]">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#ca8a04] uppercase font-mono">
+                  <span className="text-xs font-bold text-[#ca8a04] dark:text-[#facc15] uppercase font-mono">
                     ATENCIÓN
                   </span>
-                  <span className="text-[10px] font-mono text-[#7a7890]">Informe lab</span>
+                  <span className="text-[10px] font-mono text-[var(--muted)]">Informe lab</span>
                 </div>
-                <div className="text-xs font-bold text-[#0d0d14] mt-1">
+                <div className="text-xs font-bold text-[var(--ink)] mt-1">
                   Física Mecánica
                 </div>
-                <div className="text-[11px] text-[#7a7890] mt-0.5">
+                <div className="text-[11px] text-[var(--muted)] mt-0.5">
                   Entrega de informe pendiente esta semana.
                 </div>
               </div>
 
               {/* Otras materias */}
-              <div className="p-3.5 rounded-xl bg-[#f0fdf4] border border-[#dcfce7]">
+              <div className="p-3.5 rounded-xl bg-[#f0fdf4] dark:bg-[#072714]/40 border border-[#dcfce7] dark:border-[#14532d]">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#16a34a] uppercase font-mono">
+                  <span className="text-xs font-bold text-[#16a34a] dark:text-[#4ade80] uppercase font-mono">
                     ESTABLE
                   </span>
-                  <span className="text-[10px] font-mono text-[#16a34a]">Al día</span>
+                  <span className="text-[10px] font-mono text-[#16a34a] dark:text-[#4ade80]">Al día</span>
                 </div>
-                <div className="text-xs font-bold text-[#0d0d14] mt-1">
+                <div className="text-xs font-bold text-[var(--ink)] mt-1">
                   Álgebra, Estructuras e Inglés
                 </div>
-                <div className="text-[11px] text-[#7a7890] mt-0.5">
+                <div className="text-[11px] text-[var(--muted)] mt-0.5">
                   Asistencia excelente y sin alarmas inminentes.
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-[#e0dff0]">
+          <div className="mt-6 pt-4 border-t border-[var(--border)]">
             <Link
               href="/timeline"
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[#f5f5ff] hover:bg-[#ebeaff] text-[#3b3abf] text-xs font-bold border border-[#e0dff0] transition-all"
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[var(--paper)] hover:bg-[var(--surface-raised)] text-[#3b3abf] dark:text-[#a0a0ff] text-xs font-bold border border-[var(--border)] transition-all"
             >
               <span>Ver cronograma de semanas</span>
               <ChevronRight className="w-3.5 h-3.5" />

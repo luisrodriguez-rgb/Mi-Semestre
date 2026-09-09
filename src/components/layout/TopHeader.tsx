@@ -136,8 +136,8 @@ export function TopHeader() {
           </div>
 
           {metrics && (
-            <div className="hidden lg:flex items-center gap-2 text-xs text-[var(--ink)] font-medium bg-[#f0fdf4] dark:bg-[#072714] border border-[#dcfce7] dark:border-[#14532d] px-3 py-1.5 rounded-full">
-              <span className="w-2 h-2 rounded-full bg-[#16a34a]" />
+            <div className="hidden lg:flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300 font-semibold bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 px-3 py-1.5 rounded-full shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
               <span>Semana {metrics.currentWeek} de {metrics.totalWeeks} ({metrics.progressPercentage}% completado)</span>
             </div>
           )}

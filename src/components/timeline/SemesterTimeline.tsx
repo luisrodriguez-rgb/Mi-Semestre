@@ -103,12 +103,12 @@ export function SemesterTimeline({
       </div>
 
       {/* Scrubber Horizontal de Semanas (1 a 16) */}
-      <div className="card-cambas p-6">
+      <div className="card-cambas p-6 bg-[var(--surface)] border border-[var(--border)]">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-bold text-[#0d0d14]">
+          <h3 className="text-sm font-bold text-[var(--ink)]">
             Explorar Semanas del Semestre
           </h3>
-          <span className="text-xs text-[#7a7890] font-mono">
+          <span className="text-xs text-[var(--muted)] font-mono">
             Haz clic en una semana para ver sus hitos
           </span>
         </div>
@@ -124,12 +124,12 @@ export function SemesterTimeline({
               <button
                 key={w}
                 onClick={() => setSelectedWeek(w)}
-                className={`flex flex-col items-center justify-center p-2 rounded-xl text-xs font-bold transition-all border relative ${
+                className={`flex flex-col items-center justify-center p-2 rounded-xl text-xs font-bold transition-all border relative cursor-pointer ${
                   isSelected
                     ? 'bg-[#3b3abf] text-white border-[#3b3abf] shadow-md shadow-[#3b3abf]/30'
                     : isCurrent
-                    ? 'bg-[#f0f0ff] text-[#1e1e8a] border-[#3b3abf]'
-                    : 'bg-white text-[#0d0d14] border-[#e0dff0] hover:bg-[#f5f5ff]'
+                    ? 'bg-[#3b3abf]/15 text-[#3b3abf] dark:text-[#a0a0ff] border-[#3b3abf]'
+                    : 'bg-[var(--surface)] text-[var(--ink)] border-[var(--border)] hover:bg-[var(--paper)]'
                 }`}
               >
                 <span className="text-[10px] uppercase font-mono opacity-80">Sem</span>
@@ -156,7 +156,7 @@ export function SemesterTimeline({
                 </div>
 
                 {isCurrent && (
-                  <span className="absolute -top-1.5 px-1 bg-emerald-500 text-white rounded text-[8px] font-mono">
+                  <span className="absolute -top-1.5 px-1 bg-emerald-500 text-white rounded text-[8px] font-mono font-bold">
                     Hoy
                   </span>
                 )}
@@ -167,13 +167,13 @@ export function SemesterTimeline({
       </div>
 
       {/* Detalle de la Semana Seleccionada */}
-      <div className="card-cambas p-6">
-        <div className="flex items-center justify-between pb-4 border-b border-[#e0dff0]">
+      <div className="card-cambas p-6 bg-[var(--surface)] border border-[var(--border)]">
+        <div className="flex items-center justify-between pb-4 border-b border-[var(--border)]">
           <div>
-            <h4 className="text-base font-bold text-[#0d0d14]">
+            <h4 className="text-base font-bold text-[var(--ink)]">
               Hitos y Compromisos de la Semana {selectedWeek}
             </h4>
-            <p className="text-xs text-[#7a7890] mt-0.5">
+            <p className="text-xs text-[var(--muted)] mt-0.5">
               {currentWeekMilestones.exams.length} exámenes programados · {currentWeekMilestones.tasks.length} entregas pendientes
             </p>
           </div>
@@ -182,8 +182,8 @@ export function SemesterTimeline({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           {/* Exámenes de la semana */}
           <div>
-            <h5 className="text-xs font-mono font-bold uppercase tracking-wider text-[#7a7890] mb-3 flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-[#7c3aed]" />
+            <h5 className="text-xs font-mono font-bold uppercase tracking-wider text-[var(--muted)] mb-3 flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 text-[#7c3aed] dark:text-[#c084fc]" />
               Parciales y Exámenes
             </h5>
 
@@ -194,17 +194,17 @@ export function SemesterTimeline({
                   return (
                     <div
                       key={ex.id}
-                      className="p-3.5 rounded-xl bg-[#faf5ff] border border-[#ede9fe] flex items-center justify-between"
+                      className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-between"
                     >
                       <div>
-                        <span className="text-[10px] font-bold font-mono text-[#7c3aed] uppercase">
+                        <span className="text-[10px] font-bold font-mono text-purple-600 dark:text-purple-300 uppercase">
                           {sub?.name || 'Materia'}
                         </span>
-                        <div className="text-xs font-bold text-[#0d0d14] mt-0.5">
+                        <div className="text-xs font-bold text-[var(--ink)] mt-0.5">
                           {ex.title}
                         </div>
                       </div>
-                      <span className="text-xs font-mono font-bold px-2 py-1 rounded bg-white text-[#7c3aed] border border-[#ede9fe]">
+                      <span className="text-xs font-mono font-bold px-2 py-1 rounded bg-[var(--surface)] text-purple-600 dark:text-purple-300 border border-purple-500/20">
                         {ex.weight}%
                       </span>
                     </div>
@@ -212,7 +212,7 @@ export function SemesterTimeline({
                 })}
               </div>
             ) : (
-              <div className="p-4 rounded-xl bg-[#f5f5ff] border border-[#e0dff0] text-xs text-[#7a7890]">
+              <div className="p-4 rounded-xl bg-[var(--paper)] border border-[var(--border)] text-xs text-[var(--muted)]">
                 Sin exámenes agendados esta semana.
               </div>
             )}
@@ -220,8 +220,8 @@ export function SemesterTimeline({
 
           {/* Tareas de la semana */}
           <div>
-            <h5 className="text-xs font-mono font-bold uppercase tracking-wider text-[#7a7890] mb-3 flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-[#3b3abf]" />
+            <h5 className="text-xs font-mono font-bold uppercase tracking-wider text-[var(--muted)] mb-3 flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#3b3abf] dark:text-[#a0a0ff]" />
               Entregas y Talleres
             </h5>
 
@@ -232,17 +232,17 @@ export function SemesterTimeline({
                   return (
                     <div
                       key={t.id}
-                      className="p-3.5 rounded-xl bg-[#f5f5ff] border border-[#e0dff0] flex items-center justify-between"
+                      className="p-3.5 rounded-xl bg-[var(--paper)] border border-[var(--border)] flex items-center justify-between"
                     >
                       <div>
-                        <span className="text-[10px] font-bold font-mono text-[#3b3abf] uppercase">
+                        <span className="text-[10px] font-bold font-mono text-[#3b3abf] dark:text-[#a0a0ff] uppercase">
                           {sub?.name || 'Materia'}
                         </span>
-                        <div className="text-xs font-bold text-[#0d0d14] mt-0.5">
+                        <div className="text-xs font-bold text-[var(--ink)] mt-0.5">
                           {t.title}
                         </div>
                       </div>
-                      <span className="text-xs font-mono text-[#7a7890]">
+                      <span className="text-xs font-mono text-[var(--muted)]">
                         {t.estimatedMinutes}m
                       </span>
                     </div>
@@ -250,7 +250,7 @@ export function SemesterTimeline({
                 })}
               </div>
             ) : (
-              <div className="p-4 rounded-xl bg-[#f5f5ff] border border-[#e0dff0] text-xs text-[#7a7890]">
+              <div className="p-4 rounded-xl bg-[var(--paper)] border border-[var(--border)] text-xs text-[var(--muted)]">
                 Sin entregas pendientes registradas para esta semana.
               </div>
             )}
