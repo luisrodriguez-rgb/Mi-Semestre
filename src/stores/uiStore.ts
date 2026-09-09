@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { ScheduleBlock, Subject } from '@/types';
 
 export interface FocusSessionState {
   isActive: boolean;
@@ -23,8 +24,12 @@ interface UIState {
   isAddTaskOpen: boolean;
   isAddExamOpen: boolean;
   isAddClassOpen: boolean;
+  isEditClassOpen: boolean;
+  editingScheduleBlock: ScheduleBlock | null;
   isProfileOpen: boolean;
   isFocusCompletionOpen: boolean;
+  isAttendanceModalOpen: boolean;
+  isRoutineModalOpen: boolean;
   activeSubjectDetailId: string | null;
 
   focusSession: FocusSessionState;
@@ -38,8 +43,14 @@ interface UIState {
   closeAddExam: () => void;
   openAddClass: () => void;
   closeAddClass: () => void;
+  openEditClass: (block?: ScheduleBlock) => void;
+  closeEditClass: () => void;
   openProfile: () => void;
   closeProfile: () => void;
+  openAttendanceModal: () => void;
+  closeAttendanceModal: () => void;
+  openRoutineModal: () => void;
+  closeRoutineModal: () => void;
   setActiveSubjectDetailId: (id: string | null) => void;
 
   startFocusSession: (
@@ -61,8 +72,12 @@ export const useUIStore = create<UIState>((set) => ({
   isAddTaskOpen: false,
   isAddExamOpen: false,
   isAddClassOpen: false,
+  isEditClassOpen: false,
+  editingScheduleBlock: null,
   isProfileOpen: false,
   isFocusCompletionOpen: false,
+  isAttendanceModalOpen: false,
+  isRoutineModalOpen: false,
   activeSubjectDetailId: null,
 
   focusSession: {
@@ -82,10 +97,17 @@ export const useUIStore = create<UIState>((set) => ({
   closeAddTask: () => set({ isAddTaskOpen: false }),
   openAddExam: () => set({ isAddExamOpen: true }),
   closeAddExam: () => set({ isAddExamOpen: false }),
-  openAddClass: () => set({ isAddClassOpen: true }),
-  closeAddClass: () => set({ isAddClassOpen: false }),
+  openAddClass: () => set({ isEditClassOpen: true, editingScheduleBlock: null }),
+  closeAddClass: () => set({ isEditClassOpen: false, editingScheduleBlock: null }),
+  openEditClass: (block?: ScheduleBlock) =>
+    set({ isEditClassOpen: true, editingScheduleBlock: block || null }),
+  closeEditClass: () => set({ isEditClassOpen: false, editingScheduleBlock: null }),
   openProfile: () => set({ isProfileOpen: true }),
   closeProfile: () => set({ isProfileOpen: false }),
+  openAttendanceModal: () => set({ isAttendanceModalOpen: true }),
+  closeAttendanceModal: () => set({ isAttendanceModalOpen: false }),
+  openRoutineModal: () => set({ isRoutineModalOpen: true }),
+  closeRoutineModal: () => set({ isRoutineModalOpen: false }),
   setActiveSubjectDetailId: (id) => set({ activeSubjectDetailId: id }),
 
   startFocusSession: (taskTitle, subjectName, minutes, taskId) =>

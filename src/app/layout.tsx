@@ -8,6 +8,9 @@ import { AddTaskModal } from '@/components/modals/AddTaskModal';
 import { AddExamModal } from '@/components/modals/AddExamModal';
 import { ProfileModal } from '@/components/profile/ProfileModal';
 import { FocusCompletionModal } from '@/components/dashboard/FocusCompletionModal';
+import { EditClassModal } from '@/components/modals/EditClassModal';
+import { AttendanceModal } from '@/components/modals/AttendanceModal';
+import { AddRoutineModal } from '@/components/modals/AddRoutineModal';
 
 export const viewport: Viewport = {
   themeColor: '#16164f',
@@ -101,6 +104,9 @@ export default function RootLayout({
         <AddExamModal />
         <ProfileModal />
         <FocusCompletionModal />
+        <EditClassModal />
+        <AttendanceModal />
+        <AddRoutineModal />
       </body>
     </html>
   );
