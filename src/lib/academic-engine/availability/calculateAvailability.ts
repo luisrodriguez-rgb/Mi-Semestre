@@ -69,10 +69,15 @@ export function calculateDailyAvailability({
     if (ev.start > cursor) {
       const duration = ev.start - cursor;
       const isUsable = duration >= minUsableSlotMinutes;
+      const buffer = isUsable ? (duration >= 60 ? 15 : 10) : 5;
+      const effective = Math.max(0, duration - buffer);
+
       slots.push({
         startTime: minutesToTime(cursor),
         endTime: minutesToTime(ev.start),
         durationMinutes: duration,
+        transitionBufferMinutes: buffer,
+        effectiveStudyMinutes: effective,
         category: isUsable ? 'USABLE' : 'FREE',
         reason: isUsable ? 'Hueco utilizable para estudio' : 'Margen breve de transición',
         dayOfWeek,
@@ -84,6 +89,8 @@ export function calculateDailyAvailability({
       startTime: minutesToTime(ev.start),
       endTime: minutesToTime(ev.end),
       durationMinutes: ev.end - ev.start,
+      transitionBufferMinutes: 0,
+      effectiveStudyMinutes: 0,
       category: 'BLOCKED',
       reason: ev.reason,
       dayOfWeek,
@@ -95,10 +102,15 @@ export function calculateDailyAvailability({
   if (cursor < sleepMin) {
     const duration = sleepMin - cursor;
     const isUsable = duration >= minUsableSlotMinutes;
+    const buffer = isUsable ? 15 : 5;
+    const effective = Math.max(0, duration - buffer);
+
     slots.push({
       startTime: minutesToTime(cursor),
       endTime: minutesToTime(sleepMin),
       durationMinutes: duration,
+      transitionBufferMinutes: buffer,
+      effectiveStudyMinutes: effective,
       category: isUsable ? 'USABLE' : 'FREE',
       reason: isUsable ? 'Tiempo utilizable nocturno' : 'Descanso previo a dormir',
       dayOfWeek,

@@ -66,13 +66,18 @@ export function calculateFreeSlots({
     if (busy.start > currentCursor) {
       const gapMinutes = busy.start - currentCursor;
       const isUsable = gapMinutes >= minUsefulMinutes;
+      // Buffer de fricción: 15m para traslados y cambio de contexto si el hueco es >= 60m, o 10m si es menor
+      const buffer = isUsable ? (gapMinutes >= 60 ? 15 : 10) : 5;
+      const effective = Math.max(0, gapMinutes - buffer);
 
       freeSlots.push({
         startTime: minutesToTime(currentCursor),
         endTime: minutesToTime(busy.start),
         durationMinutes: gapMinutes,
+        transitionBufferMinutes: buffer,
+        effectiveStudyMinutes: effective,
         category: isUsable ? 'USABLE' : 'FREE',
-        reason: isUsable ? 'Hueco utilizable para estudio' : 'Pausa breve / descanso',
+        reason: isUsable ? 'Hueco utilizable para estudio' : 'Pausa breve / traslado',
         dayOfWeek,
       });
     }
@@ -83,11 +88,15 @@ export function calculateFreeSlots({
   if (currentCursor < endMin) {
     const gapMinutes = endMin - currentCursor;
     const isUsable = gapMinutes >= minUsefulMinutes;
+    const buffer = isUsable ? 15 : 5;
+    const effective = Math.max(0, gapMinutes - buffer);
 
     freeSlots.push({
       startTime: minutesToTime(currentCursor),
       endTime: minutesToTime(endMin),
       durationMinutes: gapMinutes,
+      transitionBufferMinutes: buffer,
+      effectiveStudyMinutes: effective,
       category: isUsable ? 'USABLE' : 'FREE',
       reason: isUsable ? 'Tiempo libre de tarde/noche' : 'Pausa breve',
       dayOfWeek,

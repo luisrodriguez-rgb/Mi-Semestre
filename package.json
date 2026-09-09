@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "npx tsx src/tests/academic-engine/engine.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
