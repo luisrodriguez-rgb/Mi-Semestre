@@ -11,6 +11,7 @@ import { FocusCompletionModal } from '@/components/dashboard/FocusCompletionModa
 import { EditClassModal } from '@/components/modals/EditClassModal';
 import { AttendanceModal } from '@/components/modals/AttendanceModal';
 import { AddRoutineModal } from '@/components/modals/AddRoutineModal';
+import { SmartOnboardingModal } from '@/components/modals/SmartOnboardingModal';
 
 export const viewport: Viewport = {
   themeColor: '#16164f',
@@ -99,6 +100,7 @@ export default function RootLayout({
         <MobileNav />
 
         {/* Modales globales de la aplicación */}
+        <SmartOnboardingModal />
         <QuickScheduleImporterModal />
         <AddTaskModal />
         <AddExamModal />

@@ -21,7 +21,7 @@ import { resetDatabaseToDemo } from '@/lib/mockData';
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { openImporter, openAddTask, openAddExam, openProfile } = useUIStore();
+  const { openImporter, openOnboarding, openAddTask, openAddExam, openProfile } = useUIStore();
   const { profile, semester, refreshData } = useSemesterData();
 
   const navItems = [
@@ -92,22 +92,34 @@ export function Sidebar() {
             Acciones Rápidas
           </div>
           <button
+            onClick={openOnboarding}
+            className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#3b3abf]/60 to-[#7c3aed]/60 hover:from-[#3b3abf] hover:to-[#7c3aed] border border-[#7b7bff]/30 transition-all text-left shadow-sm cursor-pointer"
+          >
+            <div className="flex items-center gap-2.5">
+              <Sparkles className="w-4 h-4 text-amber-300" />
+              <span>Configurar Semestre</span>
+            </div>
+            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/20 text-white font-bold">
+              IA
+            </span>
+          </button>
+          <button
             onClick={openAddTask}
-            className="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium text-[#c5c5ff] hover:text-white hover:bg-white/5 transition-all text-left"
+            className="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium text-[#c5c5ff] hover:text-white hover:bg-white/5 transition-all text-left cursor-pointer"
           >
             <PlusCircle className="w-4 h-4 text-[#7b7bff]" />
             <span>Nueva Tarea</span>
           </button>
           <button
             onClick={openAddExam}
-            className="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium text-[#c5c5ff] hover:text-white hover:bg-white/5 transition-all text-left"
+            className="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium text-[#c5c5ff] hover:text-white hover:bg-white/5 transition-all text-left cursor-pointer"
           >
             <Calendar className="w-4 h-4 text-[#7b7bff]" />
             <span>Nuevo Parcial</span>
           </button>
           <button
             onClick={openImporter}
-            className="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium text-[#c5c5ff] hover:text-white hover:bg-white/5 transition-all text-left"
+            className="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium text-[#c5c5ff] hover:text-white hover:bg-white/5 transition-all text-left cursor-pointer"
           >
             <Upload className="w-4 h-4 text-[#7b7bff]" />
             <span>Importar Horario</span>

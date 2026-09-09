@@ -21,6 +21,7 @@ export interface FocusCompletionData {
 
 interface UIState {
   isImporterOpen: boolean;
+  isOnboardingOpen: boolean;
   isAddTaskOpen: boolean;
   isAddExamOpen: boolean;
   isAddClassOpen: boolean;
@@ -37,6 +38,8 @@ interface UIState {
 
   openImporter: () => void;
   closeImporter: () => void;
+  openOnboarding: () => void;
+  closeOnboarding: () => void;
   openAddTask: () => void;
   closeAddTask: () => void;
   openAddExam: () => void;
@@ -69,6 +72,7 @@ interface UIState {
 
 export const useUIStore = create<UIState>((set) => ({
   isImporterOpen: false,
+  isOnboardingOpen: false,
   isAddTaskOpen: false,
   isAddExamOpen: false,
   isAddClassOpen: false,
@@ -93,6 +97,8 @@ export const useUIStore = create<UIState>((set) => ({
 
   openImporter: () => set({ isImporterOpen: true }),
   closeImporter: () => set({ isImporterOpen: false }),
+  openOnboarding: () => set({ isOnboardingOpen: true }),
+  closeOnboarding: () => set({ isOnboardingOpen: false }),
   openAddTask: () => set({ isAddTaskOpen: true }),
   closeAddTask: () => set({ isAddTaskOpen: false }),
   openAddExam: () => set({ isAddExamOpen: true }),

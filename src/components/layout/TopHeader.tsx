@@ -3,7 +3,7 @@
 import { useUIStore } from '@/stores/uiStore';
 import { useSemesterData } from '@/hooks/useSemesterData';
 import { calculateSemesterMetrics } from '@/lib/academic-engine';
-import { Clock, PlusCircle, Calendar, Upload, Play, Pause, Square } from 'lucide-react';
+import { Clock, PlusCircle, Calendar, Upload, Play, Pause, Square, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
 
@@ -12,6 +12,7 @@ import { ThemeToggle } from '@/components/common/ThemeToggle';
 export function TopHeader() {
   const {
     openImporter,
+    openOnboarding,
     openAddTask,
     openAddExam,
     focusSession,
@@ -166,12 +167,12 @@ export function TopHeader() {
           </button>
 
           <button
-            onClick={openImporter}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#3b3abf] hover:bg-[#2828a8] text-white text-xs font-bold shadow-md shadow-[#3b3abf]/25 transition-all cursor-pointer"
-            title="Importar Horario"
+            onClick={openOnboarding}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#3b3abf] to-[#7c3aed] hover:opacity-95 text-white text-xs font-extrabold shadow-md shadow-[#3b3abf]/30 transition-all cursor-pointer"
+            title="Asistente de Configuración Inteligente (IA / Plantillas / Desde Cero)"
           >
-            <Upload className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Importar Horario</span>
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span className="hidden sm:inline">Configurar Semestre</span>
           </button>
         </div>
       </div>
