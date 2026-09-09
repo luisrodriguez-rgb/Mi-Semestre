@@ -12,6 +12,8 @@ import {
   Upload,
   PlusCircle,
   RotateCcw,
+  User,
+  GraduationCap,
 } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { useSemesterData } from '@/hooks/useSemesterData';
@@ -19,7 +21,7 @@ import { resetDatabaseToDemo } from '@/lib/mockData';
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { openImporter, openAddTask, openAddExam } = useUIStore();
+  const { openImporter, openAddTask, openAddExam, openProfile } = useUIStore();
   const { semester, refreshData } = useSemesterData();
 
   const navItems = [
@@ -27,6 +29,7 @@ export function Sidebar() {
     { href: '/schedule', label: 'Horario Semanal', icon: Calendar },
     { href: '/radar', label: 'Radar de Riesgo', icon: AlertTriangle },
     { href: '/timeline', label: 'Línea de Semanas', icon: Layers },
+    { href: '/balance', label: 'Balance Académico', icon: GraduationCap },
   ];
 
   const handleReset = async () => {
@@ -38,7 +41,7 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-64 shrink-0 bg-[#16164f] text-white flex flex-col justify-between border-r border-[#26266f] min-h-screen">
+    <aside className="hidden md:flex w-64 shrink-0 bg-[#16164f] dark:bg-[#0b0c1b] text-white flex-col justify-between border-r border-[#26266f] dark:border-[#1d1f3b] min-h-screen transition-colors">
       {/* Top Header & Brand */}
       <div>
         <div className="p-6 border-b border-[#252570]/60">
@@ -122,20 +125,23 @@ export function Sidebar() {
           <span>Restablecer Datos Demo</span>
         </button>
 
-        <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#1e1e8a]/40 border border-[#3b3abf]/30">
+        <button
+          onClick={openProfile}
+          className="w-full text-left flex items-center justify-between p-2.5 rounded-xl bg-[#1e1e8a]/40 hover:bg-[#1e1e8a]/70 border border-[#3b3abf]/30 transition-all group"
+        >
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#3b3abf] text-white font-bold text-xs flex items-center justify-center">
-              DA
+            <div className="w-8 h-8 rounded-lg bg-[#3b3abf] text-white font-black text-xs flex items-center justify-center shadow-sm">
+              LR
             </div>
             <div>
-              <div className="text-xs font-bold text-white leading-tight">Diego A.</div>
-              <div className="text-[10px] text-[#a0a0ff]">Estudiante Icesi</div>
+              <div className="text-xs font-bold text-white leading-tight group-hover:text-[#a0a0ff] transition-colors">
+                Luis Felipe R.
+              </div>
+              <div className="text-[10px] font-mono text-[#a0a0ff]">A00389124 · Icesi</div>
             </div>
           </div>
-          <button title="Cerrar sesión" className="text-[#7a7890] hover:text-white transition-colors">
-            <LogOut className="w-4 h-4" />
-          </button>
-        </div>
+          <User className="w-4 h-4 text-[#7a7890] group-hover:text-white transition-colors" />
+        </button>
       </div>
     </aside>
   );

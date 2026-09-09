@@ -85,6 +85,9 @@ export function SmartTimetable({
     startFocusSession('Aprovechar hueco para repasar', 'Autoestudio', gapDuration);
   };
 
+  const [mobileDay, setMobileDay] = useState<DayOfWeek>(1);
+  const [mobileViewMode, setMobileViewMode] = useState<'single' | 'full'>('single');
+
   return (
     <div className="space-y-4">
       {/* Alerta de Conflictos si existen */}
@@ -114,7 +117,7 @@ export function SmartTimetable({
             onChange={(e) => setSelectedSubjectFilter(e.target.value)}
             className="bg-[#f5f5ff] border border-[#e0dff0] text-[#0d0d14] rounded-xl px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-[#3b3abf]"
           >
-            <option value="all">Todas las materias</option>
+            <option value="all">Todas las materias ({Object.keys(subjectsMap).length})</option>
             {Object.values(subjectsMap).map((sub) => (
               <option key={sub.id} value={sub.id}>
                 {sub.name} ({sub.code})
@@ -124,6 +127,26 @@ export function SmartTimetable({
         </div>
 
         <div className="flex items-center gap-4 text-xs">
+          {/* Mobile view switch pills */}
+          <div className="flex sm:hidden items-center p-1 rounded-xl bg-[#f0f0ff] border border-[#e0dff0]">
+            <button
+              onClick={() => setMobileViewMode('single')}
+              className={`px-2 py-1 rounded-lg text-[11px] font-bold ${
+                mobileViewMode === 'single' ? 'bg-[#3b3abf] text-white' : 'text-[#7a7890]'
+              }`}
+            >
+              Por Día
+            </button>
+            <button
+              onClick={() => setMobileViewMode('full')}
+              className={`px-2 py-1 rounded-lg text-[11px] font-bold ${
+                mobileViewMode === 'full' ? 'bg-[#3b3abf] text-white' : 'text-[#7a7890]'
+              }`}
+            >
+              Semana
+            </button>
+          </div>
+
           <label className="flex items-center gap-2 text-[#0d0d14] font-medium cursor-pointer">
             <input
               type="checkbox"
@@ -131,12 +154,12 @@ export function SmartTimetable({
               onChange={(e) => setShowSaturday(e.target.checked)}
               className="rounded bg-[#f5f5ff] border-[#e0dff0] text-[#3b3abf] focus:ring-0"
             />
-            <span>Incluir Sábado</span>
+            <span>Sábado</span>
           </label>
 
           <button
             onClick={openImporter}
-            className="flex items-center gap-1.5 text-[#3b3abf] hover:text-[#1e1e8a] font-bold"
+            className="hidden sm:flex items-center gap-1.5 text-[#3b3abf] hover:text-[#1e1e8a] font-bold"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Editar o Reimportar</span>
@@ -144,23 +167,42 @@ export function SmartTimetable({
         </div>
       </div>
 
-      {/* Cuadrícula del Horario Semanal */}
+      {/* Selector de Días en móviles cuando viewMode === 'single' */}
+      <div className="flex sm:hidden overflow-x-auto gap-1.5 p-1 rounded-2xl bg-white border border-[#e0dff0] shadow-sm">
+        {days.map(({ day, name }) => (
+          <button
+            key={day}
+            onClick={() => setMobileDay(day)}
+            className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold text-center transition-all ${
+              mobileDay === day && mobileViewMode === 'single'
+                ? 'bg-[#3b3abf] text-white shadow-sm'
+                : 'text-[#7a7890] hover:bg-[#f5f5ff]'
+            }`}
+          >
+            {name.slice(0, 3)}
+          </button>
+        ))}
+      </div>
+
+      {/* Cuadrícula del Horario Semanal con soporte de desplazamiento horizontal en móviles */}
       <div className="card-cambas overflow-hidden bg-white">
-        {/* Cabecera de Días estilo CAMBAS+ */}
-        <div
-          className="grid border-b border-[#e0dff0] bg-[#f5f5ff] text-center text-xs font-bold text-[#0d0d14]"
-          style={{ gridTemplateColumns: `65px repeat(${days.length}, minmax(0, 1fr))` }}
-        >
-          <div className="p-3.5 text-[#7a7890] font-mono border-r border-[#e0dff0]">Hora</div>
-          {days.map(({ day, name }) => (
+        <div className="overflow-x-auto">
+          <div className="min-w-[650px] sm:min-w-full">
+            {/* Cabecera de Días estilo CAMBAS+ */}
             <div
-              key={day}
-              className="p-3.5 text-[#0d0d14] border-r border-[#e0dff0] last:border-r-0 font-mono font-bold"
+              className="grid border-b border-[#e0dff0] bg-[#f5f5ff] text-center text-xs font-bold text-[#0d0d14]"
+              style={{ gridTemplateColumns: `65px repeat(${days.length}, minmax(0, 1fr))` }}
             >
-              <span>{name}</span>
+              <div className="p-3.5 text-[#7a7890] font-mono border-r border-[#e0dff0]">Hora</div>
+              {days.map(({ day, name }) => (
+                <div
+                  key={day}
+                  className="p-3.5 text-[#0d0d14] border-r border-[#e0dff0] last:border-r-0 font-mono font-bold"
+                >
+                  <span>{name}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
         {/* Cuerpo del Horario: Columnas y Líneas horarias */}
         <div
@@ -281,6 +323,8 @@ export function SmartTimetable({
               </div>
             );
           })}
+        </div>
+          </div>
         </div>
       </div>
     </div>

@@ -24,6 +24,7 @@
   --ink-secondary: #3e3d52;
   --paper: #f5f5ff;
   --surface: #ffffff;
+  --surface-raised: #fbfbfe;
   --muted: #7a7890;
   --border: #e0dff0;
   --border-light: #eeedfb;
@@ -46,11 +47,53 @@
   --purple-bg: #faf5ff;
 }
 
+/* Modo Oscuro — Paleta Navy/Obsidian Institucional */
+html.dark {
+  --ink: #f1f3fd;
+  --ink-secondary: #b0b0cb;
+  --paper: #090a14;
+  --surface: #121422;
+  --surface-raised: #181a2e;
+  --muted: #8888a6;
+  --border: #232742;
+  --border-light: #1c1e34;
+
+  --blue-950: #060714;
+  --blue-900: #10122e;
+  --blue-850: #141738;
+  --blue-800: #1d2159;
+  --blue-700: #282e85;
+  --blue-600: #4949cc;
+  --blue-500: #6767ed;
+  --blue-400: #8989ff;
+  --blue-300: #aaaaff;
+  --blue-200: #1c1e38;
+  --blue-100: #15172b;
+  --blue-50: #101222;
+
+  --green: #22c55e;
+  --green-light: #14532d;
+  --green-bg: #072714;
+
+  --yellow: #eab308;
+  --yellow-light: #713f12;
+  --yellow-bg: #351a04;
+
+  --red: #ef4444;
+  --red-light: #7f1d1d;
+  --red-bg: #390909;
+
+  --purple: #a855f7;
+  --purple-light: #581c87;
+  --purple-bg: #290848;
+}
+
 body {
   background-color: var(--paper);
   color: var(--ink);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   overflow-x: hidden;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 /* Card & Surface Tokens */
@@ -119,6 +162,27 @@ body {
   border: 1px solid var(--green-light);
 }
 
+html.dark .card-cambas {
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.4), 0 2px 8px -1px rgba(0, 0, 0, 0.3);
+}
+
+html.dark .card-cambas-interactive {
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+}
+html.dark .card-cambas-interactive:hover {
+  border-color: var(--blue-500);
+  box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.6), 0 0 15px rgba(91, 91, 232, 0.15);
+}
+
+html.dark .pill-control {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 7px;
@@ -133,4 +197,11 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #a0a0ff;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #232742;
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #3b3abf;
 }
