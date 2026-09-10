@@ -5,7 +5,16 @@ import { SmartTimetable } from '@/components/schedule/SmartTimetable';
 import { Calendar, Sparkles } from 'lucide-react';
 
 export default function SchedulePage() {
-  const { scheduleBlocks, subjectsMap, routines, isLoading } = useSemesterData();
+  const {
+    scheduleBlocks,
+    subjectsMap,
+    routines,
+    assignments,
+    exams,
+    attendance,
+    refreshData,
+    isLoading,
+  } = useSemesterData();
 
   if (isLoading) {
     return (
@@ -36,6 +45,10 @@ export default function SchedulePage() {
         classes={scheduleBlocks}
         subjectsMap={subjectsMap}
         routines={routines}
+        assignments={assignments}
+        exams={exams}
+        attendance={attendance}
+        refreshData={refreshData}
       />
     </div>
   );

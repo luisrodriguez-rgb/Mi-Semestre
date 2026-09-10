@@ -135,34 +135,31 @@ export function TopHeader() {
 
         {/* Lado Derecho: Enfoque, Acciones y Avatar */}
         <div className="flex items-center gap-2.5">
-          {/* Mini Enfoque Pomodoro Integrado */}
-          <div className="hidden lg:flex items-center gap-2 bg-[#f4f7fd] dark:bg-[#121636] px-3 py-1.5 rounded-xl border border-[#e2e6f2] dark:border-[#1e2552] text-xs">
-            <Timer className="w-3.5 h-3.5 text-[#3b43a8] dark:text-[#8e98ec]" />
-            <div className="text-left">
-              <div className="text-[9px] font-mono uppercase text-[#737da8] leading-none">Enfoque</div>
-              <div className="font-mono font-black text-xs text-[#14193d] dark:text-white">
-                {focusSession.isActive
-                  ? `${Math.floor(focusSession.secondsRemaining / 60)}:${(focusSession.secondsRemaining % 60).toString().padStart(2, '0')}`
-                  : '25:00'}
+          {/* Mini Enfoque Pomodoro: Solo visible cuando hay sesión activa para descongestionar el header */}
+          {focusSession.isActive && (
+            <div className="flex items-center gap-2 bg-[#f4f7fd] dark:bg-[#121636] px-3 py-1.5 rounded-xl border border-[#e2e6f2] dark:border-[#1e2552] text-xs animate-in fade-in zoom-in-95 duration-200">
+              <Timer className="w-3.5 h-3.5 text-[#3b43a8] dark:text-[#8e98ec] animate-pulse" />
+              <div className="text-left">
+                <div className="text-[9px] font-mono uppercase text-[#737da8] leading-none truncate max-w-[90px]">
+                  {focusSession.taskTitle || 'Enfoque'}
+                </div>
+                <div className="font-mono font-black text-xs text-[#14193d] dark:text-white">
+                  {`${Math.floor(focusSession.secondsRemaining / 60)}:${(focusSession.secondsRemaining % 60).toString().padStart(2, '0')}`}
+                </div>
               </div>
+              <button
+                onClick={togglePauseFocus}
+                className="w-6 h-6 rounded-full bg-[#202588] dark:bg-[#434bd8] text-white flex items-center justify-center hover:scale-105 transition-transform cursor-pointer ml-1"
+                title={focusSession.isPaused ? 'Reanudar' : 'Pausar'}
+              >
+                {focusSession.isPaused ? (
+                  <Play className="w-2.5 h-2.5 fill-white ml-0.5" />
+                ) : (
+                  <Pause className="w-2.5 h-2.5" />
+                )}
+              </button>
             </div>
-            <button
-              onClick={() => {
-                if (focusSession.isActive) {
-                  togglePauseFocus();
-                } else {
-                  useUIStore.getState().startFocusSession('Sesión Rápida', 'Enfoque', 25);
-                }
-              }}
-              className="w-6 h-6 rounded-full bg-[#202588] dark:bg-[#434bd8] text-white flex items-center justify-center hover:scale-105 transition-transform cursor-pointer ml-1"
-            >
-              {focusSession.isActive && !focusSession.isPaused ? (
-                <Pause className="w-2.5 h-2.5" />
-              ) : (
-                <Play className="w-2.5 h-2.5 fill-white ml-0.5" />
-              )}
-            </button>
-          </div>
+          )}
 
           {/* Theme Toggle */}
           <ThemeToggle />
