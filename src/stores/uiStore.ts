@@ -31,6 +31,9 @@ interface UIState {
   isFocusCompletionOpen: boolean;
   isAttendanceModalOpen: boolean;
   isRoutineModalOpen: boolean;
+  isInboxOpen: boolean;
+  isCalendarModalOpen: boolean;
+  isCommandPaletteOpen: boolean;
   activeSubjectDetailId: string | null;
 
   focusSession: FocusSessionState;
@@ -54,6 +57,13 @@ interface UIState {
   closeAttendanceModal: () => void;
   openRoutineModal: () => void;
   closeRoutineModal: () => void;
+  openInbox: () => void;
+  closeInbox: () => void;
+  openCalendarModal: () => void;
+  closeCalendarModal: () => void;
+  openCommandPalette: () => void;
+  closeCommandPalette: () => void;
+  toggleCommandPalette: () => void;
   setActiveSubjectDetailId: (id: string | null) => void;
 
   startFocusSession: (
@@ -82,6 +92,9 @@ export const useUIStore = create<UIState>((set) => ({
   isFocusCompletionOpen: false,
   isAttendanceModalOpen: false,
   isRoutineModalOpen: false,
+  isInboxOpen: false,
+  isCalendarModalOpen: false,
+  isCommandPaletteOpen: false,
   activeSubjectDetailId: null,
 
   focusSession: {
@@ -103,10 +116,9 @@ export const useUIStore = create<UIState>((set) => ({
   closeAddTask: () => set({ isAddTaskOpen: false }),
   openAddExam: () => set({ isAddExamOpen: true }),
   closeAddExam: () => set({ isAddExamOpen: false }),
-  openAddClass: () => set({ isEditClassOpen: true, editingScheduleBlock: null }),
-  closeAddClass: () => set({ isEditClassOpen: false, editingScheduleBlock: null }),
-  openEditClass: (block?: ScheduleBlock) =>
-    set({ isEditClassOpen: true, editingScheduleBlock: block || null }),
+  openAddClass: () => set({ isAddClassOpen: true }),
+  closeAddClass: () => set({ isAddClassOpen: false }),
+  openEditClass: (block) => set({ isEditClassOpen: true, editingScheduleBlock: block || null }),
   closeEditClass: () => set({ isEditClassOpen: false, editingScheduleBlock: null }),
   openProfile: () => set({ isProfileOpen: true }),
   closeProfile: () => set({ isProfileOpen: false }),
@@ -114,6 +126,13 @@ export const useUIStore = create<UIState>((set) => ({
   closeAttendanceModal: () => set({ isAttendanceModalOpen: false }),
   openRoutineModal: () => set({ isRoutineModalOpen: true }),
   closeRoutineModal: () => set({ isRoutineModalOpen: false }),
+  openInbox: () => set({ isInboxOpen: true }),
+  closeInbox: () => set({ isInboxOpen: false }),
+  openCalendarModal: () => set({ isCalendarModalOpen: true }),
+  closeCalendarModal: () => set({ isCalendarModalOpen: false }),
+  openCommandPalette: () => set({ isCommandPaletteOpen: true }),
+  closeCommandPalette: () => set({ isCommandPaletteOpen: false }),
+  toggleCommandPalette: () => set((state) => ({ isCommandPaletteOpen: !state.isCommandPaletteOpen })),
   setActiveSubjectDetailId: (id) => set({ activeSubjectDetailId: id }),
 
   startFocusSession: (taskTitle, subjectName, minutes, taskId) =>

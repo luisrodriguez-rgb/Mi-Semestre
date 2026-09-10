@@ -67,6 +67,7 @@ export function SmartTimetable({
     openEditClass,
     openAttendanceModal,
     openRoutineModal,
+    openCalendarModal,
   } = useUIStore();
 
   // Estados de vista y filtros
@@ -375,6 +376,15 @@ export function SmartTimetable({
           >
             <UserCheck className="w-3.5 h-3.5 text-emerald-500" />
             <span className="hidden sm:inline">Asistencias</span>
+          </button>
+
+          <button
+            onClick={openCalendarModal}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[var(--paper)] hover:bg-[var(--surface-raised)] text-[var(--ink)] border border-[var(--border)] font-bold transition-all cursor-pointer shadow-2xs"
+            title="Sincronizar o importar calendario (.ICS / Google / Outlook)"
+          >
+            <Calendar className="w-3.5 h-3.5 text-[#3b3abf] dark:text-[#a0a0ff]" />
+            <span className="hidden sm:inline">Calendario</span>
           </button>
         </div>
       </div>

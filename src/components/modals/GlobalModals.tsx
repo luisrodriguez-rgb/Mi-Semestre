@@ -39,6 +39,18 @@ const SmartOnboardingModal = dynamic(
   () => import('@/components/modals/SmartOnboardingModal').then((m) => m.SmartOnboardingModal),
   { ssr: false }
 );
+const InboxModal = dynamic(
+  () => import('@/components/inbox/InboxModal').then((m) => m.InboxModal),
+  { ssr: false }
+);
+const CalendarImportModal = dynamic(
+  () => import('@/components/calendar/CalendarImportModal').then((m) => m.CalendarImportModal),
+  { ssr: false }
+);
+const CommandPalette = dynamic(
+  () => import('@/components/command/CommandPalette').then((m) => m.CommandPalette),
+  { ssr: false }
+);
 
 export function GlobalModals() {
   return (
@@ -52,6 +64,9 @@ export function GlobalModals() {
       <EditClassModal />
       <AttendanceModal />
       <AddRoutineModal />
+      <InboxModal />
+      <CalendarImportModal />
+      <CommandPalette />
     </>
   );
 }

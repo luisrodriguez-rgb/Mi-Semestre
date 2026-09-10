@@ -6,3 +6,4 @@ export * from './availability/calculateAvailability';
 export * from './risk/calculateRisk';
 export * from './semester/semesterProgress';
 export * from './study/distributeStudySessions';
+export * from './planning/studyGapPlanner';

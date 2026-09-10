@@ -8,15 +8,17 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx src/tests/academic-engine/engine.test.ts && tsx src/tests/importer/smartIngester.test.ts"
+    "test": "tsx src/tests/academic-engine/engine.test.ts && tsx src/tests/importer/smartIngester.test.ts && tsx src/tests/importer/deduplication.test.ts && tsx src/tests/importer/icsParser.test.ts && tsx src/tests/ai/inboxPreprocessor.test.ts && tsx src/tests/ai/geminiProvider.test.ts && tsx src/tests/academic-engine/studyGapPlanner.test.ts"
   },
   "dependencies": {
+    "@google/genai": "^2.21.0",
     "@supabase/supabase-js": "^2.116.0",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "dexie": "^4.4.5",
     "dexie-react-hooks": "^4.4.0",
+    "ical.js": "^2.2.1",
     "lucide-react": "^1.43.0",
     "next": "16.3.4",
     "react": "19.2.8",

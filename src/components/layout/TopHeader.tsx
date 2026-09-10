@@ -5,9 +5,7 @@ import { useSemesterData } from '@/hooks/useSemesterData';
 import { calculateSemesterMetrics } from '@/lib/academic-engine';
 import {
   Calendar,
-  Clock,
   Plus,
-  CloudUpload,
   Play,
   Pause,
   Bell,
@@ -20,11 +18,11 @@ import { ThemeToggle } from '@/components/common/ThemeToggle';
 
 export function TopHeader() {
   const {
-    openImporter,
-    openOnboarding,
     openAddTask,
     openAddExam,
     openProfile,
+    openInbox,
+    openCalendarModal,
     focusSession,
     tickFocusSession,
     togglePauseFocus,
@@ -165,13 +163,26 @@ export function TopHeader() {
           {/* Theme Toggle */}
           <ThemeToggle />
 
+          {/* Botón Buzón Inteligente ⌘K */}
+          <button
+            onClick={openInbox}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+            title="Buzón Inteligente (⌘K)"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Buzón</span>
+            <kbd className="hidden md:inline font-mono text-[9px] px-1 py-0.2 bg-white dark:bg-[#141938] rounded border border-indigo-400/30">
+              ⌘K
+            </kbd>
+          </button>
+
           {/* Botón + Tarea */}
           <button
             onClick={openAddTask}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#141938] hover:bg-[#f5f8ff] text-[#202758] dark:text-[#c4cbef] border border-[#d6dced] dark:border-[#222958] text-xs font-bold transition-all shadow-2xs cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5 text-[#2b32a0] dark:text-[#8e98ec]" />
-            <span>Tarea</span>
+            <span className="hidden sm:inline">Tarea</span>
           </button>
 
           {/* Botón + Parcial */}
@@ -183,13 +194,14 @@ export function TopHeader() {
             <span>Parcial</span>
           </button>
 
-          {/* Botón Importar Horario / Setup */}
+          {/* Botón Sincronizar Calendario (.ICS) */}
           <button
-            onClick={openOnboarding}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#0c102a] dark:bg-[#181d45] hover:bg-[#161c47] text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
+            onClick={openCalendarModal}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0c102a] dark:bg-[#181d45] hover:bg-[#161c47] text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
+            title="Sincronizar con Google Calendar, Outlook o Apple Calendar"
           >
-            <CloudUpload className="w-3.5 h-3.5 text-[#8e98ec]" />
-            <span className="hidden md:inline">Importar Horario</span>
+            <Calendar className="w-3.5 h-3.5 text-[#8e98ec]" />
+            <span className="hidden md:inline">Calendario</span>
           </button>
 
           {/* Notificaciones */}

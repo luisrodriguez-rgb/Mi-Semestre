@@ -52,7 +52,16 @@ export interface PendingCourse {
   semester: number;
 }
 
-export interface ScheduleBlock {
+export type DataSource = 'manual' | 'ics' | 'ai_inbox' | 'system' | 'import';
+
+export interface ImportedEventMetadata {
+  source: DataSource;
+  externalUid?: string;
+  externalCalendarId?: string;
+  academicFingerprint?: string;
+}
+
+export interface ScheduleBlock extends Partial<ImportedEventMetadata> {
   id: string;
   subjectId: string;
   dayOfWeek: DayOfWeek;
@@ -63,7 +72,7 @@ export interface ScheduleBlock {
 
 export type EventType = 'class' | 'study' | 'assignment' | 'exam' | 'personal' | 'routine';
 
-export interface CalendarEvent {
+export interface CalendarEvent extends Partial<ImportedEventMetadata> {
   id: string;
   type: EventType;
   title: string;
@@ -80,7 +89,7 @@ export interface CalendarEvent {
 export type TaskPriority = 'high' | 'medium' | 'low';
 export type TaskStatus = 'pending' | 'in_progress' | 'completed';
 
-export interface Assignment {
+export interface Assignment extends Partial<ImportedEventMetadata> {
   id: string;
   subjectId: string;
   title: string;
@@ -91,7 +100,7 @@ export interface Assignment {
   status: TaskStatus;
 }
 
-export interface Exam {
+export interface Exam extends Partial<ImportedEventMetadata> {
   id: string;
   subjectId: string;
   title: string; // ej. "Parcial 1: Integrales triples"
@@ -128,9 +137,49 @@ export interface StudySession {
   status: 'planned' | 'completed' | 'skipped';
 }
 
+export interface StudyRecommendation {
+  id: string;
+  subjectId: string;
+  subjectName?: string;
+  subjectColor?: string;
+  assignmentId?: string;
+  examId?: string;
+  title: string;
+  start: Date;
+  end: Date;
+  startTimeStr: string;
+  endTimeStr: string;
+  durationMinutes: number;
+  priorityScore: number;
+  reason: string;
+  status: 'suggested' | 'accepted' | 'dismissed' | 'completed';
+  topics?: string[];
+}
+
+export interface NormalizedCalendarEvent {
+  uid: string;
+  title: string;
+  description?: string;
+  location?: string;
+  start: Date;
+  end: Date;
+  dayOfWeek?: DayOfWeek;
+  startTimeStr: string; // "08:00"
+  endTimeStr: string;   // "10:00"
+  recurrence?: {
+    freq?: string;
+    byDay?: string[];
+    until?: Date;
+  };
+  source: DataSource;
+  sourceCalendar?: string;
+  suggestedType: EventType;
+  matchedSubjectId?: string;
+}
+
 export type RoutineType = 'commute' | 'meal' | 'gym' | 'work' | 'rest';
 
-export interface FixedRoutine {
+export interface FixedRoutine extends Partial<ImportedEventMetadata> {
   id: string;
   title: string;
   type: RoutineType;
