@@ -56,6 +56,10 @@ export function calculateDeficitScore(neededMinutes: number, availableMinutes: n
   return 30;
 }
 
+export const MIN_STUDY_SESSION_MINUTES = 45;
+export const MAX_STUDY_SESSION_MINUTES = 75;
+export const TRANSITION_BUFFER_MINUTES = 15; // 10 min de transición inicial + 5 min de cierre
+
 /**
  * Planificador Determinístico de Huecos de Estudio
  * Genera recomendaciones no saturantes respetando tiempos de descanso
@@ -138,10 +142,12 @@ export function planStudyGaps(input: StudyPlannerInput): StudyRecommendation[] {
     return [];
   }
 
-  // 2. Ordenar huecos cronológicamente y filtrar huecos no utilizables (< 45m o en hora de almuerzo)
+  // 2. Ordenar huecos cronológicamente y filtrar huecos no utilizables
+  // Un hueco utilizable debe permitir al menos MIN_STUDY_SESSION_MINUTES (45m) + TRANSITION_BUFFER_MINUTES (15m) = 60 min.
+  // Cualquier hueco inferior (ej. 50 min) es descartado para no autoengañar al estudiante.
   const validSlots = availableSlots
     .filter((slot) => {
-      if (slot.durationMinutes < 45) return false;
+      if (slot.durationMinutes < MIN_STUDY_SESSION_MINUTES + TRANSITION_BUFFER_MINUTES) return false;
       const startMin = timeToMinutes(slot.startTime);
       // Evitar programar exactamente en la hora central de almuerzo (12:30 a 13:30)
       if (startMin >= 750 && startMin <= 810) return false;
@@ -192,11 +198,27 @@ export function planStudyGaps(input: StudyPlannerInput): StudyRecommendation[] {
 
     if (!bestTarget) continue;
 
-    // Principio: No saturar el hueco. Dejar buffer de 15m y limitar sesión a máx 60-75 min
+    // Principio: No autoengaño y no saturación.
+    // La sesión máxima posible en este hueco descontando el buffer de transición:
+    const maxPossibleSession = slot.durationMinutes - TRANSITION_BUFFER_MINUTES;
+    if (maxPossibleSession < MIN_STUDY_SESSION_MINUTES) {
+      continue;
+    }
+
+    // Limitar la sesión entre MIN_STUDY_SESSION_MINUTES (45m) y MAX_STUDY_SESSION_MINUTES (75m)
+    // Incluso en un hueco de 3 horas (180 min), nunca programa una maratón saturante.
     const sessionDuration = Math.min(
-      75,
-      Math.max(45, Math.min(slot.durationMinutes - 15, bestTarget.neededMinutes))
+      MAX_STUDY_SESSION_MINUTES,
+      Math.max(
+        MIN_STUDY_SESSION_MINUTES,
+        Math.min(maxPossibleSession, bestTarget.neededMinutes)
+      )
     );
+
+    // Salvaguarda matemática estricta: sesión + buffer NUNCA puede exceder la duración del hueco
+    if (sessionDuration + TRANSITION_BUFFER_MINUTES > slot.durationMinutes) {
+      continue;
+    }
 
     const slotStartMin = timeToMinutes(slot.startTime) + 10; // 10 min de transición
     const sessionEndMin = slotStartMin + sessionDuration;
@@ -215,11 +237,21 @@ export function planStudyGaps(input: StudyPlannerInput): StudyRecommendation[] {
       : `Entrega pendiente de ${bestTarget.title} en ${Math.ceil(bestTarget.daysRemaining)} días.`;
 
     const reasonCodes: RecommendationReasonCode[] = [];
-    if (bestTarget.type === 'exam' && bestTarget.daysRemaining <= 4) reasonCodes.push('EXAM_SOON');
-    if (bestTarget.type === 'assignment' && bestTarget.daysRemaining <= 2) reasonCodes.push('APPROACHING_DEADLINE');
-    if ((bestTarget.weight || 0) >= 20 || bestTarget.priority === 'high') reasonCodes.push('HIGH_WEIGHT');
-    if (bestTarget.neededMinutes > slot.durationMinutes) reasonCodes.push('STUDY_DEFICIT');
-    if ((riskMap.get(bestTarget.subjectId) || 0) >= 70) reasonCodes.push('HIGH_RISK');
+    if (bestTarget.type === 'exam' && bestTarget.daysRemaining <= 3) {
+      reasonCodes.push('EXAM_SOON');
+    }
+    if (bestTarget.type === 'assignment' && bestTarget.daysRemaining <= 2.0) {
+      reasonCodes.push('APPROACHING_DEADLINE');
+    }
+    if ((bestTarget.weight !== undefined && bestTarget.weight >= 20) || bestTarget.priority === 'high') {
+      reasonCodes.push('HIGH_WEIGHT');
+    }
+    if (bestTarget.neededMinutes > sessionDuration) {
+      reasonCodes.push('STUDY_DEFICIT');
+    }
+    if ((riskMap.get(bestTarget.subjectId) || 0) >= 60) {
+      reasonCodes.push('HIGH_RISK');
+    }
 
     recommendations.push({
       id: `rec_${bestTarget.id}_${slot.date}_${slotStartMin}`,
