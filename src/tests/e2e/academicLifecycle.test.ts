@@ -77,12 +77,17 @@ END:VCALENDAR`;
   console.log(`✓ ICS procesado: ${parsedIcsEvents.length} eventos normalizados.`);
 
   const scheduleBlocks: ScheduleBlock[] = [];
+  const linkedSubjectIds = new Set<string>();
+  let discardedCount = 0;
+  let unrecognizedCount = 0;
+
   for (const ev of parsedIcsEvents) {
     if (ev.suggestedType === 'class') {
       const matchSub = Object.values(subjectsMap).find((s) =>
         ev.title.toLowerCase().includes(s.name.toLowerCase()) || s.name.toLowerCase().includes(ev.title.toLowerCase())
       );
       if (matchSub) {
+        linkedSubjectIds.add(matchSub.id);
         const dedup = resolveBlockDeduplication(
           {
             subjectId: matchSub.id,
@@ -110,10 +115,22 @@ END:VCALENDAR`;
             externalUid: ev.uid,
           });
         }
+      } else {
+        unrecognizedCount++;
       }
+    } else {
+      discardedCount++;
     }
   }
-  console.log(`✓ ${scheduleBlocks.length} bloques de clase incorporados al horario sin duplicación.`);
+
+  const unlinkedSubjects = Object.values(subjectsMap).filter((s) => !linkedSubjectIds.has(s.id));
+
+  console.log(`✓ Auditoría de Cobertura de Horario:`);
+  console.log(`  · Materias matriculadas esperadas (Balance): ${Object.keys(subjectsMap).length}`);
+  console.log(`  · Materias con franjas vinculadas vía ICS: ${linkedSubjectIds.size} (${Array.from(linkedSubjectIds).map(id => subjectsMap[id].name).join(', ')})`);
+  console.log(`  · Franjas semanales incorporadas (RRULE): ${scheduleBlocks.length} bloques sin duplicación.`);
+  console.log(`  · Materias sin horario en calendario externo: ${unlinkedSubjects.length} (${unlinkedSubjects.map(s => s.name).join(', ')})`);
+  console.log(`  · Eventos externos no reconocidos: ${unrecognizedCount}, descartados: ${discardedCount}.`);
 
   // PASO 3: Captura de Información Caótica en el Buzón (WhatsApp)
   console.log('\n[PASO 3]: Buzón Inteligente (WhatsApp caótico -> Validación Zod -> Extracción)');
