@@ -18,6 +18,7 @@ import { useUIStore } from '@/stores/uiStore';
 import { attendanceRepository } from '@/lib/storage';
 import { SlotDecisionModal, FreeSlotDecisionData } from './SlotDecisionModal';
 import { ClassDetailModal } from './ClassDetailModal';
+import { CustomSelect, CustomSelectOption } from '@/components/ui/CustomSelect';
 import confetti from 'canvas-confetti';
 import {
   Clock,
@@ -231,6 +232,21 @@ export function SmartTimetable({
     return classes.filter((c) => c.subjectId === selectedSubjectFilter);
   }, [classes, selectedSubjectFilter]);
 
+  // Opciones de selector estilizado de materias con color y código
+  const subjectSelectOptions: CustomSelectOption[] = useMemo(() => [
+    {
+      value: 'all',
+      label: 'Todas las materias',
+      badge: String(Object.keys(subjectsMap).length),
+    },
+    ...Object.values(subjectsMap).map((sub) => ({
+      value: sub.id,
+      label: sub.name,
+      sublabel: sub.code,
+      color: sub.color,
+    })),
+  ], [subjectsMap]);
+
   // Helper para posicionar bloques en el grid relativo a 07:00 - 21:00 (840 minutos en total)
   const getTopAndHeight = (startTime: string, endTime: string) => {
     const startMins = timeToMinutes(startTime);
@@ -414,21 +430,13 @@ export function SmartTimetable({
           <div className="h-4 w-px bg-[var(--border)] hidden md:block" />
 
           {/* Selector de Materias */}
-          <div className="flex items-center gap-1.5">
-            <Filter className="w-3.5 h-3.5 text-[var(--muted)]" />
-            <select
-              value={selectedSubjectFilter}
-              onChange={(e) => setSelectedSubjectFilter(e.target.value)}
-              className="bg-[var(--paper)] border border-[var(--border)] text-[var(--ink)] rounded-xl px-2.5 py-1 text-xs font-semibold focus:outline-none focus:border-[#3b3abf]"
-            >
-              <option value="all">Todas las materias ({Object.keys(subjectsMap).length})</option>
-              {Object.values(subjectsMap).map((sub) => (
-                <option key={sub.id} value={sub.id}>
-                  {sub.name} ({sub.code})
-                </option>
-              ))}
-            </select>
-          </div>
+          <CustomSelect
+            value={selectedSubjectFilter}
+            onChange={setSelectedSubjectFilter}
+            options={subjectSelectOptions}
+            icon={Filter}
+            buttonClassName="py-1"
+          />
 
           <label className="flex items-center gap-1.5 text-[var(--ink)] text-xs font-medium cursor-pointer ml-1">
             <input
