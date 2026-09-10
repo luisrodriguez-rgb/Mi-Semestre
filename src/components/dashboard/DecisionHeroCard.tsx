@@ -17,6 +17,17 @@ import { Subject, ScheduleBlock, Assignment, Exam, FixedRoutine, DayOfWeek } fro
 import { getCurrentBlock } from '@/lib/academic-engine/schedule/getCurrentBlock';
 import { formatMinutesHuman } from '@/lib/academic-engine/utils/timeHelpers';
 import { useUIStore } from '@/stores/uiStore';
+import { CustomSelect, CustomSelectOption } from '@/components/ui/CustomSelect';
+
+const SIMULATED_TIME_OPTIONS: CustomSelectOption[] = [
+  { value: '08:15', label: '08:15', sublabel: 'Clase de mañana' },
+  { value: '10:00', label: '10:00', sublabel: 'Hueco libre 2h 10m' },
+  { value: '12:45', label: '12:45', sublabel: 'Hora de Almuerzo' },
+  { value: '14:00', label: '14:00', sublabel: 'Clase tarde' },
+  { value: '16:00', label: '16:00', sublabel: 'Hueco libre 1h 40m' },
+  { value: '18:24', label: '18:24', sublabel: 'Estructuras de Datos' },
+  { value: '20:15', label: '20:15', sublabel: 'Noche libre' },
+];
 
 interface DecisionHeroCardProps {
   classes: ScheduleBlock[];
@@ -174,29 +185,23 @@ export function DecisionHeroCard({
             {showTimePicker ? 'Cerrar selector' : 'Simular reloj'}
           </button>
           {showTimePicker && (
-            <div className="flex items-center gap-1 bg-[#f0f3fa] dark:bg-[#161c42] p-1 rounded-xl border border-[#dce2f2] dark:border-[#22295a]">
-              <select
+            <div className="flex items-center gap-1.5 bg-[#f0f3fa] dark:bg-[#161c42] p-1 rounded-xl border border-[#dce2f2] dark:border-[#22295a]">
+              <CustomSelect
                 value={effectiveTime}
-                onChange={(e) => {
+                onChange={(val) => {
                   setUseRealTime(false);
-                  setSimulatedTime(e.target.value);
+                  setSimulatedTime(val);
                 }}
-                className="bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] text-xs font-mono font-bold rounded-lg px-2 py-0.5"
-              >
-                <option value="08:15">08:15 (Clase de mañana)</option>
-                <option value="10:00">10:00 (Hueco libre 2h 10m)</option>
-                <option value="12:45">12:45 (Hora de Almuerzo)</option>
-                <option value="14:00">14:00 (Clase tarde)</option>
-                <option value="16:00">16:00 (Hueco libre 1h 40m)</option>
-                <option value="18:24">18:24 (Estructuras de Datos)</option>
-                <option value="20:15">20:15 (Noche libre)</option>
-              </select>
+                options={SIMULATED_TIME_OPTIONS}
+                align="right"
+                buttonClassName="py-0.5 px-2.5 font-mono text-xs"
+              />
               <button
                 onClick={() => setUseRealTime(!useRealTime)}
-                className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                className={`px-2 py-1 rounded-xl text-[10px] font-mono font-bold transition-all cursor-pointer ${
                   useRealTime
-                    ? 'bg-[#252ab8] text-white'
-                    : 'bg-white dark:bg-[#0f1330] text-[#6b75a6]'
+                    ? 'bg-[#252ab8] text-white shadow-2xs'
+                    : 'bg-white dark:bg-[#0f1330] text-[#6b75a6] border border-[#dce2f2] dark:border-[#22295a]'
                 }`}
               >
                 {useRealTime ? 'Real ON' : 'Fijar'}

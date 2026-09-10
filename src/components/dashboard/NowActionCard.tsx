@@ -12,6 +12,15 @@ import { Subject, ScheduleBlock, Assignment, Exam, FixedRoutine, DayOfWeek } fro
 import { getCurrentBlock } from '@/lib/academic-engine/schedule/getCurrentBlock';
 import { formatMinutesHuman } from '@/lib/academic-engine/utils/timeHelpers';
 import { useUIStore } from '@/stores/uiStore';
+import { CustomSelect, CustomSelectOption } from '@/components/ui/CustomSelect';
+
+const NOW_SIMULATED_TIME_OPTIONS: CustomSelectOption[] = [
+  { value: '07:30', label: '07:30', sublabel: 'En Clase' },
+  { value: '09:15', label: '09:15', sublabel: 'Hueco Mañana' },
+  { value: '12:30', label: '12:30', sublabel: 'Almuerzo' },
+  { value: '16:20', label: '16:20', sublabel: 'Hueco Libre 1h 40m' },
+  { value: '20:00', label: '20:00', sublabel: 'Noche / Libre' },
+];
 
 interface NowActionCardProps {
   classes: ScheduleBlock[];
@@ -154,25 +163,21 @@ export function NowActionCard({
 
           {showSimulator && (
             <div className="flex items-center gap-1.5 bg-[var(--paper)] p-1 rounded-xl border border-[var(--border)] animate-in fade-in">
-              <select
+              <CustomSelect
                 value={effectiveTime}
-                onChange={(e) => {
+                onChange={(val) => {
                   setUseRealTime(false);
-                  setSimulatedTime(e.target.value);
+                  setSimulatedTime(val);
                 }}
-                className="bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] rounded-lg px-2 py-1 font-mono text-[11px] font-bold focus:outline-none"
-              >
-                <option value="07:30">07:30 (En Clase)</option>
-                <option value="09:15">09:15 (Hueco Mañana)</option>
-                <option value="12:30">12:30 (Almuerzo)</option>
-                <option value="16:20">16:20 (Hueco Libre 1h 40m)</option>
-                <option value="20:00">20:00 (Noche / Libre)</option>
-              </select>
+                options={NOW_SIMULATED_TIME_OPTIONS}
+                align="right"
+                buttonClassName="py-0.5 px-2 font-mono text-[11px]"
+              />
               <button
                 onClick={() => setUseRealTime(!useRealTime)}
-                className={`px-2 py-0.5 rounded-lg font-mono text-[10px] font-bold transition-all cursor-pointer ${
+                className={`px-2 py-1 rounded-xl font-mono text-[10px] font-bold transition-all cursor-pointer ${
                   useRealTime
-                    ? 'bg-[#1e1e8a] text-white'
+                    ? 'bg-[#1e1e8a] text-white shadow-2xs'
                     : 'bg-[var(--surface)] text-[var(--muted)] border border-[var(--border)]'
                 }`}
               >
