@@ -73,17 +73,18 @@ export function NowActionCard({
     });
   }, [todayDayOfWeek, effectiveTime, classes, subjectsMap, routines]);
 
+  const [mountTime] = useState(() => Date.now());
+
   // Encontrar la tarea de mayor impacto para recomendar
   const recommendedTask = useMemo(() => {
     const pending = assignments.filter((a) => a.status !== 'completed');
     if (pending.length === 0) return null;
 
-    const nowMs = Date.now();
     const sorted = [...pending].sort((a, b) => {
       const examA = exams.find((e) => e.subjectId === a.subjectId);
       const examB = exams.find((e) => e.subjectId === b.subjectId);
-      const distA = examA ? new Date(examA.date).getTime() - nowMs : Infinity;
-      const distB = examB ? new Date(examB.date).getTime() - nowMs : Infinity;
+      const distA = examA ? new Date(examA.date).getTime() - mountTime : Infinity;
+      const distB = examB ? new Date(examB.date).getTime() - mountTime : Infinity;
 
       if (distA !== distB) return distA - distB;
       if (a.priority === 'high' && b.priority !== 'high') return -1;
@@ -104,21 +105,20 @@ export function NowActionCard({
       subject,
       reason,
     };
-  }, [assignments, exams, subjectsMap]);
+  }, [assignments, exams, subjectsMap, mountTime]);
 
   // Próximo examen general
   const nearestExam = useMemo(() => {
     if (exams.length === 0) return null;
-    const nowMs = Date.now();
     const sorted = [...exams]
       .map((e) => ({
         exam: e,
-        diffDays: Math.ceil((new Date(e.date).getTime() - nowMs) / (1000 * 60 * 60 * 24)),
+        diffDays: Math.ceil((new Date(e.date).getTime() - mountTime) / (1000 * 60 * 60 * 24)),
       }))
       .filter((e) => e.diffDays >= 0)
       .sort((a, b) => a.diffDays - b.diffDays);
     return sorted[0] || null;
-  }, [exams]);
+  }, [exams, mountTime]);
 
   const handleStartFocus = () => {
     if (recommendedTask) {

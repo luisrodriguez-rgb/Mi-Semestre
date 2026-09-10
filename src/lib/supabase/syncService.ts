@@ -9,7 +9,7 @@ import {
   attendanceRepository,
   routineRepository,
 } from '@/lib/storage';
-import { Profile, Semester, Subject, ScheduleBlock, Assignment, Exam, AttendanceRecord } from '@/types';
+import { Profile, Semester, Subject, ScheduleBlock, Assignment, Exam, AttendanceRecord, FixedRoutine } from '@/types';
 
 export interface CloudSyncResult {
   success: boolean;
@@ -183,16 +183,32 @@ export const syncService = {
         await supabase.from('attendance').upsert(attendancePayload);
       }
 
+      // 8. Rutinas fijas del usuario
+      const routines = await routineRepository.getAll();
+      if (routines.length > 0) {
+        const routinesPayload = routines.map((r) => ({
+          id: r.id,
+          user_id: user.id,
+          day_of_week: r.dayOfWeek,
+          start_time: r.startTime,
+          end_time: r.endTime,
+          title: r.title,
+          type: r.type,
+        }));
+        await supabase.from('routines').upsert(routinesPayload);
+      }
+
       return {
         success: true,
         message: '¡Datos respaldados con éxito en Supabase PostgreSQL!',
         count: subjects.length,
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Error al conectar con la base de datos de Supabase.';
       console.error('Error al sincronizar con Supabase:', err);
       return {
         success: false,
-        message: err.message || 'Error al conectar con la base de datos de Supabase.',
+        message: errorMessage,
       };
     }
   },
@@ -239,14 +255,16 @@ export const syncService = {
       };
       await semesterRepository.save(semester);
 
-      // 2. Obtener materias
+      // 2. Obtener materias pertenecientes al semestre activo
       const { data: subjectsData } = await supabase
         .from('subjects')
         .select('*')
         .eq('semester_id', cloudSem.id);
 
+      const subjectIds: string[] = [];
       if (subjectsData && subjectsData.length > 0) {
         for (const s of subjectsData) {
+          subjectIds.push(s.id);
           const sub: Subject = {
             id: s.id,
             semesterId: s.semester_id,
@@ -263,53 +281,101 @@ export const syncService = {
         }
       }
 
-      // 3. Bloques de horario
-      const { data: scheduleData } = await supabase.from('schedule_blocks').select('*');
-      if (scheduleData && scheduleData.length > 0) {
-        for (const b of scheduleData) {
-          const block: ScheduleBlock = {
-            id: b.id,
-            subjectId: b.subject_id,
-            dayOfWeek: b.day_of_week,
-            startTime: b.start_time,
-            endTime: b.end_time,
-            location: b.location,
-          };
-          await scheduleRepository.save(block);
+      // Si existen materias, restaurar entidades dependientes acotadas por subject_id
+      if (subjectIds.length > 0) {
+        // 3. Bloques de horario
+        const { data: scheduleData } = await supabase
+          .from('schedule_blocks')
+          .select('*')
+          .in('subject_id', subjectIds);
+        if (scheduleData && scheduleData.length > 0) {
+          for (const b of scheduleData) {
+            const block: ScheduleBlock = {
+              id: b.id,
+              subjectId: b.subject_id,
+              dayOfWeek: b.day_of_week,
+              startTime: b.start_time,
+              endTime: b.end_time,
+              location: b.location,
+            };
+            await scheduleRepository.save(block);
+          }
+        }
+
+        // 4. Tareas
+        const { data: assignmentsData } = await supabase
+          .from('assignments')
+          .select('*')
+          .in('subject_id', subjectIds);
+        if (assignmentsData && assignmentsData.length > 0) {
+          for (const a of assignmentsData) {
+            const task: Assignment = {
+              id: a.id,
+              subjectId: a.subject_id,
+              title: a.title,
+              description: a.description,
+              dueDate: a.due_date,
+              priority: a.priority,
+              estimatedMinutes: a.estimated_minutes,
+              status: a.status,
+            };
+            await assignmentRepository.save(task);
+          }
+        }
+
+        // 5. Exámenes
+        const { data: examsData } = await supabase
+          .from('exams')
+          .select('*')
+          .in('subject_id', subjectIds);
+        if (examsData && examsData.length > 0) {
+          for (const e of examsData) {
+            const exam: Exam = {
+              id: e.id,
+              subjectId: e.subject_id,
+              title: e.title,
+              date: e.date,
+              weight: e.weight,
+              topics: e.topics,
+            };
+            await examRepository.save(exam);
+          }
+        }
+
+        // 6. Asistencias
+        const { data: attendanceData } = await supabase
+          .from('attendance')
+          .select('*')
+          .in('subject_id', subjectIds);
+        if (attendanceData && attendanceData.length > 0) {
+          for (const at of attendanceData) {
+            const record: AttendanceRecord = {
+              id: at.id,
+              subjectId: at.subject_id,
+              date: at.date,
+              status: at.status,
+            };
+            await attendanceRepository.save(record);
+          }
         }
       }
 
-      // 4. Tareas
-      const { data: assignmentsData } = await supabase.from('assignments').select('*');
-      if (assignmentsData && assignmentsData.length > 0) {
-        for (const a of assignmentsData) {
-          const task: Assignment = {
-            id: a.id,
-            subjectId: a.subject_id,
-            title: a.title,
-            description: a.description,
-            dueDate: a.due_date,
-            priority: a.priority,
-            estimatedMinutes: a.estimated_minutes,
-            status: a.status,
+      // 7. Rutinas fijas del usuario
+      const { data: routinesData } = await supabase
+        .from('routines')
+        .select('*')
+        .eq('user_id', user.id);
+      if (routinesData && routinesData.length > 0) {
+        for (const r of routinesData) {
+          const routine: FixedRoutine = {
+            id: r.id,
+            dayOfWeek: r.day_of_week,
+            startTime: r.start_time,
+            endTime: r.end_time,
+            title: r.title,
+            type: r.type,
           };
-          await assignmentRepository.save(task);
-        }
-      }
-
-      // 5. Exámenes
-      const { data: examsData } = await supabase.from('exams').select('*');
-      if (examsData && examsData.length > 0) {
-        for (const e of examsData) {
-          const exam: Exam = {
-            id: e.id,
-            subjectId: e.subject_id,
-            title: e.title,
-            date: e.date,
-            weight: e.weight,
-            topics: e.topics,
-          };
-          await examRepository.save(exam);
+          await routineRepository.save(routine);
         }
       }
 
@@ -320,11 +386,12 @@ export const syncService = {
         message: '¡Datos descargados y restaurados localmente con éxito!',
         count: subjectsData?.length || 0,
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Error al descargar datos de la nube.';
       console.error('Error al restaurar desde Supabase:', err);
       return {
         success: false,
-        message: err.message || 'Error al descargar datos de la nube.',
+        message: errorMessage,
       };
     }
   },

@@ -8,18 +8,19 @@ import { AttendanceRecord } from '@/types';
 import { X, UserCheck, AlertTriangle, Plus, Minus, CheckCircle, ShieldAlert, Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
+function generateAttendanceId(): string {
+  return `att-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+}
+
 export function AttendanceModal() {
   const { isAttendanceModalOpen, closeAttendanceModal } = useUIStore();
   const { subjects, attendance, refreshData } = useSemesterData();
   const [animatingSubjectId, setAnimatingSubjectId] = useState<string | null>(null);
   const [lastAction, setLastAction] = useState<{ id: string; type: 'present' | 'absent' } | null>(null);
-
-  if (!isAttendanceModalOpen) return null;
-
   const handleAddAbsence = async (subjectId: string, currentAbsences: number, maxAbsences: number) => {
     const todayStr = new Date().toISOString().split('T')[0];
     const newRecord: AttendanceRecord = {
-      id: `att-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      id: generateAttendanceId(),
       subjectId,
       date: todayStr,
       status: 'absent',
@@ -38,7 +39,7 @@ export function AttendanceModal() {
   const handleAddPresent = async (subjectId: string) => {
     const todayStr = new Date().toISOString().split('T')[0];
     const newRecord: AttendanceRecord = {
-      id: `att-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      id: generateAttendanceId(),
       subjectId,
       date: todayStr,
       status: 'present',
@@ -70,6 +71,8 @@ export function AttendanceModal() {
     await refreshData();
     window.dispatchEvent(new CustomEvent('semester-data-updated'));
   };
+
+  if (!isAttendanceModalOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-sm animate-in fade-in duration-200">

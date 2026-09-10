@@ -27,6 +27,7 @@ export function EditClassModal() {
 
   useEffect(() => {
     if (editingScheduleBlock) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDayOfWeek(editingScheduleBlock.dayOfWeek);
       setStartTime(editingScheduleBlock.startTime);
       setEndTime(editingScheduleBlock.endTime);

@@ -2,12 +2,13 @@
   "name": "mi-semestre",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@11.23.0",
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "test": "npx tsx src/tests/academic-engine/engine.test.ts"
+    "test": "tsx src/tests/academic-engine/engine.test.ts && tsx src/tests/importer/smartIngester.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

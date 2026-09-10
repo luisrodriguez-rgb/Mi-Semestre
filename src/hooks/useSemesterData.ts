@@ -97,9 +97,10 @@ export function useSemesterData() {
     await semesterRepository.setActive(newSem.id);
     window.dispatchEvent(new CustomEvent('semester-data-updated'));
     return newSem.id;
-  }, []);
+  }, [profile?.id]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();
 
     const handleDataUpdated = () => {

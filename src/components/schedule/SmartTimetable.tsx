@@ -11,7 +11,6 @@ import {
   Sparkles,
   MapPin,
   AlertCircle,
-  Calendar,
   Filter,
   Plus,
   Pencil,
@@ -29,10 +28,8 @@ export function SmartTimetable({
   classes,
   subjectsMap,
   routines = [],
-  onSlotClick,
 }: SmartTimetableProps) {
   const {
-    openImporter,
     startFocusSession,
     openEditClass,
     openAttendanceModal,
@@ -314,11 +311,7 @@ export function SmartTimetable({
 
                       {/* Renderizar RUTINAS / TIEMPOS FIJOS (Almuerzo, Gym, Transporte, etc.) */}
                       {routines
-                        .filter(
-                          (r) =>
-                            r.dayOfWeek === day ||
-                            ((r as any).daysOfWeek && (r as any).daysOfWeek.includes(day))
-                        )
+                        .filter((r) => r.dayOfWeek === day)
                         .map((r) => {
                           const { top, height } = getTopAndHeight(r.startTime, r.endTime);
                           return (
@@ -330,7 +323,7 @@ export function SmartTimetable({
                               title="Tiempo fijo personal (clic para gestionar)"
                             >
                               <div className="font-bold text-xs leading-tight truncate">
-                                ⏱ {r.title || (r as any).name || 'Tiempo Fijo'}
+                                ⏱ {r.title || 'Tiempo Fijo'}
                               </div>
                               <div className="text-[9px] font-mono opacity-80 truncate">
                                 {r.startTime} – {r.endTime}

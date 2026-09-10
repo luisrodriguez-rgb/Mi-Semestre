@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useUIStore } from '@/stores/uiStore';
 import { profileRepository } from '@/lib/storage';
 import { Profile } from '@/types';
 import { defaultProfile } from '@/lib/mockData';
 import { syncService } from '@/lib/supabase/syncService';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import {
   X,
   User,
@@ -46,7 +47,7 @@ export function ProfileModal({ onProfileUpdated }: ProfileModalProps) {
 
   // Supabase states
   const [isCloudConfigured, setIsCloudConfigured] = useState(false);
-  const [cloudUser, setCloudUser] = useState<any>(null);
+  const [cloudUser, setCloudUser] = useState<SupabaseUser | null>(null);
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [isAuthLoading, setIsAuthLoading] = useState(false);
@@ -54,14 +55,7 @@ export function ProfileModal({ onProfileUpdated }: ProfileModalProps) {
   const [syncStatusMsg, setSyncStatusMsg] = useState<{ text: string; isError?: boolean } | null>(null);
   const [showAuthForm, setShowAuthForm] = useState(false);
 
-  useEffect(() => {
-    if (isProfileOpen) {
-      loadProfileData();
-      checkCloudState();
-    }
-  }, [isProfileOpen]);
-
-  const loadProfileData = async () => {
+  const loadProfileData = useCallback(async () => {
     const current = (await profileRepository.getActiveProfile()) || defaultProfile;
     const list = await profileRepository.getAll();
     setProfile(current);
@@ -71,20 +65,28 @@ export function ProfileModal({ onProfileUpdated }: ProfileModalProps) {
     setProgram(current.program);
     setSemesterNumber(current.semesterNumber);
     setEmail(current.email || '');
-  };
+  }, []);
 
-  const checkCloudState = async () => {
+  const checkCloudState = useCallback(async () => {
     const configured = syncService.isConfigured();
     setIsCloudConfigured(configured);
     if (configured) {
       try {
         const user = await syncService.getCurrentUser();
         setCloudUser(user);
-      } catch (e) {
+      } catch {
         setCloudUser(null);
       }
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (isProfileOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      loadProfileData();
+      checkCloudState();
+    }
+  }, [isProfileOpen, loadProfileData, checkCloudState]);
 
   const handleSwitchProfile = async (id: string) => {
     await profileRepository.setActiveProfile(id);
@@ -108,16 +110,43 @@ export function ProfileModal({ onProfileUpdated }: ProfileModalProps) {
     await profileRepository.save(updated);
     await profileRepository.setActiveProfile(updated.id);
 
-    setSavedSuccess(true);
-    setIsEditing(false);
+    setProfile(updated);
     setIsNewUser(false);
-    await loadProfileData();
+    setIsEditing(false);
     onProfileUpdated?.();
     window.dispatchEvent(new CustomEvent('semester-data-updated'));
+  };
 
+  const handlePushCloud = async () => {
+    setIsSyncLoading(true);
+    setSyncStatusMsg(null);
+    const res = await syncService.pushLocalToCloud();
+    setSyncStatusMsg({
+      text: res.message,
+      isError: !res.success,
+    });
+    setIsSyncLoading(false);
     setTimeout(() => {
-      setSavedSuccess(false);
-    }, 1500);
+      setSyncStatusMsg(null);
+    }, 4000);
+  };
+
+  const handlePullCloud = async () => {
+    setIsSyncLoading(true);
+    setSyncStatusMsg(null);
+    const res = await syncService.pullCloudToLocal();
+    setSyncStatusMsg({
+      text: res.message,
+      isError: !res.success,
+    });
+    setIsSyncLoading(false);
+    if (res.success) {
+      await loadProfileData();
+      onProfileUpdated?.();
+    }
+    setTimeout(() => {
+      setSyncStatusMsg(null);
+    }, 4000);
   };
 
   // Supabase Auth
@@ -131,8 +160,9 @@ export function ProfileModal({ onProfileUpdated }: ProfileModalProps) {
       await checkCloudState();
       setShowAuthForm(false);
       setSyncStatusMsg({ text: '¡Sesión iniciada en Supabase!' });
-    } catch (err: any) {
-      setSyncStatusMsg({ text: err.message || 'Error al iniciar sesión.', isError: true });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al iniciar sesión.';
+      setSyncStatusMsg({ text: msg, isError: true });
     } finally {
       setIsAuthLoading(false);
     }
@@ -146,8 +176,9 @@ export function ProfileModal({ onProfileUpdated }: ProfileModalProps) {
       await syncService.signUp(authEmail, authPassword, profile.name);
       await checkCloudState();
       setSyncStatusMsg({ text: '¡Cuenta creada! Revisa tu correo si se requiere confirmación.' });
-    } catch (err: any) {
-      setSyncStatusMsg({ text: err.message || 'Error al registrarse.', isError: true });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al registrarse.';
+      setSyncStatusMsg({ text: msg, isError: true });
     } finally {
       setIsAuthLoading(false);
     }

@@ -3,15 +3,8 @@ import './globals.css';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { TopHeader } from '@/components/layout/TopHeader';
 import { MobileNav } from '@/components/layout/MobileNav';
-import { QuickScheduleImporterModal } from '@/components/importer/QuickScheduleImporterModal';
-import { AddTaskModal } from '@/components/modals/AddTaskModal';
-import { AddExamModal } from '@/components/modals/AddExamModal';
-import { ProfileModal } from '@/components/profile/ProfileModal';
-import { FocusCompletionModal } from '@/components/dashboard/FocusCompletionModal';
-import { EditClassModal } from '@/components/modals/EditClassModal';
-import { AttendanceModal } from '@/components/modals/AttendanceModal';
-import { AddRoutineModal } from '@/components/modals/AddRoutineModal';
-import { SmartOnboardingModal } from '@/components/modals/SmartOnboardingModal';
+
+import { GlobalModals } from '@/components/modals/GlobalModals';
 
 export const viewport: Viewport = {
   themeColor: '#16164f',
@@ -103,16 +96,8 @@ export default function RootLayout({
         {/* Barra de navegación inferior móvil */}
         <MobileNav />
 
-        {/* Modales globales de la aplicación */}
-        <SmartOnboardingModal />
-        <QuickScheduleImporterModal />
-        <AddTaskModal />
-        <AddExamModal />
-        <ProfileModal />
-        <FocusCompletionModal />
-        <EditClassModal />
-        <AttendanceModal />
-        <AddRoutineModal />
+        {/* Modales globales de la aplicación (Client Component diferido) */}
+        <GlobalModals />
       </body>
     </html>
   );

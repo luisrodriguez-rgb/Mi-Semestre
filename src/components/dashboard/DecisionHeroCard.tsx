@@ -85,14 +85,13 @@ export function DecisionHeroCard({
     const pending = assignments.filter((a) => a.status !== 'completed');
     if (pending.length === 0) return null;
 
-    const nowMs = Date.now();
     const sorted = [...pending].sort((a, b) => {
       const examA = exams.find((e) => e.subjectId === a.subjectId);
       const examB = exams.find((e) => e.subjectId === b.subjectId);
-      const distA = examA ? new Date(examA.date).getTime() - nowMs : Infinity;
-      const distB = examB ? new Date(examB.date).getTime() - nowMs : Infinity;
+      const timeA = examA ? new Date(examA.date).getTime() : Infinity;
+      const timeB = examB ? new Date(examB.date).getTime() : Infinity;
 
-      if (distA !== distB) return distA - distB;
+      if (timeA !== timeB) return timeA - timeB;
       if (a.priority === 'high' && b.priority !== 'high') return -1;
       if (b.priority === 'high' && a.priority !== 'high') return 1;
       return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
@@ -312,7 +311,7 @@ export function DecisionHeroCard({
               </div>
 
               <p className="text-[11px] text-[#475569] dark:text-[#94a3b8] mt-1.5 leading-relaxed italic">
-                "{recommendedTask?.reason || 'Porque tienes un parcial próximo y el trabajo requiere ~1h 15m.'}"
+                &ldquo;{recommendedTask?.reason || 'Porque tienes un parcial próximo y el trabajo requiere ~1h 15m.'}&rdquo;
               </p>
             </div>
           </div>

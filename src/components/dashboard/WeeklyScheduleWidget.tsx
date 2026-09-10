@@ -121,8 +121,8 @@ export function WeeklyScheduleWidget({
     routines.forEach((r) => {
       const startOffset = timeToGridOffset(r.startTime);
       const duration = getDurationHours(r.startTime, r.endTime);
-      const daysList: DayOfWeek[] = (r as any).daysOfWeek || (r.dayOfWeek ? [r.dayOfWeek] : []);
-      const rTitle = r.title || (r as any).name || 'Tiempo Fijo';
+      const daysList: DayOfWeek[] = r.dayOfWeek ? [r.dayOfWeek] : [];
+      const rTitle = r.title || 'Tiempo Fijo';
 
       daysList.forEach((dayNum) => {
         result.push({

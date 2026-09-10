@@ -157,8 +157,32 @@ CREATE POLICY "Users can CRUD own attendance"
         )
     );
 
--- 9. ÍNDICES DE RENDIMIENTO
+-- 9. RUTINAS FIJAS (ROUTINES)
+CREATE TABLE IF NOT EXISTS public.routines (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    day_of_week INTEGER NOT NULL CHECK (day_of_week BETWEEN 1 AND 7),
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    title TEXT NOT NULL,
+    type TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.routines ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can CRUD own routines"
+    ON public.routines FOR ALL
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
+-- 10. ÍNDICES DE RENDIMIENTO Y OPTIMIZACIÓN RLS
+CREATE INDEX IF NOT EXISTS idx_semesters_user ON public.semesters(user_id);
 CREATE INDEX IF NOT EXISTS idx_subjects_semester ON public.subjects(semester_id);
+CREATE INDEX IF NOT EXISTS idx_schedule_subject ON public.schedule_blocks(subject_id);
 CREATE INDEX IF NOT EXISTS idx_schedule_day ON public.schedule_blocks(day_of_week);
+CREATE INDEX IF NOT EXISTS idx_assignments_subject ON public.assignments(subject_id);
 CREATE INDEX IF NOT EXISTS idx_assignments_due ON public.assignments(due_date);
+CREATE INDEX IF NOT EXISTS idx_exams_subject ON public.exams(subject_id);
 CREATE INDEX IF NOT EXISTS idx_exams_date ON public.exams(date);
+CREATE INDEX IF NOT EXISTS idx_attendance_subject ON public.attendance(subject_id);
+CREATE INDEX IF NOT EXISTS idx_routines_user ON public.routines(user_id);
