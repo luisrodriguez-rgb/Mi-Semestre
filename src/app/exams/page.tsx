@@ -10,11 +10,8 @@ import {
   Trash2,
   Filter,
   Search,
-  BookOpen,
-  Award,
   Clock,
   Sparkles,
-  AlertTriangle,
 } from 'lucide-react';
 
 export default function ExamsPage() {

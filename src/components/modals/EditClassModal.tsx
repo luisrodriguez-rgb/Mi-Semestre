@@ -5,7 +5,7 @@ import { useUIStore } from '@/stores/uiStore';
 import { useSemesterData } from '@/hooks/useSemesterData';
 import { scheduleRepository, subjectRepository } from '@/lib/storage';
 import { ScheduleBlock, Subject, DayOfWeek } from '@/types';
-import { X, Calendar, Trash2, Check, Clock, MapPin, BookOpen, AlertTriangle } from 'lucide-react';
+import { X, Calendar, Trash2, Check, MapPin, BookOpen } from 'lucide-react';
 
 export function EditClassModal() {
   const { isEditClassOpen, editingScheduleBlock, closeEditClass } = useUIStore();

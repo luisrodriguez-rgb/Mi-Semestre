@@ -2,16 +2,11 @@
 
 import { useState, useMemo } from 'react';
 import {
-  Clock,
   MapPin,
   Flame,
   Play,
   Calendar,
   Sparkles,
-  ArrowRight,
-  ChevronDown,
-  BookOpen,
-  CheckCircle2,
 } from 'lucide-react';
 import { Subject, ScheduleBlock, Assignment, Exam, FixedRoutine, DayOfWeek } from '@/types';
 import { getCurrentBlock } from '@/lib/academic-engine/schedule/getCurrentBlock';

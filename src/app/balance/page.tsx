@@ -5,20 +5,15 @@ import { useSemesterData } from '@/hooks/useSemesterData';
 import { useUIStore } from '@/stores/uiStore';
 import { mockHistoryCourses, mockPendingCourses } from '@/lib/mockData';
 import {
-  GraduationCap,
   Award,
-  BookOpen,
-  CheckCircle2,
-  Clock,
   TrendingUp,
   FileSpreadsheet,
   Upload,
-  Plus,
 } from 'lucide-react';
 
 export default function BalanceAcademicoPage() {
   const { profile, subjects, semester, isLoading } = useSemesterData();
-  const { openOnboarding, openEditClass } = useUIStore();
+  const { openOnboarding } = useUIStore();
   const [activeTab, setActiveTab] = useState<'matriculadas' | 'historial' | 'pendientes'>('matriculadas');
 
   const studentName = profile?.name || 'Estudiante';

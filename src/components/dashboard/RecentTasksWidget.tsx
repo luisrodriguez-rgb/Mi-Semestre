@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ClipboardList, ArrowRight, Check, Plus, Clock } from 'lucide-react';
+import { ClipboardList, ArrowRight, Check, Plus } from 'lucide-react';
 import { Assignment } from '@/types';
 import { useUIStore } from '@/stores/uiStore';
 import { useSemesterData } from '@/hooks/useSemesterData';

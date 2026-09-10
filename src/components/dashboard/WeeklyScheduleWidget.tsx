@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Calendar, ChevronLeft, ChevronRight, Clock, Sparkles, Plus } from 'lucide-react';
+import { Calendar, Plus } from 'lucide-react';
 import { ScheduleBlock, Subject, DayOfWeek, FixedRoutine } from '@/types';
 import { useUIStore } from '@/stores/uiStore';
 import { calculateFreeSlots } from '@/lib/academic-engine/schedule/calculateFreeSlots';
@@ -168,7 +168,7 @@ export function WeeklyScheduleWidget({
               colorText: '#065f46',
             });
           });
-      } catch (e) {
+      } catch {
         // Fallback en caso de cálculo
       }
     });

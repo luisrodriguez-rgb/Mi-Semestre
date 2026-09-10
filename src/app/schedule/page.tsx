@@ -2,7 +2,7 @@
 
 import { useSemesterData } from '@/hooks/useSemesterData';
 import { SmartTimetable } from '@/components/schedule/SmartTimetable';
-import { Calendar, Sparkles } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 
 export default function SchedulePage() {
   const {

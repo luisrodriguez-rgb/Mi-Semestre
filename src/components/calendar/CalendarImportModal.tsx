@@ -6,7 +6,7 @@ import { useSemesterData } from '@/hooks/useSemesterData';
 import { parseIcsCalendar } from '@/lib/importer/icsParser';
 import { resolveBlockDeduplication } from '@/lib/importer/deduplication';
 import { generateIcsCalendar, downloadIcsFile } from '@/lib/importer/calendarExporter';
-import { NormalizedCalendarEvent, ScheduleBlock, Subject } from '@/types';
+import { NormalizedCalendarEvent, Subject } from '@/types';
 import { db } from '@/lib/storage/database';
 import confetti from 'canvas-confetti';
 import {

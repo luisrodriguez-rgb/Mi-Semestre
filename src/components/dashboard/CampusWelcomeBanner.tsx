@@ -31,10 +31,13 @@ export function CampusWelcomeBanner({ studentName }: CampusWelcomeBannerProps) {
       <div className="absolute right-0 top-0 bottom-0 w-full md:w-[48%] pointer-events-none select-none overflow-hidden">
         {/* Degradado para fundir la imagen suavemente con el fondo oscuro */}
         <div className="absolute inset-0 z-10 bg-gradient-to-r from-[#0b102b] via-[#0b102b]/60 to-transparent" />
-        <img
+        <Image
           src="/campus_icesi.webp"
           alt="Campus Universitario Icesi"
-          className="w-full h-full object-cover object-center opacity-85"
+          fill
+          priority
+          className="object-cover object-center opacity-85"
+          sizes="(max-width: 768px) 100vw, 48vw"
         />
       </div>
     </div>

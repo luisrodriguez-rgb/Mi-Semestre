@@ -1,6 +1,5 @@
 'use client';
 
-import { useMemo } from 'react';
 import { useSemesterData } from '@/hooks/useSemesterData';
 import { calculateSemesterMetrics } from '@/lib/academic-engine';
 import { assignmentRepository } from '@/lib/storage';

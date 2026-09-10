@@ -9,7 +9,7 @@ import { X, Clock, Coffee, Car, Dumbbell, Briefcase, Moon } from 'lucide-react';
 
 export function AddRoutineModal() {
   const { isRoutineModalOpen, closeRoutineModal } = useUIStore();
-  const { routines, refreshData } = useSemesterData();
+  const { refreshData } = useSemesterData();
 
   const [title, setTitle] = useState('');
   const [type, setType] = useState<RoutineType>('meal');

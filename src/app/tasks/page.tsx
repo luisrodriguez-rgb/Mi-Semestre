@@ -8,13 +8,11 @@ import {
   ListTodo,
   Plus,
   CheckCircle2,
-  Circle,
   Clock,
   Trash2,
   Filter,
   Search,
   Timer,
-  AlertCircle,
   Check,
 } from 'lucide-react';
 

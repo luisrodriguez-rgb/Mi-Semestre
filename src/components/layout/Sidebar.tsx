@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import Link from 'next/link';
@@ -9,11 +10,8 @@ import {
   AlertTriangle,
   Layers,
   GraduationCap,
-  Sparkles,
   Settings,
-  ChevronDown,
   ListTodo,
-  Layers3,
 } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { useSemesterData } from '@/hooks/useSemesterData';

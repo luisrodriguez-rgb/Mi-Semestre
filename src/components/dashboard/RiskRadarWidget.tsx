@@ -55,7 +55,15 @@ const DEFAULT_RISK_ITEMS: RiskItem[] = [
 ];
 
 export function RiskRadarWidget({ subjects }: RiskRadarWidgetProps) {
-  const items = DEFAULT_RISK_ITEMS;
+  const items = subjects && subjects.length > 0
+    ? subjects.slice(0, 3).map((s, idx) => ({
+        id: s.id,
+        name: s.name,
+        status: idx === 0 ? ('CRÍTICO' as const) : idx === 1 ? ('ATENCIÓN' as const) : ('ESTABLE' as const),
+        details: idx === 0 ? 'Parcial en 4 días · 3 tareas' : idx === 1 ? 'Quiz en 2 días · Tarea pendiente' : 'Todo al día',
+        statusColor: idx === 0 ? ('red' as const) : idx === 1 ? ('amber' as const) : ('green' as const),
+      }))
+    : DEFAULT_RISK_ITEMS;
 
   const getBadgeStyle = (statusColor: 'red' | 'amber' | 'green') => {
     switch (statusColor) {

@@ -9,7 +9,6 @@ import {
   Play,
   Compass,
   Bookmark,
-  Sparkles,
 } from 'lucide-react';
 import { Subject, ScheduleBlock, Assignment, Exam, FixedRoutine, DayOfWeek } from '@/types';
 import { getCurrentBlock } from '@/lib/academic-engine/schedule/getCurrentBlock';

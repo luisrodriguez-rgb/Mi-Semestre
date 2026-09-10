@@ -5,7 +5,7 @@ import { useUIStore } from '@/stores/uiStore';
 import { useSemesterData } from '@/hooks/useSemesterData';
 import { attendanceRepository } from '@/lib/storage';
 import { AttendanceRecord } from '@/types';
-import { X, UserCheck, AlertTriangle, Plus, Minus, CheckCircle, ShieldAlert, Sparkles } from 'lucide-react';
+import { X, UserCheck, Plus, Minus, CheckCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 function generateAttendanceId(): string {
@@ -17,7 +17,7 @@ export function AttendanceModal() {
   const { subjects, attendance, refreshData } = useSemesterData();
   const [animatingSubjectId, setAnimatingSubjectId] = useState<string | null>(null);
   const [lastAction, setLastAction] = useState<{ id: string; type: 'present' | 'absent' } | null>(null);
-  const handleAddAbsence = async (subjectId: string, currentAbsences: number, maxAbsences: number) => {
+  const handleAddAbsence = async (subjectId: string) => {
     const todayStr = new Date().toISOString().split('T')[0];
     const newRecord: AttendanceRecord = {
       id: generateAttendanceId(),
@@ -210,7 +210,7 @@ export function AttendanceModal() {
                       </button>
 
                       <button
-                        onClick={() => handleAddAbsence(sub.id, absences, maxAbsences)}
+                        onClick={() => handleAddAbsence(sub.id)}
                         className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
                         title="Registrar inasistencia / falta"
                       >

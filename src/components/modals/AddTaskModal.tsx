@@ -5,7 +5,7 @@ import { useUIStore } from '@/stores/uiStore';
 import { useSemesterData } from '@/hooks/useSemesterData';
 import { assignmentRepository } from '@/lib/storage';
 import { Assignment, TaskPriority } from '@/types';
-import { X, PlusCircle, Clock } from 'lucide-react';
+import { X, PlusCircle } from 'lucide-react';
 
 export function AddTaskModal() {
   const { isAddTaskOpen, closeAddTask } = useUIStore();

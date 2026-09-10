@@ -6,31 +6,21 @@ import { useSemesterData } from '@/hooks/useSemesterData';
 import {
   smartIngest,
   ParsedAcademicData,
-  titleCase,
 } from '@/lib/importer/smartAcademicIngester';
 import {
   applyAcademicTemplate,
   applyParsedAcademicData,
   startFreshEmptySemester,
 } from '@/lib/importer/templateLoader';
-import { ACADEMIC_TEMPLATES, AcademicTemplate } from '@/lib/templates/academicTemplates';
+import { ACADEMIC_TEMPLATES } from '@/lib/templates/academicTemplates';
 import {
   Sparkles,
-  Upload,
-  FileText,
   Check,
   X,
   Layers,
-  GraduationCap,
   Plus,
   Trash2,
-  Calendar,
-  Clock,
-  MapPin,
   ArrowRight,
-  RotateCcw,
-  BookOpen,
-  Award,
   ChevronRight,
   ImageIcon,
 } from 'lucide-react';
@@ -455,7 +445,7 @@ export function SmartOnboardingModal() {
                 </div>
 
                 <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                  {parsedResult.subjects.map((sub, idx) => {
+                  {parsedResult.subjects.map((sub) => {
                     const blocks = parsedResult.scheduleBlocks.filter(
                       (b) => b.subjectId === sub.id
                     );
