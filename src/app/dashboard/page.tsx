@@ -24,6 +24,7 @@ export default function DashboardPage() {
     assignments,
     exams,
     routines,
+    attendance,
     refreshData,
     isLoading,
   } = useSemesterData();
@@ -37,6 +38,7 @@ export default function DashboardPage() {
     ? calculateSemesterMetrics({
         startDate: semester.startDate,
         endDate: semester.endDate,
+        totalWeeks: semester.totalWeeks ?? 16,
       })
     : { currentWeek: 6, totalWeeks: 16, progressPercentage: 37, daysRemaining: 68 };
 
@@ -98,7 +100,12 @@ export default function DashboardPage() {
 
         {/* Columna 2: Radar de Riesgo con barras indicadoras de semáforo */}
         <div className="lg:col-span-3">
-          <RiskRadarWidget subjects={subjects} />
+          <RiskRadarWidget
+            subjects={subjects}
+            assignments={assignments}
+            exams={exams}
+            attendance={attendance}
+          />
         </div>
 
         {/* Columna 3: Próximos eventos (exámenes/entregas) y Tareas recientes */}

@@ -47,7 +47,8 @@ export function RecentTasksWidget({ assignments: propAssignments, onToggleTask }
             Tareas recientes
           </h3>
           <span className="text-[10px] font-mono font-bold text-[#626c96] dark:text-[#8b95c2] ml-1 bg-[#f0f3fa] dark:bg-[#141838] px-2 py-0.5 rounded-full border border-[#e2e6f2] dark:border-[#1e2552]">
-            {assignmentsList.filter((t) => t.status !== 'completed').length} pendientes
+            {assignmentsList.filter((t) => t.status !== 'completed').length}{' '}
+            {assignmentsList.filter((t) => t.status !== 'completed').length === 1 ? 'pendiente' : 'pendientes'}
           </span>
         </div>
         <Link
@@ -92,7 +93,7 @@ export function RecentTasksWidget({ assignments: propAssignments, onToggleTask }
                 onClick={() => toggleTask(task.id)}
                 className="flex items-center justify-between p-2 rounded-xl hover:bg-[#f8faff] dark:hover:bg-[#141838] transition-colors cursor-pointer group"
               >
-                <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
                   {/* Checkbox cuadrado redondeado */}
                   <div
                     className={`w-4 h-4 rounded-md border flex items-center justify-center transition-colors shrink-0 ${
@@ -104,7 +105,7 @@ export function RecentTasksWidget({ assignments: propAssignments, onToggleTask }
                     {isCompleted && <Check className="w-2.5 h-2.5 stroke-[3]" />}
                   </div>
 
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <span
                       className={`text-xs font-semibold leading-tight block truncate ${
                         isCompleted

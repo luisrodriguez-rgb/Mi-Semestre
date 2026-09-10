@@ -13,16 +13,16 @@ interface GeneralProgressCardProps {
 }
 
 export function GeneralProgressCard({
-  progressPercentage = 37,
-  currentWeek = 6,
+  progressPercentage = 0,
+  currentWeek = 1,
   totalWeeks = 16,
-  subjects,
-  assignments,
-  exams,
+  subjects = [],
+  assignments = [],
+  exams = [],
 }: GeneralProgressCardProps) {
-  const pendingAssignmentsCount = assignments.filter((a) => a.status !== 'completed').length || 7;
-  const upcomingExamsCount = exams.length || 2;
-  const totalSubjectsCount = subjects.length || 5;
+  const pendingAssignmentsCount = assignments.filter((a) => a.status !== 'completed').length;
+  const upcomingExamsCount = exams.length;
+  const totalSubjectsCount = subjects.length;
 
   // Donut SVG circumference math
   const radius = 38;

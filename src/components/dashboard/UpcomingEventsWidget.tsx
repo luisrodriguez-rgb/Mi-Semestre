@@ -31,7 +31,7 @@ export function UpcomingEventsWidget({ exams: propExams }: UpcomingEventsWidgetP
             Próximos exámenes
           </h3>
           <span className="text-[10px] font-mono font-bold text-[#626c96] dark:text-[#8b95c2] ml-1 bg-[#f0f3fa] dark:bg-[#141838] px-2 py-0.5 rounded-full border border-[#e2e6f2] dark:border-[#1e2552]">
-            {examsList.length} parciales
+            {examsList.length} {examsList.length === 1 ? 'parcial' : 'parciales'}
           </span>
         </div>
         <Link
@@ -87,11 +87,11 @@ export function UpcomingEventsWidget({ exams: propExams }: UpcomingEventsWidgetP
 
                 {/* Detalles */}
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 flex-wrap">
+                  <div className="flex items-center justify-between gap-1.5">
                     <span className="text-xs font-bold text-[#0f1330] dark:text-white truncate">
                       {exam.title}
                     </span>
-                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full border bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20">
+                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full border bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20 shrink-0">
                       {exam.weight}%
                     </span>
                   </div>
