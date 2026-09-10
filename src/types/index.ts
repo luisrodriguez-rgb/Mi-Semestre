@@ -137,6 +137,13 @@ export interface StudySession {
   status: 'planned' | 'completed' | 'skipped';
 }
 
+export type RecommendationReasonCode =
+  | 'EXAM_SOON'
+  | 'HIGH_WEIGHT'
+  | 'STUDY_DEFICIT'
+  | 'APPROACHING_DEADLINE'
+  | 'HIGH_RISK';
+
 export interface StudyRecommendation {
   id: string;
   subjectId: string;
@@ -152,6 +159,7 @@ export interface StudyRecommendation {
   durationMinutes: number;
   priorityScore: number;
   reason: string;
+  reasonCodes?: RecommendationReasonCode[];
   status: 'suggested' | 'accepted' | 'dismissed' | 'completed';
   topics?: string[];
 }

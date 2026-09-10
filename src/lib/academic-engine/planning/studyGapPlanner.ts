@@ -4,6 +4,7 @@ import {
   Subject,
   TimeSlot,
   StudyRecommendation,
+  RecommendationReasonCode,
   RiskEvaluation,
 } from '@/types';
 import { timeToMinutes, minutesToTime } from '../utils/timeHelpers';
@@ -23,11 +24,11 @@ export interface StudyPlannerInput {
  */
 export function calculateUrgencyScore(daysRemaining: number): number {
   if (daysRemaining <= 1) return 100;
-  if (daysRemaining <= 3) return 90;
-  if (daysRemaining <= 5) return 75;
-  if (daysRemaining <= 7) return 60;
-  if (daysRemaining <= 14) return 40;
-  return 20;
+  if (daysRemaining <= 2) return 85;
+  if (daysRemaining <= 4) return 70;
+  if (daysRemaining <= 7) return 50;
+  if (daysRemaining <= 14) return 20;
+  return 10;
 }
 
 /**
@@ -35,8 +36,8 @@ export function calculateUrgencyScore(daysRemaining: number): number {
  */
 export function calculateWeightScore(weight?: number, priority?: 'high' | 'medium' | 'low'): number {
   if (weight !== undefined && weight > 0) {
-    // 30% o más es crítico -> 100
-    return Math.min(100, Math.round((weight / 30) * 100));
+    // 30% o más es crítico -> 100, con piso mínimo de 25
+    return Math.min(100, Math.max(25, Math.round((weight / 30) * 100)));
   }
   if (priority === 'high') return 85;
   if (priority === 'medium') return 60;
@@ -174,12 +175,12 @@ export function planStudyGaps(input: StudyPlannerInput): StudyRecommendation[] {
       const riskScore = riskMap.get(target.subjectId) || 30;
       const availabilityScore = slot.durationMinutes >= 60 && slot.durationMinutes <= 90 ? 100 : 70;
 
-      // Ponderación determinística
+      // Ponderación determinística orientada a urgencia e inminencia
       const priorityScore = Math.round(
-        urgencyScore * 0.30 +
+        urgencyScore * 0.40 +
         weightScore * 0.20 +
-        deficitScore * 0.20 +
-        riskScore * 0.20 +
+        deficitScore * 0.15 +
+        riskScore * 0.15 +
         availabilityScore * 0.10
       );
 
@@ -213,6 +214,13 @@ export function planStudyGaps(input: StudyPlannerInput): StudyRecommendation[] {
       ? `Parcial en ${Math.ceil(bestTarget.daysRemaining)} días (${bestTarget.weight}% de peso). Hueco ideal de ${sessionDuration}m.`
       : `Entrega pendiente de ${bestTarget.title} en ${Math.ceil(bestTarget.daysRemaining)} días.`;
 
+    const reasonCodes: RecommendationReasonCode[] = [];
+    if (bestTarget.type === 'exam' && bestTarget.daysRemaining <= 4) reasonCodes.push('EXAM_SOON');
+    if (bestTarget.type === 'assignment' && bestTarget.daysRemaining <= 2) reasonCodes.push('APPROACHING_DEADLINE');
+    if ((bestTarget.weight || 0) >= 20 || bestTarget.priority === 'high') reasonCodes.push('HIGH_WEIGHT');
+    if (bestTarget.neededMinutes > slot.durationMinutes) reasonCodes.push('STUDY_DEFICIT');
+    if ((riskMap.get(bestTarget.subjectId) || 0) >= 70) reasonCodes.push('HIGH_RISK');
+
     recommendations.push({
       id: `rec_${bestTarget.id}_${slot.date}_${slotStartMin}`,
       subjectId: bestTarget.subjectId,
@@ -228,6 +236,7 @@ export function planStudyGaps(input: StudyPlannerInput): StudyRecommendation[] {
       durationMinutes: sessionDuration,
       priorityScore: highestScore,
       reason,
+      reasonCodes,
       status: 'suggested',
       topics: bestTarget.topics,
     });

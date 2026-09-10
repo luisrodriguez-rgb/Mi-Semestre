@@ -5,7 +5,7 @@ function testStudyGapPlanner() {
   console.log('--- Testing Deterministic Study Gap Planner ---');
 
   // 1. Validar Scores
-  if (calculateUrgencyScore(1) !== 100 || calculateUrgencyScore(4) !== 75) {
+  if (calculateUrgencyScore(1) !== 100 || calculateUrgencyScore(4) !== 70) {
     throw new Error('calculateUrgencyScore failed');
   }
   if (calculateWeightScore(25) !== 83 || calculateWeightScore(undefined, 'high') !== 85) {
