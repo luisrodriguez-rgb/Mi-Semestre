@@ -1,5 +1,5 @@
 import { ScheduleBlock, FixedRoutine, TimeSlot, DayOfWeek } from '@/types';
-import { timeToMinutes, minutesToTime, intervalsOverlap } from '../utils/timeHelpers';
+import { timeToMinutes, minutesToTime } from '../utils/timeHelpers';
 
 export interface DailyAvailabilityParams {
   dayOfWeek: DayOfWeek;

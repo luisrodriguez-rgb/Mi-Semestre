@@ -9,7 +9,7 @@ import {
   attendanceRepository,
   routineRepository,
 } from '@/lib/storage';
-import { Profile, Semester, Subject, ScheduleBlock, Assignment, Exam, AttendanceRecord, FixedRoutine } from '@/types';
+import { Semester, Subject, ScheduleBlock, Assignment, Exam, AttendanceRecord, FixedRoutine } from '@/types';
 
 export interface CloudSyncResult {
   success: boolean;

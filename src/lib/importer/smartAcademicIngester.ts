@@ -1,4 +1,4 @@
-import { Profile, Semester, Subject, ScheduleBlock, Assignment, Exam } from '@/types';
+import { Profile, Semester } from '@/types';
 
 export interface ParsedAcademicData {
   profile: Partial<Profile>;

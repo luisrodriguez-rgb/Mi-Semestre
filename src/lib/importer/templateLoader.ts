@@ -9,7 +9,7 @@ import {
   assignmentRepository,
   attendanceRepository,
 } from '../storage';
-import { ACADEMIC_TEMPLATES, AcademicTemplate } from '../templates/academicTemplates';
+import { ACADEMIC_TEMPLATES } from '../templates/academicTemplates';
 import { ParsedAcademicData } from './smartAcademicIngester';
 import { Semester, Profile, Subject, ScheduleBlock, DayOfWeek } from '@/types';
 

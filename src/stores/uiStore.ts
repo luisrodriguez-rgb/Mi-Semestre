@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { ScheduleBlock, Subject } from '@/types';
+import { ScheduleBlock } from '@/types';
 
 export interface FocusSessionState {
   isActive: boolean;
