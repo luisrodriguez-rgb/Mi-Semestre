@@ -8,7 +8,7 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx src/tests/academic-engine/engine.test.ts && tsx src/tests/importer/smartIngester.test.ts && tsx src/tests/importer/deduplication.test.ts && tsx src/tests/importer/icsParser.test.ts && tsx src/tests/ai/inboxPreprocessor.test.ts && tsx src/tests/ai/geminiProvider.test.ts && tsx src/tests/academic-engine/studyGapPlanner.test.ts && tsx src/tests/academic-engine/academicScenarios.test.ts && tsx src/tests/e2e/academicLifecycle.test.ts"
+    "test": "tsx src/tests/academic-engine/engine.test.ts && tsx src/tests/importer/smartIngester.test.ts && tsx src/tests/importer/deduplication.test.ts && tsx src/tests/importer/icsParser.test.ts && tsx src/tests/ai/inboxPreprocessor.test.ts && tsx src/tests/ai/geminiProvider.test.ts && tsx src/tests/academic-engine/studyGapPlanner.test.ts && tsx src/tests/academic-engine/academicScenarios.test.ts && tsx src/tests/academic-engine/plannerBoundaries.test.ts && tsx src/tests/academic-engine/decisionTracker.test.ts && tsx src/tests/e2e/academicLifecycle.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.21.0",
