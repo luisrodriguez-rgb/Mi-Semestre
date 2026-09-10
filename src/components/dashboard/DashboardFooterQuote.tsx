@@ -23,7 +23,7 @@ export function DashboardFooterQuote() {
         <img
           src="/icon.png"
           alt="Mi Semestre"
-          className="w-4 h-4 rounded-md object-contain"
+          className="w-4 h-4 object-contain"
         />
         <span>MI SEMESTRE <span className="text-[#3b43a8] dark:text-[#8e98ec] font-black">|</span> ICESI</span>
       </div>

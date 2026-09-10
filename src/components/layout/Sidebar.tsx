@@ -53,7 +53,7 @@ export function Sidebar() {
           <img
             src="/icon.png"
             alt="MI SEMESTRE | ICESI"
-            className="w-9 h-9 rounded-[14%] object-contain shadow-md shadow-[#252ab8]/20"
+            className="w-9 h-9 object-contain drop-shadow-md"
           />
           <div>
             <div className="font-black text-sm tracking-wider text-white flex items-center gap-1.5">
@@ -164,7 +164,7 @@ export function Sidebar() {
           <img
             src="/icon.png"
             alt="MI SEMESTRE | ICESI"
-            className="w-4 h-4 rounded-[14%] object-contain opacity-80"
+            className="w-4 h-4 object-contain opacity-80"
           />
           <div>
             <div className="text-[10px] font-bold font-mono tracking-wider uppercase text-[#6f7aa8]">
