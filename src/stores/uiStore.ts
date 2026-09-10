@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { ScheduleBlock } from '@/types';
+import { ScheduleBlock, FixedRoutine } from '@/types';
 
 export interface FocusSessionState {
   isActive: boolean;
@@ -31,6 +31,7 @@ interface UIState {
   isFocusCompletionOpen: boolean;
   isAttendanceModalOpen: boolean;
   isRoutineModalOpen: boolean;
+  editingRoutine: FixedRoutine | null;
   isInboxOpen: boolean;
   isCalendarModalOpen: boolean;
   isCommandPaletteOpen: boolean;
@@ -55,7 +56,7 @@ interface UIState {
   closeProfile: () => void;
   openAttendanceModal: () => void;
   closeAttendanceModal: () => void;
-  openRoutineModal: () => void;
+  openRoutineModal: (routine?: FixedRoutine) => void;
   closeRoutineModal: () => void;
   openInbox: () => void;
   closeInbox: () => void;
@@ -92,6 +93,7 @@ export const useUIStore = create<UIState>((set) => ({
   isFocusCompletionOpen: false,
   isAttendanceModalOpen: false,
   isRoutineModalOpen: false,
+  editingRoutine: null,
   isInboxOpen: false,
   isCalendarModalOpen: false,
   isCommandPaletteOpen: false,
@@ -124,8 +126,8 @@ export const useUIStore = create<UIState>((set) => ({
   closeProfile: () => set({ isProfileOpen: false }),
   openAttendanceModal: () => set({ isAttendanceModalOpen: true }),
   closeAttendanceModal: () => set({ isAttendanceModalOpen: false }),
-  openRoutineModal: () => set({ isRoutineModalOpen: true }),
-  closeRoutineModal: () => set({ isRoutineModalOpen: false }),
+  openRoutineModal: (routine) => set({ isRoutineModalOpen: true, editingRoutine: routine || null }),
+  closeRoutineModal: () => set({ isRoutineModalOpen: false, editingRoutine: null }),
   openInbox: () => set({ isInboxOpen: true }),
   closeInbox: () => set({ isInboxOpen: false }),
   openCalendarModal: () => set({ isCalendarModalOpen: true }),

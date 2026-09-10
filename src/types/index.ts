@@ -194,6 +194,8 @@ export interface FixedRoutine extends Partial<ImportedEventMetadata> {
   dayOfWeek: DayOfWeek;
   startTime: string; // "12:00"
   endTime: string;   // "13:00"
+  notes?: string;
+  location?: string;
 }
 
 // -------------------------------------------------------------
