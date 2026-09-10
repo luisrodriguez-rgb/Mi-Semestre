@@ -132,38 +132,63 @@ export default function BalanceAcademicoPage() {
       {/* TAB 1: MATERIAS MATRICULADAS */}
       {activeTab === 'matriculadas' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {subjects.map((sub) => (
-            <div key={sub.id} className="card-academic p-5 bg-[var(--surface)] flex flex-col justify-between transition-colors">
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[var(--paper)] text-[#3b3abf] dark:text-[#a0a0ff] border border-[var(--border)]">
-                    Código: {sub.code} {sub.nrc ? `· NRC: ${sub.nrc}` : ''}
-                  </span>
-                  <span className="text-xs font-mono font-bold text-[#16a34a] dark:text-[#4ade80] bg-[#f0fdf4] dark:bg-[#072714] px-2 py-0.5 rounded border border-[#dcfce7] dark:border-[#14532d]">
-                    {sub.credits} Créditos
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2 mt-2.5">
-                  <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: sub.color }} />
-                  <h3 className="text-base font-extrabold text-[var(--ink)]">
-                    {sub.name}
-                  </h3>
-                </div>
-
-                {sub.professor && (
-                  <p className="text-xs text-[var(--muted)] mt-1 font-medium">
-                    Profesor: {sub.professor}
-                  </p>
-                )}
-
-                <div className="mt-4 pt-3 border-t border-[var(--border)] flex items-center justify-between text-xs font-mono">
-                  <span className="text-[var(--muted)]">Límite inasistencias:</span>
-                  <span className="font-bold text-[var(--ink)]">{sub.maxAbsences} faltas</span>
-                </div>
+          {subjects.length === 0 ? (
+            <div className="col-span-full card-academic p-10 bg-[var(--surface)] text-center space-y-4 border border-[var(--border)]">
+              <div className="w-14 h-14 rounded-2xl bg-[#3b3abf]/10 text-[#3b3abf] dark:text-[#a0a0ff] flex items-center justify-center mx-auto">
+                <FileSpreadsheet className="w-7 h-7" />
+              </div>
+              <div className="max-w-md mx-auto">
+                <h3 className="text-lg font-black text-[var(--ink)]">
+                  No tienes materias registradas en este semestre
+                </h3>
+                <p className="text-xs text-[var(--muted)] mt-1">
+                  Importa el texto de tu Balance Académico oficial de Banner / Icesi para generar automáticamente todas las tarjetas con código, créditos, NRC, profesor y límite de faltas.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                <button
+                  onClick={openOnboarding}
+                  className="px-5 py-2.5 rounded-xl bg-[#3b3abf] hover:bg-[#2828a8] text-white text-xs font-bold transition-all shadow-md shadow-[#3b3abf]/20 cursor-pointer flex items-center gap-2 active:scale-95"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>Importar Balance de Icesi</span>
+                </button>
               </div>
             </div>
-          ))}
+          ) : (
+            subjects.map((sub) => (
+              <div key={sub.id} className="card-academic p-5 bg-[var(--surface)] border border-[var(--border)] flex flex-col justify-between transition-colors shadow-xs hover:border-[#3b3abf]/40">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[var(--paper)] text-[#3b3abf] dark:text-[#a0a0ff] border border-[var(--border)]">
+                      Código: {sub.code} {sub.nrc ? `· NRC: ${sub.nrc}` : ''}
+                    </span>
+                    <span className="text-xs font-mono font-bold text-[#16a34a] dark:text-[#4ade80] bg-[#f0fdf4] dark:bg-[#072714] px-2 py-0.5 rounded border border-[#dcfce7] dark:border-[#14532d]">
+                      {sub.credits} Créditos
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 mt-2.5">
+                    <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: sub.color }} />
+                    <h3 className="text-base font-extrabold text-[var(--ink)]">
+                      {sub.name}
+                    </h3>
+                  </div>
+
+                  {sub.professor && (
+                    <p className="text-xs text-[var(--muted)] mt-1 font-medium">
+                      Profesor: {sub.professor}
+                    </p>
+                  )}
+
+                  <div className="mt-4 pt-3 border-t border-[var(--border)] flex items-center justify-between text-xs font-mono">
+                    <span className="text-[var(--muted)]">Límite inasistencias:</span>
+                    <span className="font-bold text-[var(--ink)]">{sub.maxAbsences} faltas</span>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       )}
 

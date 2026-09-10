@@ -168,7 +168,7 @@ export function DecisionHeroCard({
                   setUseRealTime(false);
                   setSimulatedTime(e.target.value);
                 }}
-                className="bg-white dark:bg-[#0f1330] border border-[#d0d7ed] dark:border-[#28306a] text-xs font-mono font-bold rounded-lg px-2 py-0.5"
+                className="bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] text-xs font-mono font-bold rounded-lg px-2 py-0.5"
               >
                 <option value="08:15">08:15 (Clase de mañana)</option>
                 <option value="10:00">10:00 (Hueco libre 2h 10m)</option>

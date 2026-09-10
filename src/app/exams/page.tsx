@@ -57,19 +57,19 @@ export default function ExamsPage() {
   return (
     <div className="space-y-5 animate-in fade-in duration-150">
       {/* Cabecera Principal */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-white dark:bg-[#0f1330] border border-[#e2e6f2] dark:border-[#1c224b] shadow-2xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-xs transition-colors">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#3b3abf]/10 border border-[#3b3abf]/20 flex items-center justify-center text-[#3b3abf] dark:text-[#8e98ec]">
+          <div className="w-10 h-10 rounded-xl bg-[#3b3abf]/10 border border-[#3b3abf]/20 flex items-center justify-center text-[#3b3abf] dark:text-[#a0a0ff]">
             <Calendar className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-lg font-black text-[#0f1330] dark:text-white tracking-tight flex items-center gap-2">
+            <h1 className="text-lg font-black text-[var(--ink)] tracking-tight flex items-center gap-2">
               <span>Evaluaciones y Parciales</span>
-              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-[#f0f3fa] dark:bg-[#161c42] text-[#3b3abf] dark:text-[#8e98ec] border border-[#e2e6f2] dark:border-[#22295a]">
+              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-[var(--paper)] text-[#3b3abf] dark:text-[#a0a0ff] border border-[var(--border)]">
                 {exams.length} programados
               </span>
             </h1>
-            <p className="text-xs text-[#626c96] dark:text-[#8b95c2]">
+            <p className="text-xs text-[var(--muted)]">
               Calendario semestral de parciales, entregas de proyecto y quices con ponderación
             </p>
           </div>
@@ -77,7 +77,7 @@ export default function ExamsPage() {
 
         <button
           onClick={openAddExam}
-          className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#3b3abf] hover:bg-[#2828a8] text-white text-xs font-bold transition-all shadow-sm cursor-pointer self-start sm:self-auto"
+          className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#3b3abf] hover:bg-[#2828a8] text-white text-xs font-bold transition-all shadow-sm cursor-pointer self-start sm:self-auto active:scale-95"
         >
           <Plus className="w-4 h-4" />
           <span>Nuevo Parcial</span>
@@ -85,10 +85,10 @@ export default function ExamsPage() {
       </div>
 
       {/* Barra de Filtros */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-white dark:bg-[#0f1330] border border-[#e2e6f2] dark:border-[#1c224b] shadow-2xs text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-xs text-xs transition-colors">
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 bg-[#f0f3fa] dark:bg-[#141838] px-3 py-1.5 rounded-xl border border-[#e2e6f2] dark:border-[#202758]">
-            <Filter className="w-3.5 h-3.5 text-[#3b3abf] dark:text-[#8e98ec]" />
+          <div className="flex items-center gap-1.5 bg-[var(--paper)] px-3 py-1.5 rounded-xl border border-[var(--border)]">
+            <Filter className="w-3.5 h-3.5 text-[#3b3abf] dark:text-[#a0a0ff]" />
             <select
               value={filterSubject}
               onChange={(e) => setFilterSubject(e.target.value)}
@@ -106,13 +106,13 @@ export default function ExamsPage() {
 
         {/* Input de Búsqueda */}
         <div className="relative min-w-[220px]">
-          <Search className="w-3.5 h-3.5 text-[#626c96] dark:text-[#8b95c2] absolute left-3 top-2.5" />
+          <Search className="w-3.5 h-3.5 text-[var(--muted)] absolute left-3 top-2.5" />
           <input
             type="text"
             placeholder="Buscar por tema o materia..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#f0f3fa] dark:bg-[#141838] border border-[#e2e6f2] dark:border-[#202758] rounded-xl pl-8 pr-3 py-1.5 text-xs text-[var(--ink)] placeholder:text-[#8b95c2] outline-none focus:border-[#3b3abf]"
+            className="w-full bg-[var(--paper)] border border-[var(--border)] rounded-xl pl-8 pr-3 py-1.5 text-xs text-[var(--ink)] placeholder:text-[var(--muted)] outline-none focus:border-[#3b3abf] transition-colors"
           />
         </div>
       </div>
@@ -156,17 +156,17 @@ export default function ExamsPage() {
             return (
               <div
                 key={exam.id}
-                className="p-5 rounded-2xl bg-white dark:bg-[#0f1330] border border-[#e2e6f2] dark:border-[#1c224b] shadow-2xs hover:border-[#3b3abf]/40 transition-all flex flex-col justify-between group"
+                className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-xs hover:border-[#3b3abf] transition-all flex flex-col justify-between group"
               >
                 <div>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
                       {/* Cuadro de Fecha */}
-                      <div className="w-12 h-14 rounded-2xl bg-[#f0f3fa] dark:bg-[#161c42] border border-[#e2e6f2] dark:border-[#22295a] flex flex-col items-center justify-center shrink-0">
-                        <span className="text-[10px] font-mono font-bold text-[#626c96] dark:text-[#8894c7] leading-none uppercase">
+                      <div className="w-12 h-14 rounded-2xl bg-[var(--paper)] border border-[var(--border)] flex flex-col items-center justify-center shrink-0 shadow-2xs">
+                        <span className="text-[10px] font-mono font-bold text-[var(--muted)] leading-none uppercase">
                           {month}
                         </span>
-                        <span className="text-lg font-black text-[#0f1330] dark:text-white leading-tight font-mono mt-0.5">
+                        <span className="text-lg font-black text-[var(--ink)] leading-tight font-mono mt-0.5">
                           {day}
                         </span>
                       </div>
@@ -175,17 +175,17 @@ export default function ExamsPage() {
                         <div className="flex items-center gap-2 flex-wrap">
                           {sub && (
                             <span
-                              className="px-2 py-0.5 rounded-md font-bold text-[10px] text-white"
+                              className="px-2 py-0.5 rounded-md font-bold text-[10px] text-white shadow-2xs"
                               style={{ backgroundColor: sub.color }}
                             >
                               {sub.name}
                             </span>
                           )}
-                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20">
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20">
                             Peso: {exam.weight}%
                           </span>
                         </div>
-                        <h3 className="text-sm font-extrabold text-[#0f1330] dark:text-white mt-1.5 group-hover:text-[#3b3abf] dark:group-hover:text-[#a0a0ff] transition-colors">
+                        <h3 className="text-sm font-extrabold text-[var(--ink)] mt-1.5 group-hover:text-[#3b3abf] dark:group-hover:text-[#a0a0ff] transition-colors">
                           {exam.title}
                         </h3>
                       </div>
@@ -193,7 +193,7 @@ export default function ExamsPage() {
 
                     <button
                       onClick={() => handleDelete(exam.id)}
-                      className="p-2 text-[#8b95c2] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition-colors cursor-pointer"
+                      className="p-2 text-[var(--muted)] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition-colors cursor-pointer"
                       title="Eliminar examen"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -202,15 +202,15 @@ export default function ExamsPage() {
 
                   {/* Temas si están especificados */}
                   {exam.topics && exam.topics.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-[#f0f3fa] dark:border-[#181d42]">
-                      <div className="text-[10px] font-mono uppercase tracking-wider text-[#626c96] dark:text-[#8b95c2] font-bold mb-1">
+                    <div className="mt-3.5 pt-3 border-t border-[var(--border)]">
+                      <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--muted)] font-bold mb-1.5">
                         Temas clave:
                       </div>
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-wrap gap-1.5">
                         {exam.topics.map((t, idx) => (
                           <span
                             key={idx}
-                            className="text-[10px] px-2 py-0.5 rounded-md bg-[#f0f3fa] dark:bg-[#141838] text-[var(--ink)] border border-[#e2e6f2] dark:border-[#202758]"
+                            className="text-[10px] px-2.5 py-0.5 rounded-lg bg-[var(--paper)] text-[var(--ink)] border border-[var(--border)] font-medium"
                           >
                             {t}
                           </span>
@@ -221,8 +221,8 @@ export default function ExamsPage() {
                 </div>
 
                 {/* Footer de la tarjeta con tiempo restante y botón de estudio */}
-                <div className="mt-4 pt-3 border-t border-[#f0f3fa] dark:border-[#181d42] flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 text-xs font-mono text-[#626c96] dark:text-[#8b95c2]">
+                <div className="mt-4 pt-3 border-t border-[var(--border)] flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-xs font-mono text-[var(--muted)]">
                     <Clock className="w-3.5 h-3.5" />
                     <span>
                       {diffDays > 0
@@ -242,7 +242,7 @@ export default function ExamsPage() {
                         50
                       )
                     }
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#3b3abf] hover:bg-[#2828a8] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#3b3abf] hover:bg-[#2828a8] text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
                   >
                     <Sparkles className="w-3 h-3 text-amber-300" />
                     <span>Sesión de Estudio</span>

@@ -83,10 +83,11 @@ export function TopHeader() {
     ? calculateSemesterMetrics({
         startDate: semester.startDate,
         endDate: semester.endDate,
+        totalWeeks: semester.totalWeeks || 16,
       })
     : { currentWeek: 6, totalWeeks: 16, progressPercentage: 37, daysRemaining: 68 };
 
-  const studentName = profile?.name || 'Diego Rodríguez';
+  const studentName = profile?.name || 'Estudiante';
   const initials = studentName
     .split(' ')
     .slice(0, 2)

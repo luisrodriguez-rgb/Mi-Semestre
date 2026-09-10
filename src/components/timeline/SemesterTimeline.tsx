@@ -3,7 +3,8 @@
 import { useMemo, useState } from 'react';
 import { Semester, Exam, Assignment, Subject } from '@/types';
 import { calculateSemesterMetrics } from '@/lib/academic-engine';
-import { Calendar, CheckCircle2, ChevronRight, Layers, Sparkles } from 'lucide-react';
+import { semesterRepository } from '@/lib/storage';
+import { Layers, Calendar, CheckCircle2 } from 'lucide-react';
 
 interface SemesterTimelineProps {
   semester: Semester | null;
@@ -18,18 +19,33 @@ export function SemesterTimeline({
   exams,
   assignments,
 }: SemesterTimelineProps) {
+  const [customTotalWeeks, setCustomTotalWeeks] = useState<number | null>(null);
+  const totalWeeks = customTotalWeeks ?? semester?.totalWeeks ?? 16;
   const [selectedWeek, setSelectedWeek] = useState<number>(6);
+
+  const handleUpdateTotalWeeks = async (newTotal: number) => {
+    setCustomTotalWeeks(newTotal);
+    if (selectedWeek > newTotal) {
+      setSelectedWeek(newTotal);
+    }
+    if (semester) {
+      const updated = { ...semester, totalWeeks: newTotal };
+      await semesterRepository.save(updated);
+      window.dispatchEvent(new CustomEvent('semester-data-updated'));
+    }
+  };
 
   const metrics = useMemo(() => {
     if (!semester) return null;
     return calculateSemesterMetrics({
       startDate: semester.startDate,
       endDate: semester.endDate,
+      totalWeeks,
     });
-  }, [semester]);
+  }, [semester, totalWeeks]);
 
-  // Generar array de 16 semanas
-  const weeks = Array.from({ length: 16 }, (_, i) => i + 1);
+  // Generar array dinámico de semanas
+  const weeks = useMemo(() => Array.from({ length: totalWeeks }, (_, i) => i + 1), [totalWeeks]);
 
   // Mapear eventos a semanas
   const milestonesByWeek = useMemo(() => {
@@ -42,19 +58,19 @@ export function SemesterTimeline({
     exams.forEach((e) => {
       const eMs = new Date(e.date).getTime();
       const diffDays = Math.max(0, Math.floor((eMs - startMs) / (1000 * 60 * 60 * 24)));
-      const w = Math.min(16, Math.max(1, Math.floor(diffDays / 7) + 1));
+      const w = Math.min(totalWeeks, Math.max(1, Math.floor(diffDays / 7) + 1));
       if (map[w]) map[w].exams.push(e);
     });
 
     assignments.forEach((a) => {
       const aMs = new Date(a.dueDate).getTime();
       const diffDays = Math.max(0, Math.floor((aMs - startMs) / (1000 * 60 * 60 * 24)));
-      const w = Math.min(16, Math.max(1, Math.floor(diffDays / 7) + 1));
+      const w = Math.min(totalWeeks, Math.max(1, Math.floor(diffDays / 7) + 1));
       if (map[w]) map[w].tasks.push(a);
     });
 
     return map;
-  }, [semester, exams, assignments, weeks]);
+  }, [semester, exams, assignments, weeks, totalWeeks]);
 
   const currentWeekMilestones = milestonesByWeek[selectedWeek] || { exams: [], tasks: [] };
 
@@ -69,7 +85,7 @@ export function SemesterTimeline({
               <span>Hoja de Ruta del Semestre</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight mt-1">
-              Línea de 16 Semanas
+              Línea de {totalWeeks} Semanas
             </h2>
             <p className="text-xs text-[#e8e8ff] mt-1 max-w-xl">
               Visualiza en qué punto del semestre te encuentras y anticípate a las semanas de mayor densidad de entregas y parciales.
@@ -80,7 +96,7 @@ export function SemesterTimeline({
             <div className="bg-white/10 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/20 text-right">
               <div className="text-xs font-mono uppercase text-[#c5c5ff]">Semana Actual</div>
               <div className="text-2xl font-black text-white mt-0.5">
-                Semana {metrics.currentWeek} <span className="text-sm font-normal text-[#c5c5ff]">/ 16</span>
+                Semana {metrics.currentWeek} <span className="text-sm font-normal text-[#c5c5ff]">/ {totalWeeks}</span>
               </div>
               <div className="text-[11px] text-[#a0a0ff] font-mono mt-0.5">
                 {metrics.daysRemaining} días restantes para finalizar
@@ -102,18 +118,46 @@ export function SemesterTimeline({
         )}
       </div>
 
-      {/* Scrubber Horizontal de Semanas (1 a 16) */}
-      <div className="card-academic p-6 bg-[var(--surface)] border border-[var(--border)]">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-bold text-[var(--ink)]">
-            Explorar Semanas del Semestre
-          </h3>
-          <span className="text-xs text-[var(--muted)] font-mono">
-            Haz clic en una semana para ver sus hitos
-          </span>
+      {/* Scrubber Horizontal de Semanas */}
+      <div className="card-academic p-6 bg-[var(--surface)] border border-[var(--border)] transition-colors">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h3 className="text-sm font-bold text-[var(--ink)]">
+              Explorar Semanas del Semestre
+            </h3>
+            <span className="text-xs text-[var(--muted)] font-mono">
+              Haz clic en una semana para ver sus hitos y compromisos
+            </span>
+          </div>
+
+          {/* Control interactivo para aumentar o mermar semanas del semestre */}
+          <div className="flex items-center gap-2 bg-[var(--paper)] px-3 py-1.5 rounded-xl border border-[var(--border)]">
+            <span className="text-xs text-[var(--muted)] font-mono font-medium">Duración:</span>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => handleUpdateTotalWeeks(Math.max(8, totalWeeks - 1))}
+                disabled={totalWeeks <= 8}
+                className="w-6 h-6 rounded-lg bg-[var(--surface)] text-[var(--ink)] hover:bg-[#3b3abf] hover:text-white font-black text-xs flex items-center justify-center transition-colors cursor-pointer border border-[var(--border)] disabled:opacity-30 disabled:cursor-not-allowed shadow-2xs"
+                title="Reducir 1 semana al semestre"
+              >
+                -
+              </button>
+              <span className="font-mono font-bold text-xs text-[var(--ink)] min-w-[70px] text-center">
+                {totalWeeks} semanas
+              </span>
+              <button
+                onClick={() => handleUpdateTotalWeeks(Math.min(24, totalWeeks + 1))}
+                disabled={totalWeeks >= 24}
+                className="w-6 h-6 rounded-lg bg-[var(--surface)] text-[var(--ink)] hover:bg-[#3b3abf] hover:text-white font-black text-xs flex items-center justify-center transition-colors cursor-pointer border border-[var(--border)] disabled:opacity-30 disabled:cursor-not-allowed shadow-2xs"
+                title="Aumentar 1 semana al semestre"
+              >
+                +
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-4 sm:grid-cols-8 md:grid-cols-16 gap-2">
+        <div className="grid grid-cols-4 sm:grid-cols-8 md:grid-cols-12 lg:grid-cols-16 gap-2">
           {weeks.map((w) => {
             const isCurrent = metrics?.currentWeek === w;
             const isSelected = selectedWeek === w;

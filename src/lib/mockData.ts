@@ -22,9 +22,9 @@ import {
 } from './storage';
 
 // ═════════════════════════════════════════════════════════════
-// PERFIL REAL DEL ESTUDIANTE (Balance Académico Icesi)
+// PLANTILLA DEMOSTRATIVA (Icesi - Luis Ernesto Rodríguez)
 // ═════════════════════════════════════════════════════════════
-export const defaultProfile: Profile = {
+export const demoIcesiProfile: Profile = {
   id: 'user-luis-ernesto-rodriguez',
   name: 'Luis Ernesto Rodríguez Gurrute',
   studentCode: 'A00414805',
@@ -35,6 +35,22 @@ export const defaultProfile: Profile = {
   cohort: '202510',
   gpa: 4.3,
   email: 'luis.rodriguez14@u.icesi.edu.co',
+};
+
+// ═════════════════════════════════════════════════════════════
+// PERFIL INICIAL NEUTRAL (Para nuevos estudiantes)
+// ═════════════════════════════════════════════════════════════
+export const defaultProfile: Profile = {
+  id: 'user-estudiante-activo',
+  name: 'Estudiante',
+  studentCode: 'A00123456',
+  documentId: '',
+  university: 'Universidad Icesi',
+  program: 'Pregrado Universitario',
+  semesterNumber: 1,
+  cohort: '202610',
+  gpa: 4.5,
+  email: '',
 };
 
 // ═════════════════════════════════════════════════════════════
@@ -475,8 +491,8 @@ export async function resetDatabaseToDemo(): Promise<void> {
   const { db } = await import('./storage/database');
   await db.delete();
   await db.open();
-  await profileRepository.save(defaultProfile);
-  await profileRepository.setActiveProfile(defaultProfile.id);
+  await profileRepository.save(demoIcesiProfile);
+  await profileRepository.setActiveProfile(demoIcesiProfile.id);
   await semesterRepository.save(mockSemester);
   await subjectRepository.bulkSave(mockSubjects);
   await scheduleRepository.bulkSave(mockScheduleBlocks);
@@ -484,4 +500,38 @@ export async function resetDatabaseToDemo(): Promise<void> {
   await examRepository.bulkSave(mockExams);
   await assignmentRepository.bulkSave(mockAssignments);
   await attendanceRepository.bulkSave(mockAttendance);
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('mi_semestre_user_configured_v1');
+  }
+}
+
+export async function resetDatabaseToCleanSlate(): Promise<void> {
+  const { db } = await import('./storage/database');
+  await db.delete();
+  await db.open();
+  const cleanProfile: Profile = {
+    id: `user-${Date.now()}`,
+    name: 'Estudiante',
+    studentCode: 'A00123456',
+    university: 'Universidad Icesi',
+    program: 'Mi Carrera',
+    semesterNumber: 1,
+    gpa: 4.5,
+    email: '',
+  };
+  await profileRepository.save(cleanProfile);
+  await profileRepository.setActiveProfile(cleanProfile.id);
+  const cleanSemester: Semester = {
+    id: `sem-${Date.now()}`,
+    userId: cleanProfile.id,
+    name: 'Primer Semestre 2026',
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: new Date(Date.now() + 112 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    isActive: true,
+    totalWeeks: 16,
+  };
+  await semesterRepository.save(cleanSemester);
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('mi_semestre_user_configured_v1', 'true');
+  }
 }
