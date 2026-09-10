@@ -3,10 +3,19 @@
 import { useUIStore } from '@/stores/uiStore';
 import { useSemesterData } from '@/hooks/useSemesterData';
 import { calculateSemesterMetrics } from '@/lib/academic-engine';
-import { Clock, PlusCircle, Calendar, Upload, Play, Pause, Square, Sparkles } from 'lucide-react';
+import {
+  Calendar,
+  Clock,
+  Plus,
+  CloudUpload,
+  Play,
+  Pause,
+  Bell,
+  Sparkles,
+  Timer,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
-
 import { ThemeToggle } from '@/components/common/ThemeToggle';
 
 export function TopHeader() {
@@ -15,6 +24,7 @@ export function TopHeader() {
     openOnboarding,
     openAddTask,
     openAddExam,
+    openProfile,
     focusSession,
     tickFocusSession,
     togglePauseFocus,
@@ -22,14 +32,24 @@ export function TopHeader() {
     openFocusCompletion,
   } = useUIStore();
 
-  const { semester } = useSemesterData();
+  const { semester, profile } = useSemesterData();
   const [timeStr, setTimeStr] = useState('');
+  const [dateStr, setDateStr] = useState('');
 
   useEffect(() => {
     const update = () => {
+      const now = new Date();
       setTimeStr(
-        new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+        now.toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true })
       );
+      // Ej: Mié, 9 de sep. 2026
+      const formattedDate = now.toLocaleDateString('es-CO', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      });
+      setDateStr(formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1));
     };
     update();
     const id = setInterval(update, 1000);
@@ -57,116 +77,141 @@ export function TopHeader() {
       });
       stopFocusSession();
     }
-  }, [focusSession.isActive, focusSession.secondsRemaining, focusSession.totalMinutes, focusSession.taskId, focusSession.taskTitle, focusSession.subjectName, openFocusCompletion, stopFocusSession]);
-
-  const handleManualStop = () => {
-    const elapsedMinutes = Math.round((focusSession.totalMinutes * 60 - focusSession.secondsRemaining) / 60);
-    openFocusCompletion({
-      taskId: focusSession.taskId,
-      taskTitle: focusSession.taskTitle,
-      subjectName: focusSession.subjectName,
-      minutesPlanned: focusSession.totalMinutes,
-      minutesElapsed: Math.max(1, elapsedMinutes),
-    });
-    stopFocusSession();
-  };
+  }, [focusSession, openFocusCompletion, stopFocusSession]);
 
   const metrics = semester
     ? calculateSemesterMetrics({
         startDate: semester.startDate,
         endDate: semester.endDate,
       })
-    : null;
+    : { currentWeek: 6, totalWeeks: 16, progressPercentage: 37, daysRemaining: 68 };
 
-  const formatTimer = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
+  const studentName = profile?.name || 'Diego Rodríguez';
+  const initials = studentName
+    .split(' ')
+    .slice(0, 2)
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase();
 
   return (
-    <div className="sticky top-0 z-30 bg-[var(--surface)]/90 backdrop-blur-md border-b border-[var(--border)] transition-colors">
-      {/* Banner de Enfoque Activo si está corriendo */}
-      {focusSession.isActive && (
-        <div className="bg-[#1e1e8a] dark:bg-[#151738] text-white px-6 py-2 flex items-center justify-between text-xs font-semibold">
-          <div className="flex items-center gap-3">
-            <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-400 animate-ping" />
-            <span className="uppercase tracking-wider text-[#c5c5ff]">Sesión de Enfoque:</span>
-            <span className="font-mono text-sm font-bold bg-[#10103e] dark:bg-[#090a14] px-2 py-0.5 rounded border border-[#3b3abf]">
-              {formatTimer(focusSession.secondsRemaining)}
-            </span>
-            <span className="text-white/90 truncate max-w-md">
-              {focusSession.taskTitle} {focusSession.subjectName && `(${focusSession.subjectName})`}
-            </span>
+    <header className="sticky top-0 z-30 bg-white/95 dark:bg-[#0a0d20]/95 backdrop-blur-md border-b border-[#e2e6f2] dark:border-[#191f42] transition-colors">
+      <div className="px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-4">
+        {/* Lado Izquierdo: Fecha y Progreso Semestral */}
+        <div className="flex items-center gap-4 flex-wrap">
+          {/* Fecha y Hora en vivo */}
+          <div className="flex items-center gap-2.5 text-xs text-[#2c3258] dark:text-[#c4cbef]">
+            <div className="p-1 rounded-md bg-[#f0f3fa] dark:bg-[#141938] text-[#38418f] dark:text-[#8e98ec]">
+              <Calendar className="w-3.5 h-3.5" />
+            </div>
+            <div className="font-semibold">
+              <span className="text-[11px] text-[#69729a] dark:text-[#828cb8] block leading-none">
+                {dateStr || 'Mié, 9 de sep. 2026'}
+              </span>
+              <span className="text-xs font-black text-[#14193d] dark:text-white mt-0.5 block font-mono">
+                {timeStr || '6:24 p.m.'}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={togglePauseFocus}
-              className="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20 text-white text-xs font-medium flex items-center gap-1 cursor-pointer"
-            >
-              {focusSession.isPaused ? <Play className="w-3 h-3 text-emerald-400" /> : <Pause className="w-3 h-3 text-amber-300" />}
-              {focusSession.isPaused ? 'Reanudar' : 'Pausar'}
-            </button>
-            <button
-              onClick={handleManualStop}
-              className="px-2.5 py-1 rounded bg-rose-600/30 hover:bg-rose-600/50 text-rose-200 text-xs font-medium flex items-center gap-1 cursor-pointer"
-            >
-              <Square className="w-3 h-3" />
-              Finalizar
-            </button>
+
+          <div className="hidden md:block w-px h-6 bg-[#e2e6f2] dark:bg-[#202750]" />
+
+          {/* Barra de Progreso Semanal */}
+          <div className="hidden sm:flex items-center gap-3 text-xs">
+            <div className="text-[11px] font-bold text-[#14193d] dark:text-[#c4cbef]">
+              Semana {metrics.currentWeek} de {metrics.totalWeeks}
+            </div>
+            <div className="w-24 bg-[#e5e9f5] dark:bg-[#1b2247] h-1.5 rounded-full overflow-hidden">
+              <div
+                className="bg-[#2a30b0] dark:bg-[#5b64f5] h-full rounded-full transition-all"
+                style={{ width: `${metrics.progressPercentage}%` }}
+              />
+            </div>
+            <span className="text-[11px] font-mono font-bold text-[#626c96] dark:text-[#8894c7]">
+              {metrics.progressPercentage}%
+            </span>
           </div>
         </div>
-      )}
 
-      {/* Main Top Header Bar */}
-      <div className="px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {/* Mobile Brand (hidden on desktop because sidebar is visible) */}
-          <div className="flex md:hidden items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[#3b3abf] text-white flex items-center justify-center font-black text-xs shadow-sm">
-              MS
-            </div>
-            <div className="font-extrabold text-sm text-[var(--ink)]">
-              MI SEMESTRE<span className="text-[#3b3abf]">+</span>
-            </div>
-          </div>
-
-          <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-[var(--muted)] bg-[var(--paper)] px-3 py-1.5 rounded-full border border-[var(--border)]">
-            <Clock className="w-3.5 h-3.5 text-[#3b3abf]" />
-            <span className="font-bold text-[var(--ink)]">{timeStr || '16:00'}</span>
-          </div>
-
-          {metrics && (
-            <div className="hidden lg:flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300 font-semibold bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 px-3 py-1.5 rounded-full shadow-xs">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span>Semana {metrics.currentWeek} de {metrics.totalWeeks} ({metrics.progressPercentage}% completado)</span>
-            </div>
-          )}
-        </div>
-
+        {/* Lado Derecho: Enfoque, Acciones y Avatar */}
         <div className="flex items-center gap-2.5">
+          {/* Mini Enfoque Pomodoro Integrado */}
+          <div className="hidden lg:flex items-center gap-2 bg-[#f4f7fd] dark:bg-[#121636] px-3 py-1.5 rounded-xl border border-[#e2e6f2] dark:border-[#1e2552] text-xs">
+            <Timer className="w-3.5 h-3.5 text-[#3b43a8] dark:text-[#8e98ec]" />
+            <div className="text-left">
+              <div className="text-[9px] font-mono uppercase text-[#737da8] leading-none">Enfoque</div>
+              <div className="font-mono font-black text-xs text-[#14193d] dark:text-white">
+                {focusSession.isActive
+                  ? `${Math.floor(focusSession.secondsRemaining / 60)}:${(focusSession.secondsRemaining % 60).toString().padStart(2, '0')}`
+                  : '25:00'}
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                if (focusSession.isActive) {
+                  togglePauseFocus();
+                } else {
+                  useUIStore.getState().startFocusSession('Sesión Rápida', 'Enfoque', 25);
+                }
+              }}
+              className="w-6 h-6 rounded-full bg-[#202588] dark:bg-[#434bd8] text-white flex items-center justify-center hover:scale-105 transition-transform cursor-pointer ml-1"
+            >
+              {focusSession.isActive && !focusSession.isPaused ? (
+                <Pause className="w-2.5 h-2.5" />
+              ) : (
+                <Play className="w-2.5 h-2.5 fill-white ml-0.5" />
+              )}
+            </button>
+          </div>
+
           {/* Theme Toggle */}
           <ThemeToggle />
 
+          {/* Botón + Tarea */}
           <button
             onClick={openAddTask}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#1e1e8a] hover:bg-[#2828a8] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
-            title="Añadir Tarea"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#141938] hover:bg-[#f5f8ff] text-[#202758] dark:text-[#c4cbef] border border-[#d6dced] dark:border-[#222958] text-xs font-bold transition-all shadow-2xs cursor-pointer"
           >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span>+ Tarea</span>
+            <Plus className="w-3.5 h-3.5 text-[#2b32a0] dark:text-[#8e98ec]" />
+            <span>Tarea</span>
           </button>
 
+          {/* Botón + Parcial */}
+          <button
+            onClick={openAddExam}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#141938] hover:bg-[#f5f8ff] text-[#202758] dark:text-[#c4cbef] border border-[#d6dced] dark:border-[#222958] text-xs font-bold transition-all shadow-2xs cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5 text-[#2b32a0] dark:text-[#8e98ec]" />
+            <span>Parcial</span>
+          </button>
+
+          {/* Botón Importar Horario / Setup */}
           <button
             onClick={openOnboarding}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--surface)] hover:bg-[var(--paper)] text-[var(--ink)] border border-[var(--border)] text-xs font-bold transition-all shadow-xs cursor-pointer"
-            title="Configurar Semestre (IA / Plantillas / Cero)"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#0c102a] dark:bg-[#181d45] hover:bg-[#161c47] text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
           >
-            <Sparkles className="w-3.5 h-3.5 text-[#1e1e8a] dark:text-[#a0a0ff]" />
-            <span>Configurar</span>
+            <CloudUpload className="w-3.5 h-3.5 text-[#8e98ec]" />
+            <span className="hidden md:inline">Importar Horario</span>
           </button>
+
+          {/* Notificaciones */}
+          <button
+            className="p-2 rounded-xl text-[#6b76ad] hover:text-[#202758] dark:hover:text-white hover:bg-[#f0f3fa] dark:hover:bg-[#141938] transition-colors cursor-pointer"
+            title="Notificaciones"
+          >
+            <Bell className="w-4 h-4" />
+          </button>
+
+          {/* Avatar Header */}
+          <div
+            onClick={openProfile}
+            className="w-8 h-8 rounded-full bg-[#202588] text-white font-black text-xs flex items-center justify-center cursor-pointer shadow-xs border border-white/20"
+            title={studentName}
+          >
+            {initials}
+          </div>
         </div>
       </div>
-    </div>
+    </header>
   );
 }

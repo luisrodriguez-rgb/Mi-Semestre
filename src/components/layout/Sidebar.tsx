@@ -3,210 +3,158 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Clock,
+  Home,
   Calendar,
+  CheckSquare,
   AlertTriangle,
   Layers,
-  Sparkles,
-  PlusCircle,
-  RotateCcw,
-  User,
   GraduationCap,
-  Award,
-  CheckSquare,
+  Sparkles,
   Settings,
+  ChevronDown,
+  ListTodo,
+  Layers3,
 } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { useSemesterData } from '@/hooks/useSemesterData';
-import { resetDatabaseToDemo } from '@/lib/mockData';
 
 export function Sidebar() {
   const pathname = usePathname();
   const { openOnboarding, openAddTask, openAddExam, openProfile } = useUIStore();
-  const { profile, semester, refreshData } = useSemesterData();
+  const { profile, semester } = useSemesterData();
 
-  const handleReset = async () => {
-    if (confirm('¿Restablecer datos del semestre al estado inicial de demostración?')) {
-      await resetDatabaseToDemo();
-      await refreshData();
-      window.location.reload();
-    }
-  };
+  const isCurrent = (path: string) =>
+    pathname === path || (path === '/dashboard' && pathname === '/');
 
-  const isDashboard = pathname === '/dashboard' || pathname === '/';
+  const navItems = [
+    { href: '/dashboard', label: '¿Qué hago ahora?', icon: Home },
+    { href: '/schedule', label: 'Horario Semanal', icon: Calendar },
+    { href: '/dashboard#tareas', label: 'Tareas', icon: ListTodo },
+    { href: '/dashboard#evaluaciones', label: 'Evaluaciones', icon: CheckSquare },
+    { href: '/radar', label: 'Radar de Riesgo', icon: AlertTriangle },
+    { href: '/timeline', label: 'Línea de Semanas', icon: Layers },
+    { href: '/balance', label: 'Balance Académico', icon: GraduationCap },
+  ];
+
+  const studentName = profile?.name || 'Diego Rodríguez';
+  const studentProgram = profile?.program || 'Ingeniería de Sistemas';
+  const initials = studentName
+    .split(' ')
+    .slice(0, 2)
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase();
 
   return (
-    <aside className="hidden md:flex w-64 shrink-0 bg-[#16164f] dark:bg-[#0b0c1b] text-white flex-col justify-between border-r border-[#26266f] dark:border-[#1d1f3b] h-screen sticky top-0 overflow-y-auto transition-colors z-40">
-      {/* Top Header & Brand */}
+    <aside className="hidden md:flex w-64 shrink-0 bg-[#0c102a] dark:bg-[#070919] text-white flex-col justify-between border-r border-[#1e2348] h-screen sticky top-0 overflow-y-auto transition-colors z-40 select-none">
       <div>
-        <div className="p-5 border-b border-[#252570]/60">
-          <Link href="/dashboard" className="flex items-center gap-3 group">
-            <div className="w-9 h-9 rounded-xl bg-[#3b3abf] flex items-center justify-center shadow-md shadow-black/20 group-hover:scale-105 transition-transform">
-              <span className="font-black text-xs text-white">MS</span>
+        {/* Logo Superior CAMBAS+ ICESI */}
+        <div className="p-6 pb-5 flex items-center gap-3 border-b border-[#1b2046]/50">
+          <img
+            src="/logo.webp"
+            alt="CAMBAS+ ICESI"
+            className="w-9 h-9 rounded-xl object-contain shadow-md shadow-[#252ab8]/20"
+          />
+          <div>
+            <div className="font-black text-sm tracking-wider text-white flex items-center gap-1">
+              CAMBAS<span className="text-[#656cf5] font-black">+</span>
             </div>
-            <div>
-              <div className="font-black text-sm tracking-tight text-white flex items-center gap-1">
-                MI SEMESTRE<span className="text-[#a0a0ff]">+</span>
-              </div>
-              <div className="text-[10px] text-[#a0a0ff] font-mono truncate max-w-[150px]">
-                {semester?.name || 'Icesi · Semestre 2026-2'}
-              </div>
+            <div className="text-[10px] font-mono tracking-widest text-[#7a85b8] uppercase font-bold">
+              ICESI
             </div>
-          </Link>
+          </div>
         </div>
 
-        {/* ══════════════════════════════════════════════════════════
-            NAVEGACIÓN CATEGORIZADA: CENTRO · ORGANIZAR · ENTENDER
-           ══════════════════════════════════════════════════════════ */}
-        <div className="px-3 py-4 space-y-4">
-          {/* SECCIÓN 1: CENTRO */}
-          <div>
-            <div className="px-3 pb-1.5 text-[9px] font-mono uppercase tracking-widest text-[#7a7890] font-bold">
-              Centro
+        {/* Lista de Navegación Principal */}
+        <nav className="p-3 space-y-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = isCurrent(item.href);
+
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={`flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                  active
+                    ? 'bg-[#2b31a8] text-white shadow-md shadow-[#1b2046]/60 font-bold'
+                    : 'text-[#8b96c8] hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Icon className={`w-4 h-4 ${active ? 'text-white' : 'text-[#6b76ad]'}`} />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Sección "MI SEMESTRE" */}
+        <div className="px-4 pt-4">
+          <button
+            onClick={openOnboarding}
+            className="w-full flex items-center justify-between text-[10px] font-mono uppercase tracking-wider text-[#636f9e] font-bold pb-2 hover:text-[#9eaae0] transition-colors"
+          >
+            <span>MI SEMESTRE</span>
+            <ChevronDown className="w-3.5 h-3.5" />
+          </button>
+          <div
+            onClick={openOnboarding}
+            className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#141838]/60 hover:bg-[#191f48] border border-[#202758] transition-all cursor-pointer group"
+          >
+            <div className="w-6 h-6 rounded-lg bg-[#252ab8]/40 border border-[#3b41d0]/50 flex items-center justify-center text-[#8e97ff] text-[11px] font-mono font-bold">
+              S
             </div>
-            <Link
-              href="/dashboard"
-              className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                isDashboard
-                  ? 'bg-[#3b3abf] text-white shadow-md shadow-[#1a1a5e]/40'
-                  : 'text-[#c5c5ff] hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <Clock className={`w-4 h-4 ${isDashboard ? 'text-white' : 'text-[#7b7bff]'}`} />
-              <span>¿Qué hago ahora?</span>
-            </Link>
-          </div>
-
-          {/* SECCIÓN 2: ORGANIZAR */}
-          <div className="space-y-0.5">
-            <div className="px-3 pb-1.5 text-[9px] font-mono uppercase tracking-widest text-[#7a7890] font-bold">
-              Organizar
-            </div>
-            <Link
-              href="/schedule"
-              className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                pathname === '/schedule'
-                  ? 'bg-[#3b3abf] text-white shadow-md shadow-[#1a1a5e]/40'
-                  : 'text-[#c5c5ff] hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <Calendar className={`w-4 h-4 ${pathname === '/schedule' ? 'text-white' : 'text-[#7b7bff]'}`} />
-              <span>Horario Semanal</span>
-            </Link>
-
-            <button
-              onClick={openAddTask}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-[#c5c5ff] hover:text-white hover:bg-white/5 transition-all text-left cursor-pointer"
-            >
-              <CheckSquare className="w-4 h-4 text-[#7b7bff]" />
-              <span>+ Nueva Tarea</span>
-            </button>
-
-            <button
-              onClick={openAddExam}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-[#c5c5ff] hover:text-white hover:bg-white/5 transition-all text-left cursor-pointer"
-            >
-              <Award className="w-4 h-4 text-[#7b7bff]" />
-              <span>+ Nuevo Parcial</span>
-            </button>
-          </div>
-
-          {/* SECCIÓN 3: ENTENDER */}
-          <div className="space-y-0.5">
-            <div className="px-3 pb-1.5 text-[9px] font-mono uppercase tracking-widest text-[#7a7890] font-bold">
-              Entender
-            </div>
-            <Link
-              href="/radar"
-              className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                pathname === '/radar'
-                  ? 'bg-[#3b3abf] text-white shadow-md shadow-[#1a1a5e]/40'
-                  : 'text-[#c5c5ff] hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <AlertTriangle className={`w-4 h-4 ${pathname === '/radar' ? 'text-white' : 'text-[#7b7bff]'}`} />
-              <span>Radar de Riesgo</span>
-            </Link>
-
-            <Link
-              href="/timeline"
-              className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                pathname === '/timeline'
-                  ? 'bg-[#3b3abf] text-white shadow-md shadow-[#1a1a5e]/40'
-                  : 'text-[#c5c5ff] hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <Layers className={`w-4 h-4 ${pathname === '/timeline' ? 'text-white' : 'text-[#7b7bff]'}`} />
-              <span>Línea de Semanas</span>
-            </Link>
-
-            <Link
-              href="/balance"
-              className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                pathname === '/balance'
-                  ? 'bg-[#3b3abf] text-white shadow-md shadow-[#1a1a5e]/40'
-                  : 'text-[#c5c5ff] hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <GraduationCap className={`w-4 h-4 ${pathname === '/balance' ? 'text-white' : 'text-[#7b7bff]'}`} />
-              <span>Balance Académico</span>
-            </Link>
-          </div>
-
-          {/* SECCIÓN 4: CONFIGURAR */}
-          <div className="space-y-0.5">
-            <div className="px-3 pb-1.5 text-[9px] font-mono uppercase tracking-widest text-[#7a7890] font-bold">
-              Configurar
-            </div>
-            <button
-              onClick={openOnboarding}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-left cursor-pointer"
-            >
-              <div className="flex items-center gap-2.5">
-                <Sparkles className="w-4 h-4 text-amber-300" />
-                <span>Asistente IA</span>
+            <div className="min-w-0 text-left">
+              <div className="text-xs font-bold text-white group-hover:text-[#8e97ff] transition-colors truncate">
+                {semester?.name?.includes('Industrial') ? 'Semestre 2026-2' : 'Semestre 2026-2'}
               </div>
-              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-[#3b3abf] text-white font-bold">
-                SETUP
-              </span>
-            </button>
+              <div className="text-[10px] text-[#7a85b8] font-mono truncate">
+                {studentProgram}
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* User Card & Reset Footer */}
-      <div className="p-3 border-t border-[#252570]/60 space-y-2">
-        <button
-          onClick={handleReset}
-          className="w-full flex items-center justify-center gap-1.5 py-1 px-2 rounded-lg text-[10px] font-mono text-[#7a7890] hover:text-[#c5c5ff] hover:bg-white/5 transition-all"
-        >
-          <RotateCcw className="w-3 h-3" />
-          <span>Restablecer Demo</span>
-        </button>
-
-        <button
+      {/* Pie de Usuario y Branding */}
+      <div className="p-3 border-t border-[#1b2046]/50 space-y-3">
+        {/* Tarjeta Usuario */}
+        <div
           onClick={openProfile}
-          className="w-full text-left flex items-center justify-between p-2 rounded-xl bg-[#1e1e8a]/30 hover:bg-[#1e1e8a]/60 border border-[#3b3abf]/30 transition-all group cursor-pointer"
+          className="flex items-center justify-between p-2 rounded-xl bg-[#141838]/80 hover:bg-[#191f48] border border-[#202758] transition-all cursor-pointer group"
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-7 h-7 rounded-lg bg-[#3b3abf] text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0">
-              {(profile?.name || 'Luis Felipe')
-                .split(' ')
-                .slice(0, 2)
-                .map((n) => n[0])
-                .join('')}
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1e2380] to-[#3a42d8] border border-[#525bf4]/40 text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0">
+              {initials}
             </div>
             <div className="min-w-0">
-              <div className="text-xs font-bold text-white leading-tight group-hover:text-[#a0a0ff] transition-colors truncate">
-                {profile?.name || 'Luis Felipe R.'}
+              <div className="text-xs font-bold text-white group-hover:text-[#8e97ff] transition-colors truncate">
+                {studentName}
               </div>
-              <div className="text-[10px] font-mono text-[#a0a0ff] truncate">
-                {profile?.studentCode ? `${profile.studentCode} · Icesi` : 'A00414805 · Icesi'}
+              <div className="text-[10px] text-[#7a85b8] font-mono truncate">
+                {studentProgram}
               </div>
             </div>
           </div>
-          <User className="w-3.5 h-3.5 text-[#7b7bff] group-hover:text-white shrink-0" />
-        </button>
+          <Settings className="w-4 h-4 text-[#6b76ad] group-hover:text-white transition-colors shrink-0" />
+        </div>
+
+        {/* Footer CAMBAS+ ICESI */}
+        <div className="px-2 pt-1 flex items-center gap-2 text-[#56618e]">
+          <img
+            src="/logo.webp"
+            alt="CAMBAS+ ICESI"
+            className="w-4 h-4 rounded-md object-contain opacity-75"
+          />
+          <div>
+            <div className="text-[10px] font-bold font-mono tracking-wider uppercase text-[#6f7aa8]">
+              CAMBAS+ <span className="text-[9px] font-normal opacity-70">ICESI</span>
+            </div>
+            <div className="text-[9px] text-[#56618e] font-sans">
+              Tu semestre, en tus manos.
+            </div>
+          </div>
+        </div>
       </div>
     </aside>
   );
