@@ -6,6 +6,7 @@ import { useSemesterData } from '@/hooks/useSemesterData';
 import { assignmentRepository } from '@/lib/storage';
 import { Assignment, TaskPriority } from '@/types';
 import { X, PlusCircle } from 'lucide-react';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 
 export function AddTaskModal() {
   const { isAddTaskOpen, closeAddTask } = useUIStore();
@@ -75,51 +76,53 @@ export function AddTaskModal() {
 
           <div>
             <label className="block text-xs font-bold text-[var(--ink)] mb-1">Materia</label>
-            <select
-              value={subjectId || subjects[0]?.id}
-              onChange={(e) => setSubjectId(e.target.value)}
-              className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs text-[var(--ink)] focus:outline-none focus:border-[#3b3abf]"
-            >
-              {subjects.map((sub) => (
-                <option key={sub.id} value={sub.id}>
-                  {sub.name} ({sub.code})
-                </option>
-              ))}
-            </select>
+            <CustomSelect
+              className="w-full"
+              value={subjectId || subjects[0]?.id || ''}
+              onChange={(val) => setSubjectId(val)}
+              options={subjects.map((sub) => ({
+                value: sub.id,
+                label: sub.name,
+                sublabel: sub.code,
+                color: sub.color,
+              }))}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-[var(--ink)] mb-1">Tiempo Estimado</label>
-              <select
-                value={estimatedMinutes}
-                onChange={(e) => setEstimatedMinutes(Number(e.target.value))}
-                className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs text-[var(--ink)] focus:outline-none focus:border-[#3b3abf]"
-              >
-                <option value={15}>15 minutos</option>
-                <option value={30}>30 minutos</option>
-                <option value={45}>45 minutos</option>
-                <option value={60}>1 hora</option>
-                <option value={90}>1h 30m</option>
-                <option value={120}>2 horas</option>
-                <option value={180}>3 horas</option>
-              </select>
+              <CustomSelect
+                className="w-full"
+                value={String(estimatedMinutes)}
+                onChange={(val) => setEstimatedMinutes(Number(val))}
+                options={[
+                  { value: '15', label: '15 minutos' },
+                  { value: '30', label: '30 minutos' },
+                  { value: '45', label: '45 minutos' },
+                  { value: '60', label: '1 hora' },
+                  { value: '90', label: '1h 30m' },
+                  { value: '120', label: '2 horas' },
+                  { value: '180', label: '3 horas' },
+                ]}
+              />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-[var(--ink)] mb-1">Vence en</label>
-              <select
-                value={dueDays}
-                onChange={(e) => setDueDays(Number(e.target.value))}
-                className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs text-[var(--ink)] focus:outline-none focus:border-[#3b3abf]"
-              >
-                <option value={1}>Mañana</option>
-                <option value={2}>En 2 días</option>
-                <option value={3}>En 3 días</option>
-                <option value={4}>En 4 días</option>
-                <option value={7}>En 1 semana</option>
-                <option value={14}>En 2 semanas</option>
-              </select>
+              <CustomSelect
+                className="w-full"
+                value={String(dueDays)}
+                onChange={(val) => setDueDays(Number(val))}
+                options={[
+                  { value: '1', label: 'Mañana' },
+                  { value: '2', label: 'En 2 días' },
+                  { value: '3', label: 'En 3 días' },
+                  { value: '4', label: 'En 4 días' },
+                  { value: '7', label: 'En 1 semana' },
+                  { value: '14', label: 'En 2 semanas' },
+                ]}
+              />
             </div>
           </div>
 

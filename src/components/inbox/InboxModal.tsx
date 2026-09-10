@@ -19,6 +19,7 @@ import {
   Send,
   Loader2,
 } from 'lucide-react';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 
 export function InboxModal() {
   const { isInboxOpen, closeInbox } = useUIStore();
@@ -286,24 +287,25 @@ export function InboxModal() {
                           </div>
                           <div>
                             <label className="text-[10px] text-[var(--muted)] block">Materia</label>
-                            <select
+                            <CustomSelect
+                              className="w-full"
                               value={item.matchedSubjectId || ''}
-                              onChange={(e) => {
-                                const selected = subjects.find((s) => s.id === e.target.value);
+                              placeholder="Seleccionar materia..."
+                              onChange={(val) => {
+                                const selected = subjects.find((s) => s.id === val);
                                 handleUpdateItem(item.id, {
-                                  matchedSubjectId: e.target.value,
+                                  matchedSubjectId: val,
                                   subjectName: selected?.name || null,
                                 });
                               }}
-                              className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg p-1.5 text-xs text-[var(--ink)]"
-                            >
-                              <option value="">Seleccionar materia...</option>
-                              {subjects.map((s) => (
-                                <option key={s.id} value={s.id}>
-                                  {s.name} ({s.code})
-                                </option>
-                              ))}
-                            </select>
+                              options={subjects.map((s) => ({
+                                value: s.id,
+                                label: s.name,
+                                sublabel: s.code,
+                                color: s.color,
+                              }))}
+                              buttonClassName="p-1.5 text-xs rounded-lg"
+                            />
                           </div>
                           <div>
                             <label className="text-[10px] text-[var(--muted)] block">Fecha</label>

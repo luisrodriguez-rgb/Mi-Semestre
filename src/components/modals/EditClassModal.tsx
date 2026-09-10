@@ -6,6 +6,7 @@ import { useSemesterData } from '@/hooks/useSemesterData';
 import { scheduleRepository, subjectRepository } from '@/lib/storage';
 import { ScheduleBlock, Subject, DayOfWeek } from '@/types';
 import { X, Calendar, Trash2, Check, MapPin, BookOpen } from 'lucide-react';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 
 export function EditClassModal() {
   const { isEditClassOpen, editingScheduleBlock, closeEditClass } = useUIStore();
@@ -202,17 +203,17 @@ export function EditClassModal() {
               <label className="block text-xs font-bold text-[var(--ink)] mb-1">
                 Elegir materia existente o crear nueva
               </label>
-              <select
+              <CustomSelect
+                className="w-full"
                 value={subjectId}
-                onChange={(e) => handleSelectExistingSubject(e.target.value)}
-                className="w-full rounded-xl border border-[var(--border)] bg-[var(--paper)] px-3 py-2 text-xs text-[var(--ink)] focus:outline-none focus:border-[#3b3abf]"
-              >
-                {subjects.map((sub) => (
-                  <option key={sub.id} value={sub.id}>
-                    {sub.name} ({sub.code} {sub.nrc ? `· NRC ${sub.nrc}` : ''})
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => handleSelectExistingSubject(val)}
+                options={subjects.map((sub) => ({
+                  value: sub.id,
+                  label: sub.name,
+                  sublabel: `${sub.code}${sub.nrc ? ` · NRC ${sub.nrc}` : ''}`,
+                  color: sub.color,
+                }))}
+              />
             </div>
           )}
 

@@ -6,6 +6,7 @@ import { useSemesterData } from '@/hooks/useSemesterData';
 import { examRepository } from '@/lib/storage';
 import { Exam } from '@/types';
 import { X, Calendar } from 'lucide-react';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 
 export function AddExamModal() {
   const { isAddExamOpen, closeAddExam } = useUIStore();
@@ -73,17 +74,17 @@ export function AddExamModal() {
 
           <div>
             <label className="block text-xs font-bold text-[var(--ink)] mb-1">Materia</label>
-            <select
-              value={subjectId || subjects[0]?.id}
-              onChange={(e) => setSubjectId(e.target.value)}
-              className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs text-[var(--ink)] focus:outline-none focus:border-[#3b3abf]"
-            >
-              {subjects.map((sub) => (
-                <option key={sub.id} value={sub.id}>
-                  {sub.name} ({sub.code})
-                </option>
-              ))}
-            </select>
+            <CustomSelect
+              className="w-full"
+              value={subjectId || subjects[0]?.id || ''}
+              onChange={(val) => setSubjectId(val)}
+              options={subjects.map((sub) => ({
+                value: sub.id,
+                label: sub.name,
+                sublabel: sub.code,
+                color: sub.color,
+              }))}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -101,17 +102,18 @@ export function AddExamModal() {
 
             <div>
               <label className="block text-xs font-bold text-[var(--ink)] mb-1">Fecha del Examen</label>
-              <select
-                value={inDays}
-                onChange={(e) => setInDays(Number(e.target.value))}
-                className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs text-[var(--ink)] focus:outline-none focus:border-[#3b3abf]"
-              >
-                <option value={2}>En 2 días (Urgente)</option>
-                <option value={4}>En 4 días (Crítico)</option>
-                <option value={7}>En 1 semana</option>
-                <option value={14}>En 2 semanas</option>
-                <option value={21}>En 3 semanas</option>
-              </select>
+              <CustomSelect
+                className="w-full"
+                value={String(inDays)}
+                onChange={(val) => setInDays(Number(val))}
+                options={[
+                  { value: '2', label: 'En 2 días', badge: 'Urgente' },
+                  { value: '4', label: 'En 4 días', badge: 'Crítico' },
+                  { value: '7', label: 'En 1 semana' },
+                  { value: '14', label: 'En 2 semanas' },
+                  { value: '21', label: 'En 3 semanas' },
+                ]}
+              />
             </div>
           </div>
 

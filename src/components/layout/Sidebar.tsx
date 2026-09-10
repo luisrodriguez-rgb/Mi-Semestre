@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { useSemesterData } from '@/hooks/useSemesterData';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -101,17 +102,18 @@ export function Sidebar() {
           
           <div className="space-y-1.5">
             {allSemesters && allSemesters.length > 1 ? (
-              <select
+              <CustomSelect
+                className="w-full"
                 value={semester?.id || ''}
-                onChange={(e) => switchSemester(e.target.value)}
-                className="w-full text-xs font-bold text-white bg-[#141838] border border-[#202758] rounded-xl px-3 py-2 outline-none focus:border-[#656cf5] cursor-pointer"
-              >
-                {allSemesters.map((s) => (
-                  <option key={s.id} value={s.id} className="bg-[#0c102a] text-white">
-                    {s.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => switchSemester(val)}
+                options={allSemesters.map((s) => ({
+                  value: s.id,
+                  label: s.name,
+                  badge: s.isActive ? 'Activo' : undefined,
+                }))}
+                buttonClassName="bg-[#141838] border-[#202758] text-white hover:border-[#656cf5]"
+                menuClassName="bg-[#141838] border-[#202758] text-white"
+              />
             ) : (
               <div
                 onClick={openOnboarding}

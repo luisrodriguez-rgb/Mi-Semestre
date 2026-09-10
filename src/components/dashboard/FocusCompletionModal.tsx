@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useUIStore } from '@/stores/uiStore';
 import { assignmentRepository, studySessionRepository } from '@/lib/storage';
 import { CheckCircle2, Clock, Award, X, ArrowRight } from 'lucide-react';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 import confetti from 'canvas-confetti';
 
 export function FocusCompletionModal() {
@@ -156,18 +157,20 @@ export function FocusCompletionModal() {
                     <span className="font-semibold text-[var(--ink)]">
                       Tiempo estimado restante:
                     </span>
-                    <select
-                      value={remainingMinutes}
-                      onChange={(e) => setRemainingMinutes(Number(e.target.value))}
-                      className="bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] rounded-lg px-2 py-1 font-mono text-xs font-bold"
-                    >
-                      <option value={15}>15 minutos</option>
-                      <option value={30}>30 minutos</option>
-                      <option value={45}>45 minutos</option>
-                      <option value={60}>1 hora</option>
-                      <option value={90}>1h 30m</option>
-                      <option value={120}>2 horas</option>
-                    </select>
+                    <CustomSelect
+                      value={String(remainingMinutes)}
+                      onChange={(val) => setRemainingMinutes(Number(val))}
+                      options={[
+                        { value: '15', label: '15 minutos' },
+                        { value: '30', label: '30 minutos' },
+                        { value: '45', label: '45 minutos' },
+                        { value: '60', label: '1 hora' },
+                        { value: '90', label: '1h 30m' },
+                        { value: '120', label: '2 horas' },
+                      ]}
+                      align="right"
+                      buttonClassName="py-0.5 px-2 font-mono text-xs"
+                    />
                   </div>
                 )}
               </div>
