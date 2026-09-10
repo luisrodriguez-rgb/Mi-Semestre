@@ -58,25 +58,70 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error }, { status: 400 });
     }
 
-    // Fetch con timeout y límite de redirecciones
+    // Fetch seguro con validación manual de cada redirección (anti-SSRF en rebotes)
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
-      const response = await fetch(validatedUrl.toString(), {
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'MiSemestre-CalendarSync/1.0',
-          Accept: 'text/calendar, application/json, text/plain, */*',
-        },
-        redirect: 'follow',
-      });
+      let currentUrl = validatedUrl.toString();
+      let response: Response | null = null;
+      let redirectCount = 0;
+      const MAX_REDIRECTS = 3;
+
+      while (redirectCount <= MAX_REDIRECTS) {
+        response = await fetch(currentUrl, {
+          signal: controller.signal,
+          headers: {
+            'User-Agent': 'MiSemestre-CalendarSync/1.0',
+            Accept: 'text/calendar, application/json, text/plain, */*',
+          },
+          redirect: 'manual',
+        });
+
+        // Si es redirección (301, 302, 307, 308)
+        if ([301, 302, 303, 307, 308].includes(response.status)) {
+          redirectCount++;
+          if (redirectCount > MAX_REDIRECTS) {
+            clearTimeout(timeoutId);
+            return NextResponse.json(
+              { error: 'Demasiadas redirecciones consecutivas (máximo 3 permitidas).' },
+              { status: 508 }
+            );
+          }
+
+          const locationHeader = response.headers.get('location');
+          if (!locationHeader) {
+            clearTimeout(timeoutId);
+            return NextResponse.json(
+              { error: 'Redirección sin encabezado Location válido.' },
+              { status: 502 }
+            );
+          }
+
+          // Resolver URL relativa o absoluta y revalidar con isSafeUrl
+          const nextTarget = new URL(locationHeader, currentUrl);
+          const checkHop = isSafeUrl(nextTarget.toString());
+          if (!checkHop.safe || !checkHop.url) {
+            clearTimeout(timeoutId);
+            return NextResponse.json(
+              { error: `Redirección bloqueada por seguridad: ${checkHop.error}` },
+              { status: 403 }
+            );
+          }
+
+          currentUrl = checkHop.url.toString();
+          continue;
+        }
+
+        // Si no es redirección, rompemos el ciclo
+        break;
+      }
 
       clearTimeout(timeoutId);
 
-      if (!response.ok) {
+      if (!response || !response.ok) {
         return NextResponse.json(
-          { error: `El servidor del calendario respondió con error ${response.status}: ${response.statusText}` },
+          { error: `El servidor del calendario respondió con error ${response?.status || 502}: ${response?.statusText || 'Error de red'}` },
           { status: 502 }
         );
       }
