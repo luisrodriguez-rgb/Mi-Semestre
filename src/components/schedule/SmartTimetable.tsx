@@ -6,6 +6,7 @@ import {
   Subject,
   DayOfWeek,
   FixedRoutine,
+  RoutineType,
   Assignment,
   Exam,
   AttendanceRecord,
@@ -30,8 +31,99 @@ import {
   ChevronLeft,
   ChevronRight,
   Coffee,
+  Car,
+  Dumbbell,
+  Briefcase,
+  Moon,
   ArrowRight,
 } from 'lucide-react';
+
+function getOverlappingRoutinesLayout(dayRoutines: FixedRoutine[]) {
+  const sorted = [...dayRoutines].sort(
+    (a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime)
+  );
+
+  const clusters: FixedRoutine[][] = [];
+  sorted.forEach((r) => {
+    const rStart = timeToMinutes(r.startTime);
+    const rEnd = timeToMinutes(r.endTime);
+
+    const cluster = clusters.find((c) =>
+      c.some((item) => {
+        const itemStart = timeToMinutes(item.startTime);
+        const itemEnd = timeToMinutes(item.endTime);
+        return rStart < itemEnd && itemStart < rEnd;
+      })
+    );
+
+    if (cluster) {
+      cluster.push(r);
+    } else {
+      clusters.push([r]);
+    }
+  });
+
+  const layoutMap = new Map<string, { colIndex: number; totalCols: number }>();
+  clusters.forEach((cluster) => {
+    const totalCols = cluster.length;
+    cluster.forEach((item, index) => {
+      layoutMap.set(item.id, { colIndex: index, totalCols });
+    });
+  });
+
+  return layoutMap;
+}
+
+function getRoutineStyle(type?: RoutineType) {
+  switch (type) {
+    case 'commute':
+      return {
+        Icon: Car,
+        bg: 'bg-sky-50/90 dark:bg-sky-950/30',
+        border: 'border-sky-300/70 dark:border-sky-700/50',
+        text: 'text-sky-900 dark:text-sky-200',
+        iconColor: 'text-sky-600 dark:text-sky-400',
+        hover: 'hover:bg-sky-100/80',
+      };
+    case 'gym':
+      return {
+        Icon: Dumbbell,
+        bg: 'bg-emerald-50/90 dark:bg-emerald-950/30',
+        border: 'border-emerald-300/70 dark:border-emerald-700/50',
+        text: 'text-emerald-900 dark:text-emerald-200',
+        iconColor: 'text-emerald-600 dark:text-emerald-400',
+        hover: 'hover:bg-emerald-100/80',
+      };
+    case 'work':
+      return {
+        Icon: Briefcase,
+        bg: 'bg-indigo-50/90 dark:bg-indigo-950/30',
+        border: 'border-indigo-300/70 dark:border-indigo-700/50',
+        text: 'text-indigo-900 dark:text-indigo-200',
+        iconColor: 'text-indigo-600 dark:text-indigo-400',
+        hover: 'hover:bg-indigo-100/80',
+      };
+    case 'rest':
+      return {
+        Icon: Moon,
+        bg: 'bg-purple-50/90 dark:bg-purple-950/30',
+        border: 'border-purple-300/70 dark:border-purple-700/50',
+        text: 'text-purple-900 dark:text-purple-200',
+        iconColor: 'text-purple-600 dark:text-purple-400',
+        hover: 'hover:bg-purple-100/80',
+      };
+    case 'meal':
+    default:
+      return {
+        Icon: Coffee,
+        bg: 'bg-amber-50/90 dark:bg-amber-950/30',
+        border: 'border-amber-300/70 dark:border-amber-700/50',
+        text: 'text-amber-900 dark:text-amber-200',
+        iconColor: 'text-amber-600 dark:text-amber-400',
+        hover: 'hover:bg-amber-100/80',
+      };
+  }
+}
 
 interface SmartTimetableProps {
   classes: ScheduleBlock[];
@@ -361,7 +453,7 @@ export function SmartTimetable({
           </button>
 
           <button
-            onClick={openRoutineModal}
+            onClick={() => openRoutineModal()}
             className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[var(--paper)] hover:bg-[var(--surface-raised)] text-[var(--ink)] border border-[var(--border)] font-bold transition-all cursor-pointer shadow-2xs"
             title="Añadir bloque personal (almuerzo, gym, estudio)"
           >
@@ -553,23 +645,36 @@ export function SmartTimetable({
                           );
                         })}
 
-                      {/* 2. BLOQUES PERSONALES / RUTINAS (Franjas horizontales discretas) */}
+                      {/* 2. BLOQUES PERSONALES / RUTINAS (Franjas horizontales discretas con desolapamiento) */}
                       {typeFilter !== 'classes' &&
                         typeFilter !== 'slots' &&
-                        routines
-                          .filter((r) => r.dayOfWeek === day)
-                          .map((r) => {
+                        (() => {
+                          const dayRoutines = routines.filter((r) => r.dayOfWeek === day);
+                          const layoutMap = getOverlappingRoutinesLayout(dayRoutines);
+
+                          return dayRoutines.map((r) => {
                             const { top, height } = getTopAndHeight(r.startTime, r.endTime);
+                            const layout = layoutMap.get(r.id) || { colIndex: 0, totalCols: 1 };
+                            const colWidth = 100 / layout.totalCols;
+                            const left = layout.colIndex * colWidth;
+                            const styleInfo = getRoutineStyle(r.type);
+                            const RoutineIcon = styleInfo.Icon;
+
                             return (
                               <div
                                 key={`routine-${r.id}-${day}`}
-                                onClick={openRoutineModal}
-                                className="absolute inset-x-1 rounded-lg px-2 py-1 border border-amber-300/70 dark:border-amber-700/50 bg-amber-50/80 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 flex items-center justify-between overflow-hidden transition-all hover:bg-amber-100/80 cursor-pointer shadow-2xs"
-                                style={{ top, height }}
-                                title="Bloque personal (clic para editar)"
+                                onClick={() => openRoutineModal(r)}
+                                className={`absolute rounded-lg px-2 py-1 border ${styleInfo.border} ${styleInfo.bg} ${styleInfo.text} flex items-center justify-between overflow-hidden transition-all ${styleInfo.hover} cursor-pointer shadow-2xs`}
+                                style={{
+                                  top,
+                                  height,
+                                  left: layout.totalCols > 1 ? `calc(${left}% + 2px)` : '4px',
+                                  width: layout.totalCols > 1 ? `calc(${colWidth}% - 4px)` : 'calc(100% - 8px)',
+                                }}
+                                title={`${r.title} (${r.startTime} - ${r.endTime}) · Clic para editar`}
                               >
                                 <div className="flex items-center gap-1.5 truncate">
-                                  <Coffee className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
+                                  <RoutineIcon className={`w-3 h-3 ${styleInfo.iconColor} shrink-0`} />
                                   <span className="font-bold text-[10px] truncate">{r.title}</span>
                                 </div>
                                 <span className="text-[9px] font-mono opacity-80 shrink-0 ml-1">
@@ -577,7 +682,8 @@ export function SmartTimetable({
                                 </span>
                               </div>
                             );
-                          })}
+                          });
+                        })()}
 
                       {/* 3. BLOQUES DE CLASE (Nivel 1 con borde temático + Altura adaptativa) */}
                       {typeFilter !== 'slots' &&
@@ -850,22 +956,36 @@ export function SmartTimetable({
                       );
                     })}
 
-                {/* Rutinas en Vista Día */}
+                {/* Rutinas en Vista Día con desolapamiento */}
                 {typeFilter !== 'classes' &&
                   typeFilter !== 'slots' &&
-                  routines
-                    .filter((r) => r.dayOfWeek === activeDay)
-                    .map((r) => {
+                  (() => {
+                    const dayRoutines = routines.filter((r) => r.dayOfWeek === activeDay);
+                    const layoutMap = getOverlappingRoutinesLayout(dayRoutines);
+
+                    return dayRoutines.map((r) => {
                       const { top, height } = getTopAndHeight(r.startTime, r.endTime);
+                      const layout = layoutMap.get(r.id) || { colIndex: 0, totalCols: 1 };
+                      const colWidth = 100 / layout.totalCols;
+                      const left = layout.colIndex * colWidth;
+                      const styleInfo = getRoutineStyle(r.type);
+                      const RoutineIcon = styleInfo.Icon;
+
                       return (
                         <div
                           key={`day-routine-${r.id}`}
-                          onClick={openRoutineModal}
-                          className="absolute inset-x-3 rounded-xl px-3 py-1.5 border border-amber-300 dark:border-amber-700/50 bg-amber-50/90 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 flex items-center justify-between overflow-hidden cursor-pointer hover:bg-amber-100 transition-colors shadow-2xs"
-                          style={{ top, height }}
+                          onClick={() => openRoutineModal(r)}
+                          className={`absolute rounded-xl px-3 py-1.5 border ${styleInfo.border} ${styleInfo.bg} ${styleInfo.text} flex items-center justify-between overflow-hidden cursor-pointer ${styleInfo.hover} transition-colors shadow-2xs`}
+                          style={{
+                            top,
+                            height,
+                            left: layout.totalCols > 1 ? `calc(${left}% + 6px)` : '12px',
+                            width: layout.totalCols > 1 ? `calc(${colWidth}% - 12px)` : 'calc(100% - 24px)',
+                          }}
+                          title={`${r.title} (${r.startTime} - ${r.endTime}) · Clic para editar`}
                         >
                           <div className="flex items-center gap-2">
-                            <Coffee className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                            <RoutineIcon className={`w-3.5 h-3.5 ${styleInfo.iconColor}`} />
                             <span className="font-bold text-xs">{r.title}</span>
                           </div>
                           <span className="text-xs font-mono opacity-80">
@@ -873,7 +993,8 @@ export function SmartTimetable({
                           </span>
                         </div>
                       );
-                    })}
+                    });
+                  })()}
 
                 {/* Clases en Vista Día */}
                 {typeFilter !== 'slots' &&
@@ -1065,14 +1186,18 @@ export function SmartTimetable({
 
                       if (item.type === 'routine') {
                         const r = item.data;
+                        const styleInfo = getRoutineStyle(r.type);
+                        const RoutineIcon = styleInfo.Icon;
+
                         return (
                           <div
                             key={`agenda-routine-${r.id}-${idx}`}
-                            onClick={openRoutineModal}
-                            className="p-2.5 rounded-xl border border-amber-300/60 dark:border-amber-700/50 bg-amber-50/60 dark:bg-amber-950/20 text-amber-900 dark:text-amber-200 flex items-center justify-between cursor-pointer hover:bg-amber-100/70 transition-colors"
+                            onClick={() => openRoutineModal(r)}
+                            className={`p-2.5 rounded-xl border ${styleInfo.border} ${styleInfo.bg} ${styleInfo.text} flex items-center justify-between cursor-pointer ${styleInfo.hover} transition-colors`}
+                            title={`${r.title} (${r.startTime} – ${r.endTime}) · Clic para editar`}
                           >
                             <div className="flex items-center gap-2">
-                              <Coffee className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                              <RoutineIcon className={`w-3.5 h-3.5 ${styleInfo.iconColor}`} />
                               <span className="font-bold text-xs">{r.title}</span>
                               <span className="text-[10px] font-mono opacity-75">
                                 ({r.startTime} – {r.endTime})

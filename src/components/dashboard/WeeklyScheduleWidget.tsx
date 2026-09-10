@@ -60,6 +60,7 @@ interface DisplayBlock {
   subText?: string;
   durationLabel?: string;
   rawClass?: ScheduleBlock;
+  rawRoutine?: FixedRoutine;
   durationMinutes?: number;
 }
 
@@ -136,6 +137,7 @@ export function WeeklyScheduleWidget({
           colorBg: 'rgba(245, 158, 11, 0.12)',
           colorBorder: '#f59e0b',
           colorText: '#b45309',
+          rawRoutine: r,
         });
       });
     });
@@ -178,6 +180,10 @@ export function WeeklyScheduleWidget({
 
   const totalGridHours = 14; // 7:00 a 21:00
 
+  const uniqueSubjectsCount = useMemo(() => {
+    return new Set(classes.map((c) => c.subjectId)).size;
+  }, [classes]);
+
   return (
     <div className="rounded-2xl bg-white dark:bg-[#0f1330] border border-[#e2e6f2] dark:border-[#1c224b] p-5 shadow-xs transition-colors">
       {/* Cabecera del Widget con Título y Controles */}
@@ -188,7 +194,7 @@ export function WeeklyScheduleWidget({
             Horario semanal
           </h3>
           <span className="text-[10px] font-mono font-bold text-[#626c96] dark:text-[#8b95c2] ml-1 bg-[#f0f3fa] dark:bg-[#141838] px-2 py-0.5 rounded-full border border-[#e2e6f2] dark:border-[#1e2552]">
-            {classes.length} clases
+            {uniqueSubjectsCount} {uniqueSubjectsCount === 1 ? 'materia' : 'materias'} · {classes.length} {classes.length === 1 ? 'bloque' : 'bloques'}
           </span>
         </div>
 
@@ -274,6 +280,35 @@ export function WeeklyScheduleWidget({
 
               const dayBlocks = displayBlocks.filter((b) => b.day === d.dayNum);
 
+              // Resolver solapamientos entre bloques de rutina en este día
+              const routineBlocks = dayBlocks.filter((b) => b.type === 'routine');
+              const routineLayout = new Map<string, { colIndex: number; totalCols: number }>();
+              const clusters: (typeof routineBlocks)[] = [];
+
+              routineBlocks.forEach((r) => {
+                const rStart = r.startHourFraction;
+                const rEnd = r.startHourFraction + r.durationHours;
+                const cluster = clusters.find((c) =>
+                  c.some((item) => {
+                    const itemStart = item.startHourFraction;
+                    const itemEnd = item.startHourFraction + item.durationHours;
+                    return rStart < itemEnd && itemStart < rEnd;
+                  })
+                );
+                if (cluster) {
+                  cluster.push(r);
+                } else {
+                  clusters.push([r]);
+                }
+              });
+
+              clusters.forEach((cluster) => {
+                const total = cluster.length;
+                cluster.forEach((item, idx) => {
+                  routineLayout.set(item.id, { colIndex: idx, totalCols: total });
+                });
+              });
+
               return (
                 <div
                   key={d.dayNum}
@@ -322,14 +357,20 @@ export function WeeklyScheduleWidget({
                     }
 
                     if (block.type === 'routine') {
+                      const layout = routineLayout.get(block.id) || { colIndex: 0, totalCols: 1 };
+                      const colWidth = 100 / layout.totalCols;
+                      const left = layout.colIndex * colWidth;
+
                       return (
                         <div
                           key={block.id}
-                          onClick={openRoutineModal}
-                          className="absolute inset-x-1 rounded-lg p-1.5 border border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 shadow-2xs flex flex-col justify-start text-left overflow-hidden z-10 transition-transform hover:scale-[1.02] cursor-pointer"
+                          onClick={() => openRoutineModal(block.rawRoutine)}
+                          className="absolute rounded-lg p-1.5 border border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 shadow-2xs flex flex-col justify-start text-left overflow-hidden z-10 transition-transform hover:scale-[1.02] cursor-pointer"
                           style={{
                             top: `${topPct}%`,
                             height: `${heightPct}%`,
+                            left: layout.totalCols > 1 ? `calc(${left}% + 2px)` : '4px',
+                            width: layout.totalCols > 1 ? `calc(${colWidth}% - 4px)` : 'calc(100% - 8px)',
                           }}
                           title="Tiempo fijo personal (clic para gestionar)"
                         >
