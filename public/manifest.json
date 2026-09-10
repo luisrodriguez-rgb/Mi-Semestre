@@ -1,18 +1,24 @@
 {
-  "name": "Mi Semestre — Sistema Operativo del Semestre",
-  "short_name": "Mi Semestre",
+  "name": "CAMBAS+ ICESI — Sistema Operativo Estudiantil",
+  "short_name": "CAMBAS+",
   "description": "Tu centro de control académico inteligente: horario interactivo, cálculo de tiempo disponible y radar de riesgo.",
   "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#16164f",
-  "theme_color": "#16164f",
+  "background_color": "#0c102a",
+  "theme_color": "#0c102a",
   "orientation": "portrait-primary",
   "lang": "es-CO",
   "icons": [
     {
-      "src": "/favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.webp",
+      "sizes": "512x512",
+      "type": "image/webp"
     }
   ]
 }

@@ -38,6 +38,10 @@ export const metadata: Metadata = {
   ],
   creator: 'Luis Felipe Rodríguez',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/icon.png',
+    apple: '/icon.png',
+  },
   openGraph: {
     title: 'Mi Semestre — Sistema Operativo Personal del Semestre',
     description:
