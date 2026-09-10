@@ -4,8 +4,8 @@
 
 # Mi Semestre · Sistema Operativo Personal del Semestre
 
-**Centro de Control Académico Inteligente y Toma de Decisiones en Tiempo Real**  
-*Diseñado a medida para la vida universitaria en la Universidad Icesi.*
+> **Sistema operativo personal para gestionar un semestre universitario.**  
+> Entiende tu situación académica real y te dice qué hacer ahora mismo.
 
 [![Next.js 16](https://img.shields.io/badge/Next.js-16_(App_Router)-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![React 19](https://img.shields.io/badge/React-19-blue?style=for-the-badge&logo=react)](https://react.dev/)
@@ -13,7 +13,7 @@
 [![pnpm 11](https://img.shields.io/badge/Package_Manager-pnpm_11-F69220?style=for-the-badge&logo=pnpm)](https://pnpm.io/)
 [![Dexie.js](https://img.shields.io/badge/Storage-Local--First_(Dexie/IndexedDB)-00A86B?style=for-the-badge)](https://dexie.org/)
 [![Supabase](https://img.shields.io/badge/Cloud-Supabase_(PostgreSQL_+_RLS)-3ECF8E?style=for-the-badge&logo=supabase)](https://supabase.com/)
-[![Cyber Neo](https://img.shields.io/badge/Cyber_Neo_Security-9%2F100_(Low_Risk)-16a34a?style=for-the-badge&logo=shield)](file:///Users/leonfeliperodriguez/Desktop/Trabajos/Horario/cyber-neo-report.md)
+[![Security](https://img.shields.io/badge/Security-Hardened_(OWASP_Aligned)-16a34a?style=for-the-badge&logo=shield)](#6-seguridad-y-endurecimiento-t%C3%A9cnico)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
 <br/>
@@ -38,6 +38,17 @@ La pregunta crítica del estudiante nunca es *«¿A qué hora tengo clase?»*, s
 > **«Tengo 5 materias, parciales en 4 días, 3 talleres pendientes y un hueco de 1h 40m en el campus. ¿Me alcanza el tiempo? ¿Qué debería priorizar ahora mismo para no colapsar el fin de semana?»**
 
 **Mi Semestre** transforma el horario estático en un **Sistema Operativo de Decisión**: descuenta tiempos de traslado, rutinas de almuerzo y margen cognitivo, cruzando las horas libres reales con la urgencia causal de parciales y entregas para recomendar la mejor acción inmediata.
+
+### El Bucle de Decisión Académica
+
+```text
+CAPTURA   ──► Importa calendario externo (.ics) o pega cualquier mensaje caótico de WhatsApp.
+ENTIENDE  ──► Normaliza materias, tareas, parciales, clases y rutinas fijas con Zod.
+DECIDE    ──► Calcula disponibilidad neta, riesgo académico y prioridad causal.
+ACTÚA     ──► Propone con explicaciones auditables qué hacer en el hueco disponible.
+EJECUTA   ──► Inicia una sesión de foco (Pomodoro) vinculada directamente a esa decisión.
+RECALCULA ──► Al completar la sesión, actualiza el estado académico y ajusta el semestre.
+```
 
 ---
 
@@ -148,7 +159,33 @@ El informe completo de seguridad se encuentra disponible en:
 
 ---
 
-## 6. Instalación y Puesta en Marcha
+## 6. Seguridad y Endurecimiento Técnico (Security Hardening)
+
+El sistema implementa una arquitectura defensiva multicapa diseñada para proteger la privacidad del estudiante y blindar el servidor contra vectores comunes de explotación:
+
+* **Cabeceras HTTP de Protección ([next.config.ts](file:///Users/leonfeliperodriguez/Desktop/Trabajos/Horario/next.config.ts)):**
+  * `Strict-Transport-Security: max-age=31536000; includeSubDomains` (HSTS estricto de 1 año sin directiva `preload` prematura para evitar bloqueos operativos en staging).
+  * `X-Frame-Options: DENY` (prevención total de Clickjacking).
+  * `X-Content-Type-Options: nosniff` (mitigación de ataques de confusión MIME).
+  * `Referrer-Policy: strict-origin-when-cross-origin`.
+  * `Permissions-Policy: camera=(), microphone=(), geolocation=()`.
+  * `poweredByHeader: false` (ocultamiento de huella de Next.js).
+* **Defensa Anti-SSRF en Cada Salto ([/api/calendar/import-url](file:///Users/leonfeliperodriguez/Desktop/Trabajos/Horario/src/app/api/calendar/import-url/route.ts)):**
+  * Seguimiento de redirecciones manual (`redirect: 'manual'`) con re-validación de seguridad en cada salto previo a la conexión.
+  * Esquemas restringidos exclusivamente a `https://`.
+  * Bloqueo de rangos privados e interfaces internas: `127.0.0.1`, `localhost`, `::1` (IPv6), `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16` y `169.254.0.0/16` (metadatos cloud / link-local).
+  * Límite estricto de carga útil de 2 MB y corte por timeout a los 5.000 ms para frustrar ataques de denegación de servicio o DNS rebinding.
+* **Aislamiento de Secretos de IA:**
+  * El procesamiento del Buzón Inteligente reside exclusivamente en el Route Handler del servidor (`/api/ai/extract`). `GEMINI_API_KEY` nunca viaja al navegador ni se exige a los estudiantes.
+* **Arquitectura Local-First & Privacidad:**
+  * La base de datos primaria funciona 100% offline en el navegador mediante IndexedDB (Dexie.js).
+  * No existe rastreo ni recolección de datos personales por parte de servidores externos.
+* **Políticas Row Level Security (RLS) en Supabase:**
+  * Esquema PostgreSQL protegido donde cada tabla valida criptográficamente que `auth.uid() = user_id`, impidiendo lecturas o escrituras cruzadas entre usuarios.
+
+---
+
+## 7. Instalación y Puesta en Marcha
 
 ### Prerrequisitos
 * **Node.js 20+**
@@ -196,7 +233,7 @@ El informe completo de seguridad se encuentra disponible en:
 
 ---
 
-## 7. Scripts Disponibles
+## 8. Scripts Disponibles
 
 | Comando | Descripción |
 | :--- | :--- |
@@ -208,7 +245,7 @@ El informe completo de seguridad se encuentra disponible en:
 
 ---
 
-## 8. Despliegue en Producción
+## 9. Despliegue en Producción
 
 El proyecto está preparado para despliegue instantáneo en **Vercel** o cualquier infraestructura compatible con Next.js:
 
