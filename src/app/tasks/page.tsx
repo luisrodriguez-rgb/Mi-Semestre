@@ -15,6 +15,7 @@ import {
   Timer,
   Check,
 } from 'lucide-react';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 
 export default function TasksPage() {
   const { assignments, subjects, subjectsMap, refreshData, isLoading } = useSemesterData();
@@ -99,21 +100,25 @@ export default function TasksPage() {
       <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-xs text-xs transition-colors">
         <div className="flex flex-wrap items-center gap-2">
           {/* Selector de Materia */}
-          <div className="flex items-center gap-1.5 bg-[var(--paper)] px-3 py-1.5 rounded-xl border border-[var(--border)]">
-            <Filter className="w-3.5 h-3.5 text-[#3b3abf] dark:text-[#a0a0ff]" />
-            <select
-              value={filterSubject}
-              onChange={(e) => setFilterSubject(e.target.value)}
-              className="bg-transparent text-[var(--ink)] font-semibold outline-none cursor-pointer"
-            >
-              <option value="all">Todas las materias ({subjects.length})</option>
-              {subjects.map((sub) => (
-                <option key={sub.id} value={sub.id}>
-                  {sub.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <CustomSelect
+            value={filterSubject}
+            onChange={setFilterSubject}
+            options={[
+              {
+                value: 'all',
+                label: 'Todas las materias',
+                badge: String(subjects.length),
+              },
+              ...subjects.map((sub) => ({
+                value: sub.id,
+                label: sub.name,
+                sublabel: sub.code,
+                color: sub.color,
+              })),
+            ]}
+            icon={Filter}
+            buttonClassName="py-1.5"
+          />
 
           {/* Toggle de Estado */}
           <div className="flex items-center p-0.5 rounded-xl bg-[var(--paper)] border border-[var(--border)]">
