@@ -205,7 +205,7 @@ export function SmartTimetable({
       </div>
 
       {/* Cuadrícula del Horario Semanal */}
-      <div className="card-cambas overflow-hidden bg-[var(--surface)] border border-[var(--border)] transition-colors">
+      <div className="card-academic overflow-hidden bg-[var(--surface)] border border-[var(--border)] transition-colors">
         <div className="overflow-x-auto">
           <div className="min-w-[650px] sm:min-w-full">
             {/* Header de Columnas de Días */}
@@ -311,6 +311,33 @@ export function SmartTimetable({
                           </div>
                         );
                       })}
+
+                      {/* Renderizar RUTINAS / TIEMPOS FIJOS (Almuerzo, Gym, Transporte, etc.) */}
+                      {routines
+                        .filter(
+                          (r) =>
+                            r.dayOfWeek === day ||
+                            ((r as any).daysOfWeek && (r as any).daysOfWeek.includes(day))
+                        )
+                        .map((r) => {
+                          const { top, height } = getTopAndHeight(r.startTime, r.endTime);
+                          return (
+                            <div
+                              key={`routine-${r.id}-${day}`}
+                              onClick={openRoutineModal}
+                              className="absolute inset-x-1.5 rounded-xl p-2 shadow-2xs border border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 flex flex-col justify-between overflow-hidden transition-all hover:z-20 hover:scale-[1.02] cursor-pointer"
+                              style={{ top, height }}
+                              title="Tiempo fijo personal (clic para gestionar)"
+                            >
+                              <div className="font-bold text-xs leading-tight truncate">
+                                ⏱ {r.title || (r as any).name || 'Tiempo Fijo'}
+                              </div>
+                              <div className="text-[9px] font-mono opacity-80 truncate">
+                                {r.startTime} – {r.endTime}
+                              </div>
+                            </div>
+                          );
+                        })}
 
                       {/* Renderizar BLOQUES DE CLASE INTERACTIVOS */}
                       {dayClasses.map((c) => {

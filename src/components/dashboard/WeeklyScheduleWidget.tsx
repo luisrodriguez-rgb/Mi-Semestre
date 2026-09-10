@@ -1,13 +1,16 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Calendar, ChevronLeft, ChevronRight, Clock, Sparkles } from 'lucide-react';
-import { ScheduleBlock, Subject, DayOfWeek } from '@/types';
+import { Calendar, ChevronLeft, ChevronRight, Clock, Sparkles, Plus } from 'lucide-react';
+import { ScheduleBlock, Subject, DayOfWeek, FixedRoutine } from '@/types';
 import { useUIStore } from '@/stores/uiStore';
+import { calculateFreeSlots } from '@/lib/academic-engine/schedule/calculateFreeSlots';
+import { formatMinutesHuman } from '@/lib/academic-engine/utils/timeHelpers';
 
 interface WeeklyScheduleWidgetProps {
   classes: ScheduleBlock[];
   subjectsMap: Record<string, Subject>;
+  routines?: FixedRoutine[];
 }
 
 interface ScheduleDay {
@@ -45,248 +48,168 @@ const HOURS = [
 
 interface DisplayBlock {
   id: string;
-  type: 'class' | 'free_slot';
+  type: 'class' | 'free_slot' | 'routine';
   title: string;
   subtitle?: string;
   day: DayOfWeek;
-  startHourFraction: number; // e.g. 8.0 for 8:00, 9.5 for 9:30
+  startHourFraction: number; // e.g. 1.0 for 8:00
   durationHours: number;
   colorBg: string;
   colorBorder: string;
   colorText: string;
   subText?: string;
   durationLabel?: string;
+  rawClass?: ScheduleBlock;
+  durationMinutes?: number;
 }
 
-export function WeeklyScheduleWidget({ classes, subjectsMap }: WeeklyScheduleWidgetProps) {
-  const { startFocusSession } = useUIStore();
+export function WeeklyScheduleWidget({
+  classes = [],
+  subjectsMap = {},
+  routines = [],
+}: WeeklyScheduleWidgetProps) {
+  const { startFocusSession, openEditClass, openRoutineModal } = useUIStore();
   const [viewMode, setViewMode] = useState<'Semana' | 'Día'>('Semana');
   const [activeDay, setActiveDay] = useState<number>(2); // Martes 9
 
   // Helper para convertir "08:00" a fracción numérica relativa a 7:00 (base 0)
   const timeToGridOffset = (timeStr: string) => {
+    if (!timeStr) return 0;
     const [h, m] = timeStr.split(':').map(Number);
-    const hour24 = h < 7 ? h + 12 : h; // si es formato 12h
-    return hour24 + m / 60 - 7;
+    const hour24 = h < 7 ? h + 12 : h;
+    return Math.max(0, hour24 + (m || 0) / 60 - 7);
   };
 
   // Convertir duration en horas
   const getDurationHours = (start: string, end: string) => {
+    if (!start || !end) return 1.5;
     const [h1, m1] = start.split(':').map(Number);
     const [h2, m2] = end.split(':').map(Number);
-    const mTotal1 = (h1 < 7 ? h1 + 12 : h1) * 60 + m1;
-    const mTotal2 = (h2 < 7 ? h2 + 12 : h2) * 60 + m2;
-    return Math.max(0.8, (mTotal2 - mTotal1) / 60);
+    const mTotal1 = (h1 < 7 ? h1 + 12 : h1) * 60 + (m1 || 0);
+    const mTotal2 = (h2 < 7 ? h2 + 12 : h2) * 60 + (m2 || 0);
+    return Math.max(0.6, (mTotal2 - mTotal1) / 60);
   };
 
-  // Bloques de clase y huecos libres visuales fieles al mockup
+  // Bloques reales de clase, rutinas y huecos libres
   const displayBlocks: DisplayBlock[] = useMemo(() => {
-    // Si tenemos clases de la base de datos, mapeamos las que existan
-    // Y garantizamos la presencia de los huecos libres y materias emblemáticas
-    const result: DisplayBlock[] = [
-      // ─── LUNES 8 ───
-      {
-        id: 'lun-calc',
-        type: 'class',
-        title: 'Cálculo Multivariado',
-        subtitle: 'Aula 201 · Prof. Gómez',
-        day: 1,
-        startHourFraction: 1.0, // 8:00
-        durationHours: 1.8,
-        colorBg: '#dbeafe', // light blue
-        colorBorder: '#93c5fd',
-        colorText: '#1e40af',
-      },
-      {
-        id: 'lun-free-5pm',
-        type: 'free_slot',
-        title: 'HUECO LIBRE',
-        durationLabel: '1h 40m',
-        day: 1,
-        startHourFraction: 10.0, // 5:00 pm (17:00)
-        durationHours: 1.66,
-        colorBg: '#ecfdf5', // light green
-        colorBorder: '#a7f3d0',
-        colorText: '#065f46',
-      },
+    const result: DisplayBlock[] = [];
 
-      // ─── MARTES 9 (HOY) ───
-      {
-        id: 'mar-free-9am',
-        type: 'free_slot',
-        title: 'HUECO LIBRE',
-        durationLabel: '2h 10m',
-        day: 2,
-        startHourFraction: 1.0, // 8:00 - 10:10
-        durationHours: 2.16,
-        colorBg: '#ecfdf5',
-        colorBorder: '#a7f3d0',
-        colorText: '#065f46',
-      },
-      {
-        id: 'mar-ingles',
-        type: 'class',
-        title: 'Inglés Técnico',
-        subtitle: 'Aula 105 · Prof. Ruiz',
-        day: 2,
-        startHourFraction: 6.0, // 1:00 pm (13:00)
-        durationHours: 1.8,
-        colorBg: '#fef3c7', // light amber
-        colorBorder: '#fde68a',
-        colorText: '#92400e',
-      },
-      {
-        id: 'mar-estructuras',
-        type: 'class',
-        title: 'Estructuras de Datos',
-        subtitle: 'Aula 204 · Prof. Méndez',
-        day: 2,
-        startHourFraction: 7.0, // 2:00 pm (14:00)
-        durationHours: 1.8,
-        colorBg: '#dbeafe',
-        colorBorder: '#93c5fd',
-        colorText: '#1e40af',
-      },
+    // 1. Mapear clases de la base de datos
+    classes.forEach((c) => {
+      const sub = subjectsMap[c.subjectId];
+      const startOffset = timeToGridOffset(c.startTime);
+      const duration = getDurationHours(c.startTime, c.endTime);
 
-      // ─── MIÉRCOLES 10 ───
-      {
-        id: 'mie-fisica',
-        type: 'class',
-        title: 'Física Mecánica',
-        subtitle: 'Lab 3 · Prof. Torres',
-        day: 3,
-        startHourFraction: 1.0, // 8:00
-        durationHours: 1.8,
-        colorBg: '#ede9fe', // light purple
-        colorBorder: '#ddd6fe',
-        colorText: '#5b21b6',
-      },
-      {
-        id: 'mie-algebra',
-        type: 'class',
-        title: 'Álgebra Lineal',
-        subtitle: 'Aula 302 · Prof. Castro',
-        day: 3,
-        startHourFraction: 6.0, // 1:00 pm
-        durationHours: 1.8,
-        colorBg: '#ccfbf1', // light teal
-        colorBorder: '#99f6e4',
-        colorText: '#115e59',
-      },
-      {
-        id: 'mie-free-5pm',
-        type: 'free_slot',
-        title: 'HUECO LIBRE',
-        durationLabel: '2h 30m',
-        day: 3,
-        startHourFraction: 10.0, // 5:00 pm
-        durationHours: 2.5,
-        colorBg: '#ecfdf5',
-        colorBorder: '#a7f3d0',
-        colorText: '#065f46',
-      },
+      const color = sub?.color || '#3b3abf';
 
-      // ─── JUEVES 11 ───
-      {
-        id: 'jue-calc',
+      result.push({
+        id: `class-${c.id}`,
         type: 'class',
-        title: 'Cálculo Multivariado',
-        subtitle: 'Aula 201 · Prof. Gómez',
-        day: 4,
-        startHourFraction: 1.0, // 8:00
-        durationHours: 1.8,
-        colorBg: '#dbeafe',
-        colorBorder: '#93c5fd',
-        colorText: '#1e40af',
-      },
-      {
-        id: 'jue-ingles',
-        type: 'class',
-        title: 'Inglés Técnico',
-        subtitle: 'Aula 105 · Prof. Ruiz',
-        day: 4,
-        startHourFraction: 6.0, // 1:00 pm
-        durationHours: 1.8,
-        colorBg: '#fef3c7',
-        colorBorder: '#fde68a',
-        colorText: '#92400e',
-      },
-      {
-        id: 'jue-free-5pm',
-        type: 'free_slot',
-        title: 'HUECO LIBRE',
-        durationLabel: '1h 20m',
-        day: 4,
-        startHourFraction: 10.0, // 5:00 pm
-        durationHours: 1.33,
-        colorBg: '#ecfdf5',
-        colorBorder: '#a7f3d0',
-        colorText: '#065f46',
-      },
+        title: sub?.name || 'Clase',
+        subtitle: `${c.location || 'Campus'} · ${sub?.code || ''}`,
+        day: c.dayOfWeek,
+        startHourFraction: startOffset,
+        durationHours: duration,
+        colorBg: `${color}18`,
+        colorBorder: color,
+        colorText: color,
+        rawClass: c,
+      });
+    });
 
-      // ─── VIERNES 12 ───
-      {
-        id: 'vie-fisica',
-        type: 'class',
-        title: 'Física Mecánica',
-        subtitle: 'Lab 3 · Prof. Torres',
-        day: 5,
-        startHourFraction: 1.0, // 8:00
-        durationHours: 1.8,
-        colorBg: '#ede9fe',
-        colorBorder: '#ddd6fe',
-        colorText: '#5b21b6',
-      },
-      {
-        id: 'vie-estructuras',
-        type: 'class',
-        title: 'Estructuras de Datos',
-        subtitle: 'Aula 204 · Prof. Méndez',
-        day: 5,
-        startHourFraction: 6.0, // 1:00 pm
-        durationHours: 1.8,
-        colorBg: '#dbeafe',
-        colorBorder: '#93c5fd',
-        colorText: '#1e40af',
-      },
-      {
-        id: 'vie-free-5pm',
-        type: 'free_slot',
-        title: 'HUECO LIBRE',
-        durationLabel: '2h 00m',
-        day: 5,
-        startHourFraction: 10.0, // 5:00 pm
-        durationHours: 2.0,
-        colorBg: '#ecfdf5',
-        colorBorder: '#a7f3d0',
-        colorText: '#065f46',
-      },
-    ];
+    // 2. Mapear rutinas / tiempos fijos (almuerzo, gym, etc.)
+    routines.forEach((r) => {
+      const startOffset = timeToGridOffset(r.startTime);
+      const duration = getDurationHours(r.startTime, r.endTime);
+      const daysList: DayOfWeek[] = (r as any).daysOfWeek || (r.dayOfWeek ? [r.dayOfWeek] : []);
+      const rTitle = r.title || (r as any).name || 'Tiempo Fijo';
+
+      daysList.forEach((dayNum) => {
+        result.push({
+          id: `routine-${r.id}-${dayNum}`,
+          type: 'routine',
+          title: rTitle,
+          subtitle: r.type ? `Tiempo fijo · ${r.type}` : 'Tiempo fijo',
+          day: dayNum as DayOfWeek,
+          startHourFraction: startOffset,
+          durationHours: duration,
+          colorBg: 'rgba(245, 158, 11, 0.12)',
+          colorBorder: '#f59e0b',
+          colorText: '#b45309',
+        });
+      });
+    });
+
+    // 3. Calcular huecos libres reales por cada día
+    WEEK_DAYS.forEach((d) => {
+      try {
+        const freeSlots = calculateFreeSlots({
+          dayOfWeek: d.dayNum,
+          classes,
+          routines,
+          dayStart: '07:00',
+          dayEnd: '21:00',
+        });
+
+        freeSlots
+          .filter((s) => s.category === 'USABLE' && s.durationMinutes >= 45)
+          .forEach((slot, idx) => {
+            result.push({
+              id: `free-${d.dayNum}-${idx}`,
+              type: 'free_slot',
+              title: 'HUECO LIBRE',
+              durationLabel: formatMinutesHuman(slot.durationMinutes),
+              durationMinutes: slot.durationMinutes,
+              day: d.dayNum,
+              startHourFraction: timeToGridOffset(slot.startTime),
+              durationHours: Math.max(0.6, slot.durationMinutes / 60),
+              colorBg: '#ecfdf5',
+              colorBorder: '#a7f3d0',
+              colorText: '#065f46',
+            });
+          });
+      } catch (e) {
+        // Fallback en caso de cálculo
+      }
+    });
 
     return result;
-  }, []);
+  }, [classes, subjectsMap, routines]);
 
   const totalGridHours = 14; // 7:00 a 21:00
 
   return (
     <div className="rounded-2xl bg-white dark:bg-[#0f1330] border border-[#e2e6f2] dark:border-[#1c224b] p-5 shadow-xs transition-colors">
-      {/* Cabecera del widget */}
-      <div className="flex items-center justify-between pb-3.5 border-b border-[#f0f3fa] dark:border-[#181d42]">
+      {/* Cabecera del Widget con Título y Controles */}
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-3.5 border-b border-[#f0f3fa] dark:border-[#181d42]">
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-[#3b43a8] dark:text-[#8e98ec]" />
           <h3 className="text-sm font-bold text-[#0f1330] dark:text-white tracking-tight">
             Horario semanal
           </h3>
+          <span className="text-[10px] font-mono font-bold text-[#626c96] dark:text-[#8b95c2] ml-1 bg-[#f0f3fa] dark:bg-[#141838] px-2 py-0.5 rounded-full border border-[#e2e6f2] dark:border-[#1e2552]">
+            {classes.length} clases
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Switch Semana | Día */}
-          <div className="flex items-center bg-[#f0f3fa] dark:bg-[#141838] p-0.5 rounded-xl border border-[#e2e6f2] dark:border-[#1e2552]">
+          {/* Botón rápido para añadir clase */}
+          <button
+            onClick={() => openEditClass()}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#3b3abf] hover:bg-[#2828a8] text-white text-xs font-bold transition-all shadow-2xs cursor-pointer"
+            title="Añadir clase al horario"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Clase</span>
+          </button>
+
+          {/* Toggle Semana / Día */}
+          <div className="flex items-center p-0.5 rounded-lg bg-[#f0f3fa] dark:bg-[#141838] text-xs font-medium">
             <button
               onClick={() => setViewMode('Semana')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`px-2.5 py-0.5 rounded-md transition-all cursor-pointer ${
                 viewMode === 'Semana'
-                  ? 'bg-[#0c102a] text-white shadow-xs'
+                  ? 'bg-white dark:bg-[#202758] text-[#0c102a] dark:text-white font-bold shadow-2xs'
                   : 'text-[#626c96] hover:text-[#0c102a] dark:hover:text-white'
               }`}
             >
@@ -294,65 +217,50 @@ export function WeeklyScheduleWidget({ classes, subjectsMap }: WeeklyScheduleWid
             </button>
             <button
               onClick={() => setViewMode('Día')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`px-2.5 py-0.5 rounded-md transition-all cursor-pointer ${
                 viewMode === 'Día'
-                  ? 'bg-[#0c102a] text-white shadow-xs'
+                  ? 'bg-white dark:bg-[#202758] text-[#0c102a] dark:text-white font-bold shadow-2xs'
                   : 'text-[#626c96] hover:text-[#0c102a] dark:hover:text-white'
               }`}
             >
               Día
             </button>
           </div>
-
-          {/* Navegación < > */}
-          <div className="flex items-center gap-0.5">
-            <button
-              className="p-1 rounded-lg text-[#626c96] hover:bg-[#f0f3fa] dark:hover:bg-[#141838] transition-colors cursor-pointer"
-              title="Semana anterior"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              className="p-1 rounded-lg text-[#626c96] hover:bg-[#f0f3fa] dark:hover:bg-[#141838] transition-colors cursor-pointer"
-              title="Semana siguiente"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
         </div>
       </div>
 
-      {/* Grid del horario con scroll horizontal en móviles */}
+      {/* Grid del horario con scroll horizontal */}
       <div className="overflow-x-auto mt-3">
         <div className="min-w-[580px]">
           {/* Fila de Días */}
-          <div className="grid grid-cols-[48px_repeat(6,1fr)] border-b border-[#f0f3fa] dark:border-[#181d42] pb-2 text-center text-xs">
+          <div className="grid grid-cols-[56px_repeat(6,1fr)] border-b border-[#f0f3fa] dark:border-[#181d42] pb-2 text-center text-xs">
             <div className="text-[10px] font-mono text-[#8b95c2]"></div>
             {WEEK_DAYS.map((d) => {
-              const isToday = d.dayNum === 2; // Martes 9 activo en el mockup
+              const isToday = d.dayNum === activeDay;
               return (
                 <div key={d.dayNum} className="flex justify-center px-1">
-                  <div
-                    className={`py-1 px-3 rounded-lg text-xs font-bold transition-all ${
+                  <button
+                    onClick={() => setActiveDay(d.dayNum)}
+                    className={`py-1 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                       isToday
-                        ? 'bg-[#0c102a] text-white shadow-xs'
-                        : 'text-[#505a88] dark:text-[#a0a8d6]'
+                        ? 'bg-[#0c102a] dark:bg-[#252ab8] text-white shadow-xs'
+                        : 'text-[#505a88] dark:text-[#a0a8d6] hover:bg-[#f0f3fa] dark:hover:bg-[#141838]'
                     }`}
                   >
                     <span>{d.name} </span>
                     <span className="font-mono">{d.dayOfMonth}</span>
-                  </div>
+                  </button>
                 </div>
               );
             })}
           </div>
 
           {/* Cuerpo del Timetable con las horas y los bloques */}
-          <div className="relative grid grid-cols-[48px_repeat(6,1fr)] h-[560px] bg-white dark:bg-[#0f1330] mt-1">
+          <div className="relative grid grid-cols-[56px_repeat(6,1fr)] h-[460px] bg-white dark:bg-[#0f1330] mt-1">
             {/* Eje de Horas en el borde izquierdo */}
             <div className="flex flex-col justify-between py-1 text-[10px] font-mono text-[#8b95c2] border-r border-[#f0f3fa] dark:border-[#181d42] select-none pr-2 text-right">
               {HOURS.map((h, i) => (
-                <span key={i} className="leading-none">
+                <span key={i} className="leading-none whitespace-nowrap">
                   {h}
                 </span>
               ))}
@@ -360,7 +268,12 @@ export function WeeklyScheduleWidget({ classes, subjectsMap }: WeeklyScheduleWid
 
             {/* Columnas para cada día */}
             {WEEK_DAYS.map((d) => {
+              if (viewMode === 'Día' && d.dayNum !== activeDay) {
+                return null;
+              }
+
               const dayBlocks = displayBlocks.filter((b) => b.day === d.dayNum);
+
               return (
                 <div
                   key={d.dayNum}
@@ -375,7 +288,7 @@ export function WeeklyScheduleWidget({ classes, subjectsMap }: WeeklyScheduleWid
                     />
                   ))}
 
-                  {/* Renderizar bloques de clase y huecos libres */}
+                  {/* Renderizar bloques de clase, rutinas y huecos libres */}
                   {dayBlocks.map((block) => {
                     const topPct = (block.startHourFraction / totalGridHours) * 100;
                     const heightPct = (block.durationHours / totalGridHours) * 100;
@@ -385,7 +298,11 @@ export function WeeklyScheduleWidget({ classes, subjectsMap }: WeeklyScheduleWid
                         <div
                           key={block.id}
                           onClick={() =>
-                            startFocusSession('Estudio en hueco disponible', 'Auto-enfoque', 45)
+                            startFocusSession(
+                              'Estudio en hueco disponible',
+                              'Auto-enfoque',
+                              block.durationMinutes || 45
+                            )
                           }
                           className="absolute inset-x-1 rounded-lg p-1.5 border border-emerald-300 dark:border-emerald-700/60 bg-[#ecfdf5] dark:bg-[#072515]/60 flex flex-col justify-center items-start text-left cursor-pointer hover:scale-[1.02] hover:shadow-xs transition-transform z-10"
                           style={{
@@ -404,10 +321,35 @@ export function WeeklyScheduleWidget({ classes, subjectsMap }: WeeklyScheduleWid
                       );
                     }
 
+                    if (block.type === 'routine') {
+                      return (
+                        <div
+                          key={block.id}
+                          onClick={openRoutineModal}
+                          className="absolute inset-x-1 rounded-lg p-1.5 border border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 shadow-2xs flex flex-col justify-start text-left overflow-hidden z-10 transition-transform hover:scale-[1.02] cursor-pointer"
+                          style={{
+                            top: `${topPct}%`,
+                            height: `${heightPct}%`,
+                          }}
+                          title="Tiempo fijo personal (clic para gestionar)"
+                        >
+                          <div className="text-[10px] font-black leading-tight truncate">
+                            ⏱ {block.title}
+                          </div>
+                          {block.subtitle && (
+                            <div className="text-[9px] font-medium opacity-85 truncate mt-0.5">
+                              {block.subtitle}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+
                     return (
                       <div
                         key={block.id}
-                        className="absolute inset-x-1 rounded-lg p-1.5 border shadow-2xs flex flex-col justify-start text-left overflow-hidden z-10 transition-transform hover:scale-[1.02]"
+                        onClick={() => block.rawClass && openEditClass(block.rawClass)}
+                        className="absolute inset-x-1 rounded-lg p-1.5 border shadow-2xs flex flex-col justify-start text-left overflow-hidden z-10 transition-transform hover:scale-[1.02] cursor-pointer hover:shadow-md group"
                         style={{
                           top: `${topPct}%`,
                           height: `${heightPct}%`,
@@ -415,9 +357,13 @@ export function WeeklyScheduleWidget({ classes, subjectsMap }: WeeklyScheduleWid
                           borderColor: block.colorBorder,
                           color: block.colorText,
                         }}
+                        title="Clic para editar esta clase o materia"
                       >
-                        <div className="text-[10px] font-black leading-tight truncate">
-                          {block.title}
+                        <div className="text-[10px] font-black leading-tight truncate flex items-center justify-between">
+                          <span className="truncate">{block.title}</span>
+                          <span className="text-[8px] opacity-0 group-hover:opacity-100 font-mono transition-opacity">
+                            ✎
+                          </span>
                         </div>
                         {block.subtitle && (
                           <div className="text-[9px] font-medium opacity-85 truncate mt-0.5">
@@ -431,13 +377,26 @@ export function WeeklyScheduleWidget({ classes, subjectsMap }: WeeklyScheduleWid
               );
             })}
 
-            {/* Línea horizontal de tiempo actual (6:24 p.m. = 18:24 = offset 11.4h) */}
+            {/* Línea horizontal de tiempo actual dinámica */}
             <div
               className="absolute inset-x-0 border-t-2 border-rose-500 z-20 pointer-events-none flex items-center"
-              style={{ top: '78%' }}
+              style={{
+                top: `${Math.min(
+                  96,
+                  Math.max(
+                    4,
+                    (((new Date().getHours() + new Date().getMinutes() / 60 - 7) / totalGridHours) *
+                      100)
+                  )
+                )}%`,
+              }}
             >
               <span className="absolute left-0 -translate-y-1/2 px-1 py-0.2 rounded bg-rose-500 text-white font-mono text-[8px] font-black shadow-2xs">
-                6:24 p.m.
+                {new Date().toLocaleTimeString('es-CO', {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  hour12: true,
+                })}
               </span>
             </div>
           </div>

@@ -45,7 +45,7 @@ export function RiskCard({ risk, onPlanStudy }: RiskCardProps) {
 
   return (
     <div
-      className={`card-cambas-interactive p-5 flex flex-col justify-between border ${style.cardBorder} transition-colors`}
+      className={`card-academic-interactive p-5 flex flex-col justify-between border ${style.cardBorder} transition-colors`}
     >
       <div>
         {/* Header con Badge Tipográfico y Score Cuantificable */}

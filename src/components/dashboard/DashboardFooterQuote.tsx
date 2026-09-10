@@ -21,11 +21,11 @@ export function DashboardFooterQuote() {
 
       <div className="flex items-center gap-2 text-[10px] font-mono tracking-widest text-[#7a85b8] uppercase font-bold shrink-0">
         <img
-          src="/logo.webp"
-          alt="CAMBAS+"
+          src="/icon.png"
+          alt="Mi Semestre"
           className="w-4 h-4 rounded-md object-contain"
         />
-        <span>CAMBAS<span className="text-[#3b43a8] dark:text-[#8e98ec] font-black">+</span> ICESI</span>
+        <span>MI SEMESTRE <span className="text-[#3b43a8] dark:text-[#8e98ec] font-black">|</span> ICESI</span>
       </div>
     </footer>
   );

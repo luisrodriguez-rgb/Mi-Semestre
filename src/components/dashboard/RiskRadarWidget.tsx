@@ -82,7 +82,7 @@ export function RiskRadarWidget({ subjects }: RiskRadarWidgetProps) {
   };
 
   return (
-    <div className="rounded-2xl bg-white dark:bg-[#0f1330] border border-[#e2e6f2] dark:border-[#1c224b] p-5 shadow-xs transition-colors flex flex-col justify-between">
+    <div className="rounded-2xl bg-white dark:bg-[#0f1330] border border-[#e2e6f2] dark:border-[#1c224b] p-5 shadow-xs transition-colors flex flex-col justify-between h-full">
       <div>
         {/* Cabecera */}
         <div className="flex items-center justify-between pb-3.5 border-b border-[#f0f3fa] dark:border-[#181d42]">
@@ -102,7 +102,7 @@ export function RiskRadarWidget({ subjects }: RiskRadarWidgetProps) {
         </div>
 
         {/* Lista de Materias con Indicador Vertical */}
-        <div className="mt-4 space-y-3">
+        <div className="mt-3.5 space-y-2.5">
           {items.map((item) => (
             <Link
               key={item.id}
@@ -136,6 +136,21 @@ export function RiskRadarWidget({ subjects }: RiskRadarWidgetProps) {
             </Link>
           ))}
         </div>
+      </div>
+
+      {/* Síntesis de Salud del Semestre */}
+      <div className="mt-4 p-3 rounded-xl bg-[#f8faff] dark:bg-[#141838] border border-[#e2e6f2] dark:border-[#1c224b] flex items-center justify-between text-xs">
+        <div>
+          <div className="font-bold text-[#0f1330] dark:text-white">
+            Salud del semestre
+          </div>
+          <div className="text-[11px] text-[#626c96] dark:text-[#8b95c2] mt-0.5">
+            5 materias · 2 requieren atención
+          </div>
+        </div>
+        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/20">
+          Atención
+        </span>
       </div>
     </div>
   );

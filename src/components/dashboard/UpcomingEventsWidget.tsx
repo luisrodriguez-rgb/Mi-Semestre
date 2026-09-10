@@ -1,71 +1,25 @@
 'use client';
 
 import Link from 'next/link';
-import { Calendar, ArrowRight } from 'lucide-react';
+import { Calendar, ArrowRight, Plus } from 'lucide-react';
 import { Exam } from '@/types';
+import { useSemesterData } from '@/hooks/useSemesterData';
+import { useUIStore } from '@/stores/uiStore';
 
 interface UpcomingEventsWidgetProps {
   exams?: Exam[];
 }
 
-interface EventItem {
-  id: string;
-  day: string;
-  month: string;
-  title: string;
-  timeAndPlace: string;
-  type: 'Examen' | 'Tarea' | 'Taller';
-}
+export function UpcomingEventsWidget({ exams: propExams }: UpcomingEventsWidgetProps) {
+  const { openAddExam } = useUIStore();
+  const { exams: hookExams, subjectsMap } = useSemesterData();
 
-const DEFAULT_EVENTS: EventItem[] = [
-  {
-    id: 'ev-1',
-    day: '11',
-    month: 'SEP',
-    title: 'Parcial - Cálculo Multivariado',
-    timeAndPlace: '8:00 a.m. · Aula 201',
-    type: 'Examen',
-  },
-  {
-    id: 'ev-2',
-    day: '12',
-    month: 'SEP',
-    title: 'Entrega - Informe Laboratorio',
-    timeAndPlace: '4:00 p.m. · Plataforma',
-    type: 'Tarea',
-  },
-  {
-    id: 'ev-3',
-    day: '18',
-    month: 'SEP',
-    title: 'Taller - Física Mecánica',
-    timeAndPlace: '10:00 a.m. · Lab 3',
-    type: 'Taller',
-  },
-  {
-    id: 'ev-4',
-    day: '25',
-    month: 'SEP',
-    title: 'Parcial - Estructuras de Datos',
-    timeAndPlace: '2:00 p.m. · Aula 204',
-    type: 'Examen',
-  },
-];
+  const examsList = propExams && propExams.length > 0 ? propExams : hookExams;
 
-export function UpcomingEventsWidget({ exams }: UpcomingEventsWidgetProps) {
-  const events = DEFAULT_EVENTS;
-
-  const getTypeStyle = (type: EventItem['type']) => {
-    switch (type) {
-      case 'Examen':
-        return 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20';
-      case 'Tarea':
-        return 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20';
-      case 'Taller':
-      default:
-        return 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20';
-    }
-  };
+  // Ordenar los exámenes por fecha más cercana
+  const sortedExams = [...examsList]
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(0, 4);
 
   return (
     <div className="rounded-2xl bg-white dark:bg-[#0f1330] border border-[#e2e6f2] dark:border-[#1c224b] p-5 shadow-xs transition-colors">
@@ -74,11 +28,14 @@ export function UpcomingEventsWidget({ exams }: UpcomingEventsWidgetProps) {
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-[#3b43a8] dark:text-[#8e98ec]" />
           <h3 className="text-sm font-bold text-[#0f1330] dark:text-white tracking-tight">
-            Próximos eventos
+            Próximos exámenes
           </h3>
+          <span className="text-[10px] font-mono font-bold text-[#626c96] dark:text-[#8b95c2] ml-1 bg-[#f0f3fa] dark:bg-[#141838] px-2 py-0.5 rounded-full border border-[#e2e6f2] dark:border-[#1e2552]">
+            {examsList.length} parciales
+          </span>
         </div>
         <Link
-          href="/dashboard#evaluaciones"
+          href="/exams"
           className="text-xs font-semibold text-[#3b43a8] dark:text-[#8e98ec] hover:underline flex items-center gap-0.5"
         >
           <span>Ver todos</span>
@@ -88,42 +45,64 @@ export function UpcomingEventsWidget({ exams }: UpcomingEventsWidgetProps) {
 
       {/* Lista de eventos */}
       <div className="mt-3.5 space-y-2.5">
-        {events.map((ev) => (
-          <div
-            key={ev.id}
-            className="flex items-center justify-between p-2 rounded-xl hover:bg-[#f8faff] dark:hover:bg-[#141838] transition-colors"
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              {/* Caja de fecha */}
-              <div className="w-10 h-10 rounded-xl bg-[#f0f3fa] dark:bg-[#161c42] border border-[#e2e6f2] dark:border-[#22295a] flex flex-col items-center justify-center shrink-0">
-                <span className="text-xs font-black font-mono text-[#0f1330] dark:text-white leading-none">
-                  {ev.day}
-                </span>
-                <span className="text-[8px] font-mono font-bold text-[#626c96] dark:text-[#8b95c2] leading-none mt-0.5">
-                  {ev.month}
-                </span>
-              </div>
-
-              <div className="min-w-0">
-                <div className="text-xs font-bold text-[#0f1330] dark:text-white truncate">
-                  {ev.title}
-                </div>
-                <div className="text-[10px] font-mono text-[#626c96] dark:text-[#8b95c2] mt-0.5 truncate">
-                  {ev.timeAndPlace}
-                </div>
-              </div>
-            </div>
-
-            {/* Badge de tipo */}
-            <span
-              className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border shrink-0 ml-2 ${getTypeStyle(
-                ev.type
-              )}`}
+        {sortedExams.length === 0 ? (
+          <div className="text-center py-5">
+            <p className="text-xs text-[#626c96] dark:text-[#8b95c2]">
+              No tienes parciales programados aún.
+            </p>
+            <button
+              onClick={openAddExam}
+              className="mt-2 text-xs font-bold text-[#3b43a8] dark:text-[#8e98ec] hover:underline inline-flex items-center gap-1 cursor-pointer"
             >
-              {ev.type}
-            </span>
+              <Plus className="w-3 h-3" />
+              <span>Añadir primer examen</span>
+            </button>
           </div>
-        ))}
+        ) : (
+          sortedExams.map((exam) => {
+            const sub = subjectsMap[exam.subjectId];
+            const examDate = new Date(exam.date);
+            const day = isNaN(examDate.getDate()) ? '15' : examDate.getDate().toString();
+            const month = isNaN(examDate.getMonth())
+              ? 'SEP'
+              : examDate.toLocaleDateString('es-CO', { month: 'short' }).toUpperCase();
+            const timeStr = isNaN(examDate.getTime())
+              ? ''
+              : examDate.toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+            return (
+              <div
+                key={exam.id}
+                className="flex items-center gap-3 p-2 rounded-xl hover:bg-[#f8faff] dark:hover:bg-[#141838] transition-colors group cursor-default"
+              >
+                {/* Cuadro de Fecha Tipo Calendario */}
+                <div className="w-10 h-11 rounded-xl bg-[#f0f3fa] dark:bg-[#161c42] border border-[#e2e6f2] dark:border-[#22295a] flex flex-col items-center justify-center shrink-0">
+                  <span className="text-[9px] font-mono font-bold text-[#626c96] dark:text-[#8894c7] leading-none uppercase">
+                    {month}
+                  </span>
+                  <span className="text-sm font-black text-[#0f1330] dark:text-white leading-tight font-mono mt-0.5">
+                    {day}
+                  </span>
+                </div>
+
+                {/* Detalles */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-xs font-bold text-[#0f1330] dark:text-white truncate">
+                      {exam.title}
+                    </span>
+                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full border bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20">
+                      {exam.weight}%
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-[#626c96] dark:text-[#8b95c2] truncate mt-0.5">
+                    {sub?.name || 'Materia'} {timeStr ? `· ${timeStr}` : ''}
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
     </div>
   );

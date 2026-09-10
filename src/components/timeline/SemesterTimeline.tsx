@@ -61,7 +61,7 @@ export function SemesterTimeline({
   return (
     <div className="space-y-6">
       {/* Banner de Progreso Global */}
-      <div className="banner-cambas p-6 sm:p-8 relative overflow-hidden">
+      <div className="banner-academic p-6 sm:p-8 relative overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#c5c5ff] font-bold">
@@ -103,7 +103,7 @@ export function SemesterTimeline({
       </div>
 
       {/* Scrubber Horizontal de Semanas (1 a 16) */}
-      <div className="card-cambas p-6 bg-[var(--surface)] border border-[var(--border)]">
+      <div className="card-academic p-6 bg-[var(--surface)] border border-[var(--border)]">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-bold text-[var(--ink)]">
             Explorar Semanas del Semestre
@@ -124,39 +124,38 @@ export function SemesterTimeline({
               <button
                 key={w}
                 onClick={() => setSelectedWeek(w)}
-                className={`flex flex-col items-center justify-center p-2 rounded-xl text-xs font-bold transition-all border relative cursor-pointer ${
+                className={`py-3 px-2 rounded-xl text-center transition-all flex flex-col items-center justify-center relative cursor-pointer ${
                   isSelected
-                    ? 'bg-[#3b3abf] text-white border-[#3b3abf] shadow-md shadow-[#3b3abf]/30'
+                    ? 'bg-[#3b3abf] text-white shadow-md shadow-[#3b3abf]/30 scale-105 z-10'
                     : isCurrent
-                    ? 'bg-[#3b3abf]/15 text-[#3b3abf] dark:text-[#a0a0ff] border-[#3b3abf]'
-                    : 'bg-[var(--surface)] text-[var(--ink)] border-[var(--border)] hover:bg-[var(--paper)]'
+                    ? 'bg-[#3b3abf]/15 border-2 border-[#3b3abf] text-[var(--ink)]'
+                    : 'bg-[var(--paper)] text-[var(--muted)] hover:text-[var(--ink)] border border-[var(--border)] hover:bg-[var(--surface-raised)]'
                 }`}
               >
-                <span className="text-[10px] uppercase font-mono opacity-80">Sem</span>
-                <span className="text-sm font-black">{w}</span>
+                <span className="text-[10px] font-mono font-bold leading-none">
+                  S{w}
+                </span>
 
-                {/* Badges de hitos */}
-                <div className="flex items-center gap-1 mt-1">
+                {/* Dots indicadores de hitos */}
+                <div className="flex items-center gap-1 mt-1.5 h-1.5">
                   {hasExams && (
                     <span
                       className={`w-1.5 h-1.5 rounded-full ${
                         isSelected ? 'bg-amber-300' : 'bg-rose-500'
                       }`}
-                      title="Tiene exámenes"
                     />
                   )}
                   {hasTasks && (
                     <span
                       className={`w-1.5 h-1.5 rounded-full ${
-                        isSelected ? 'bg-emerald-300' : 'bg-[#3b3abf]'
+                        isSelected ? 'bg-emerald-300' : 'bg-[#7b7bff]'
                       }`}
-                      title="Tiene tareas"
                     />
                   )}
                 </div>
 
                 {isCurrent && (
-                  <span className="absolute -top-1.5 px-1 bg-emerald-500 text-white rounded text-[8px] font-mono font-bold">
+                  <span className="absolute -top-1 -right-1 px-1 rounded bg-[#3b3abf] text-white text-[8px] font-mono font-black">
                     Hoy
                   </span>
                 )}
@@ -167,7 +166,7 @@ export function SemesterTimeline({
       </div>
 
       {/* Detalle de la Semana Seleccionada */}
-      <div className="card-cambas p-6 bg-[var(--surface)] border border-[var(--border)]">
+      <div className="card-academic p-6 bg-[var(--surface)] border border-[var(--border)]">
         <div className="flex items-center justify-between pb-4 border-b border-[var(--border)]">
           <div>
             <h4 className="text-base font-bold text-[var(--ink)]">

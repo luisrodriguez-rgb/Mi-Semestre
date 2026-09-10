@@ -20,8 +20,8 @@ import { useSemesterData } from '@/hooks/useSemesterData';
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { openOnboarding, openAddTask, openAddExam, openProfile } = useUIStore();
-  const { profile, semester } = useSemesterData();
+  const { openOnboarding, openProfile } = useUIStore();
+  const { profile, semester, allSemesters, switchSemester } = useSemesterData();
 
   const isCurrent = (path: string) =>
     pathname === path || (path === '/dashboard' && pathname === '/');
@@ -29,8 +29,8 @@ export function Sidebar() {
   const navItems = [
     { href: '/dashboard', label: '¿Qué hago ahora?', icon: Home },
     { href: '/schedule', label: 'Horario Semanal', icon: Calendar },
-    { href: '/dashboard#tareas', label: 'Tareas', icon: ListTodo },
-    { href: '/dashboard#evaluaciones', label: 'Evaluaciones', icon: CheckSquare },
+    { href: '/tasks', label: 'Tareas', icon: ListTodo },
+    { href: '/exams', label: 'Evaluaciones', icon: CheckSquare },
     { href: '/radar', label: 'Radar de Riesgo', icon: AlertTriangle },
     { href: '/timeline', label: 'Línea de Semanas', icon: Layers },
     { href: '/balance', label: 'Balance Académico', icon: GraduationCap },
@@ -48,16 +48,16 @@ export function Sidebar() {
   return (
     <aside className="hidden md:flex w-64 shrink-0 bg-[#0c102a] dark:bg-[#070919] text-white flex-col justify-between border-r border-[#1e2348] h-screen sticky top-0 overflow-y-auto transition-colors z-40 select-none">
       <div>
-        {/* Logo Superior CAMBAS+ ICESI */}
+        {/* Logo Superior MI SEMESTRE | ICESI */}
         <div className="p-6 pb-5 flex items-center gap-3 border-b border-[#1b2046]/50">
           <img
-            src="/logo.webp"
-            alt="CAMBAS+ ICESI"
-            className="w-9 h-9 rounded-xl object-contain shadow-md shadow-[#252ab8]/20"
+            src="/icon.png"
+            alt="MI SEMESTRE | ICESI"
+            className="w-9 h-9 rounded-[14%] object-contain shadow-md shadow-[#252ab8]/20"
           />
           <div>
-            <div className="font-black text-sm tracking-wider text-white flex items-center gap-1">
-              CAMBAS<span className="text-[#656cf5] font-black">+</span>
+            <div className="font-black text-sm tracking-wider text-white flex items-center gap-1.5">
+              MI SEMESTRE <span className="text-[#656cf5] font-black">|</span>
             </div>
             <div className="text-[10px] font-mono tracking-widest text-[#7a85b8] uppercase font-bold">
               ICESI
@@ -88,30 +88,50 @@ export function Sidebar() {
           })}
         </nav>
 
-        {/* Sección "MI SEMESTRE" */}
+        {/* Sección "MI SEMESTRE" & Multi-Semestre Switcher */}
         <div className="px-4 pt-4">
-          <button
-            onClick={openOnboarding}
-            className="w-full flex items-center justify-between text-[10px] font-mono uppercase tracking-wider text-[#636f9e] font-bold pb-2 hover:text-[#9eaae0] transition-colors"
-          >
+          <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider text-[#636f9e] font-bold pb-2">
             <span>MI SEMESTRE</span>
-            <ChevronDown className="w-3.5 h-3.5" />
-          </button>
-          <div
-            onClick={openOnboarding}
-            className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#141838]/60 hover:bg-[#191f48] border border-[#202758] transition-all cursor-pointer group"
-          >
-            <div className="w-6 h-6 rounded-lg bg-[#252ab8]/40 border border-[#3b41d0]/50 flex items-center justify-center text-[#8e97ff] text-[11px] font-mono font-bold">
-              S
-            </div>
-            <div className="min-w-0 text-left">
-              <div className="text-xs font-bold text-white group-hover:text-[#8e97ff] transition-colors truncate">
-                {semester?.name?.includes('Industrial') ? 'Semestre 2026-2' : 'Semestre 2026-2'}
+            <button
+              onClick={openOnboarding}
+              className="text-[#8e98ec] hover:text-white transition-colors"
+              title="Configurar semestre"
+            >
+              + Cambiar
+            </button>
+          </div>
+          
+          <div className="space-y-1.5">
+            {allSemesters && allSemesters.length > 1 ? (
+              <select
+                value={semester?.id || ''}
+                onChange={(e) => switchSemester(e.target.value)}
+                className="w-full text-xs font-bold text-white bg-[#141838] border border-[#202758] rounded-xl px-3 py-2 outline-none focus:border-[#656cf5] cursor-pointer"
+              >
+                {allSemesters.map((s) => (
+                  <option key={s.id} value={s.id} className="bg-[#0c102a] text-white">
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div
+                onClick={openOnboarding}
+                className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#141838]/60 hover:bg-[#191f48] border border-[#202758] transition-all cursor-pointer group"
+              >
+                <div className="w-6 h-6 rounded-lg bg-[#252ab8]/40 border border-[#3b41d0]/50 flex items-center justify-center text-[#8e97ff] text-[11px] font-mono font-bold">
+                  S
+                </div>
+                <div className="min-w-0 text-left">
+                  <div className="text-xs font-bold text-white group-hover:text-[#8e97ff] transition-colors truncate">
+                    {semester?.name || 'Semestre 2026-2'}
+                  </div>
+                  <div className="text-[10px] text-[#7a85b8] font-mono truncate">
+                    {studentProgram}
+                  </div>
+                </div>
               </div>
-              <div className="text-[10px] text-[#7a85b8] font-mono truncate">
-                {studentProgram}
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -139,16 +159,16 @@ export function Sidebar() {
           <Settings className="w-4 h-4 text-[#6b76ad] group-hover:text-white transition-colors shrink-0" />
         </div>
 
-        {/* Footer CAMBAS+ ICESI */}
+        {/* Footer MI SEMESTRE | ICESI */}
         <div className="px-2 pt-1 flex items-center gap-2 text-[#56618e]">
           <img
-            src="/logo.webp"
-            alt="CAMBAS+ ICESI"
-            className="w-4 h-4 rounded-md object-contain opacity-75"
+            src="/icon.png"
+            alt="MI SEMESTRE | ICESI"
+            className="w-4 h-4 rounded-[14%] object-contain opacity-80"
           />
           <div>
             <div className="text-[10px] font-bold font-mono tracking-wider uppercase text-[#6f7aa8]">
-              CAMBAS+ <span className="text-[9px] font-normal opacity-70">ICESI</span>
+              MI SEMESTRE <span className="text-[9px] font-normal opacity-70">| ICESI</span>
             </div>
             <div className="text-[9px] text-[#56618e] font-sans">
               Tu semestre, en tus manos.

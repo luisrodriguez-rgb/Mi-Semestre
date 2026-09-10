@@ -53,13 +53,13 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
+    <div className="space-y-4 sm:space-y-5 animate-in fade-in duration-200">
       {/* ═════════════════════════════════════════════════════════════
           FILA 1: BANNER EDITORIAL + ¿QUÉ HAGO AHORA? + PROGRESO GENERAL
          ═════════════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-5">
         {/* Columna Izquierda Ancha: Saludo y Centro de Decisión Operativa */}
-        <div className="xl:col-span-8 space-y-5">
+        <div className="xl:col-span-8 space-y-4">
           <CampusWelcomeBanner studentName={profile?.name} />
           <DecisionHeroCard
             classes={scheduleBlocks}
@@ -71,7 +71,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Columna Derecha Estrecha: Tu Progreso General y Estado del Semestre */}
-        <div className="xl:col-span-4 space-y-5 flex flex-col justify-between">
+        <div className="xl:col-span-4 space-y-4">
           <GeneralProgressCard
             progressPercentage={metrics.progressPercentage}
             currentWeek={metrics.currentWeek}
@@ -87,12 +87,13 @@ export default function DashboardPage() {
       {/* ═════════════════════════════════════════════════════════════
           FILA 2: HORARIO SEMANAL (Col 1) · RADAR (Col 2) · EVENTOS & TAREAS (Col 3)
          ═════════════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-stretch">
         {/* Columna 1: Horario semanal interactivo con bloques de clase y huecos libres */}
         <div className="lg:col-span-6">
           <WeeklyScheduleWidget
             classes={scheduleBlocks}
             subjectsMap={subjectsMap}
+            routines={routines}
           />
         </div>
 
@@ -102,7 +103,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Columna 3: Próximos eventos (exámenes/entregas) y Tareas recientes */}
-        <div className="lg:col-span-3 space-y-5">
+        <div className="lg:col-span-3 space-y-4">
           <UpcomingEventsWidget exams={exams} />
           <RecentTasksWidget
             assignments={assignments}

@@ -57,6 +57,8 @@ export function SmartOnboardingModal() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [parsedResult, setParsedResult] = useState<ParsedAcademicData | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [loadingTemplateId, setLoadingTemplateId] = useState<string | null>(null);
+  const [loadedTemplateId, setLoadedTemplateId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Estado pestaña Desde Cero (Wizard)
@@ -147,16 +149,21 @@ export function SmartOnboardingModal() {
 
   // Cargar una plantilla oficial
   const handleLoadTemplate = async (templateId: string) => {
-    setIsProcessing(true);
-    await applyAcademicTemplate(templateId);
-    await refreshData();
-    setIsSuccess(true);
-    setIsProcessing(false);
+    setLoadingTemplateId(templateId);
+    try {
+      await applyAcademicTemplate(templateId);
+      await refreshData();
+      setLoadingTemplateId(null);
+      setLoadedTemplateId(templateId);
 
-    setTimeout(() => {
-      setIsSuccess(false);
-      closeOnboarding();
-    }, 1000);
+      setTimeout(() => {
+        setLoadedTemplateId(null);
+        closeOnboarding();
+      }, 900);
+    } catch (err) {
+      console.error('Error al cargar plantilla:', err);
+      setLoadingTemplateId(null);
+    }
   };
 
   // Finalizar creación desde cero
@@ -553,11 +560,29 @@ export function SmartOnboardingModal() {
 
                     <button
                       onClick={() => handleLoadTemplate(tmpl.id)}
-                      disabled={isProcessing}
-                      className="mt-4 w-full py-2 px-4 rounded-xl bg-[#3b3abf] hover:bg-[#2828a8] text-white text-xs font-bold shadow-md shadow-[#3b3abf]/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                      disabled={loadingTemplateId !== null}
+                      className={`mt-4 w-full py-2 px-4 rounded-xl text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        loadedTemplateId === tmpl.id
+                          ? 'bg-emerald-600 shadow-md shadow-emerald-600/30'
+                          : 'bg-[#3b3abf] hover:bg-[#2828a8] shadow-md shadow-[#3b3abf]/20'
+                      }`}
                     >
-                      {isSuccess ? <Check className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                      <span>{isSuccess ? '¡Cargado!' : 'Cargar esta Plantilla'}</span>
+                      {loadedTemplateId === tmpl.id ? (
+                        <>
+                          <Check className="w-4 h-4" />
+                          <span>¡Plantilla Cargada!</span>
+                        </>
+                      ) : loadingTemplateId === tmpl.id ? (
+                        <>
+                          <Sparkles className="w-4 h-4 animate-spin text-amber-300" />
+                          <span>Cargando datos...</span>
+                        </>
+                      ) : (
+                        <>
+                          <ChevronRight className="w-4 h-4" />
+                          <span>Cargar esta Plantilla</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 ))}

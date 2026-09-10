@@ -1,6 +1,6 @@
 'use client';
 
-import { Layers3, ClipboardList, Calendar } from 'lucide-react';
+import { Layers3, ClipboardList, Calendar, UserCheck } from 'lucide-react';
 import { Subject, Assignment, Exam } from '@/types';
 
 interface GeneralProgressCardProps {
@@ -109,6 +109,16 @@ export function GeneralProgressCard({
           </div>
           <span className="font-mono font-bold text-[#0f1330] dark:text-white">
             {upcomingExamsCount}
+          </span>
+        </div>
+
+        <div className="flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2.5 text-[#505a88] dark:text-[#949ecb] font-medium">
+            <UserCheck className="w-4 h-4 text-[#3b43a8] dark:text-[#8e98ec]" />
+            <span>Asistencia promedio</span>
+          </div>
+          <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+            96.8%
           </span>
         </div>
       </div>

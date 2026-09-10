@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════
-   Mi Semestre — CAMBAS+ Inspired Design System
+   Mi Semestre | ICESI — Academic Design System
    ═══════════════════════════════════════════════ */
 
 :root {
@@ -104,6 +104,7 @@ body {
 }
 
 /* Card & Surface Tokens */
+.card-academic,
 .card-cambas {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -111,6 +112,7 @@ body {
   border-radius: 1.25rem;
 }
 
+.card-academic-interactive,
 .card-cambas-interactive {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -118,6 +120,7 @@ body {
   border-radius: 1.25rem;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
+.card-academic-interactive:hover,
 .card-cambas-interactive:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 30px -4px rgba(26, 26, 94, 0.1);
@@ -125,6 +128,7 @@ body {
 }
 
 /* Hero & Feature Banners */
+.banner-academic,
 .banner-cambas {
   background: linear-gradient(135deg, #1e1e8a 0%, #3b3abf 60%, #5b5be8 100%);
   color: #ffffff;
@@ -169,17 +173,20 @@ body {
   border: 1px solid var(--green-light);
 }
 
+html.dark .card-academic,
 html.dark .card-cambas {
   background: var(--surface);
   border-color: var(--border);
   box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.4), 0 2px 8px -1px rgba(0, 0, 0, 0.3);
 }
 
+html.dark .card-academic-interactive,
 html.dark .card-cambas-interactive {
   background: var(--surface);
   border-color: var(--border);
   box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
 }
+html.dark .card-academic-interactive:hover,
 html.dark .card-cambas-interactive:hover {
   border-color: var(--blue-500);
   box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.6), 0 0 15px rgba(91, 91, 232, 0.15);

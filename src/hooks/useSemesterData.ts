@@ -24,6 +24,7 @@ import {
 import { seedDatabaseIfEmpty } from '@/lib/mockData';
 
 export function useSemesterData() {
+  const [allSemesters, setAllSemesters] = useState<Semester[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [semester, setSemester] = useState<Semester | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -42,6 +43,7 @@ export function useSemesterData() {
       const [
         activeProfile,
         activeSem,
+        semestersList,
         allSubjects,
         allSchedule,
         allAssignments,
@@ -51,6 +53,7 @@ export function useSemesterData() {
       ] = await Promise.all([
         profileRepository.getActiveProfile(),
         semesterRepository.getActive(),
+        semesterRepository.getAll(),
         subjectRepository.getAll(),
         scheduleRepository.getAll(),
         assignmentRepository.getAll(),
@@ -61,6 +64,7 @@ export function useSemesterData() {
 
       setProfile(activeProfile || null);
       setSemester(activeSem || null);
+      setAllSemesters(semestersList);
       setSubjects(allSubjects);
       setScheduleBlocks(allSchedule);
       setAssignments(allAssignments);
@@ -72,6 +76,27 @@ export function useSemesterData() {
     } finally {
       setIsLoading(false);
     }
+  }, []);
+
+  const switchSemester = useCallback(async (semesterId: string) => {
+    await semesterRepository.setActive(semesterId);
+    window.dispatchEvent(new CustomEvent('semester-data-updated'));
+  }, []);
+
+  const createSemester = useCallback(async (name: string, startDate?: string, endDate?: string) => {
+    const newSem: Semester = {
+      id: `sem-${Date.now()}`,
+      userId: profile?.id || 'usr-default',
+      name,
+      startDate: startDate || new Date().toISOString().split('T')[0],
+      endDate: endDate || new Date(Date.now() + 120 * 24 * 3600 * 1000).toISOString().split('T')[0],
+      totalWeeks: 16,
+      isActive: true,
+    };
+    await semesterRepository.save(newSem);
+    await semesterRepository.setActive(newSem.id);
+    window.dispatchEvent(new CustomEvent('semester-data-updated'));
+    return newSem.id;
   }, []);
 
   useEffect(() => {
@@ -96,6 +121,7 @@ export function useSemesterData() {
   return {
     profile,
     semester,
+    allSemesters,
     subjects,
     subjectsMap,
     scheduleBlocks,
@@ -105,5 +131,7 @@ export function useSemesterData() {
     routines,
     isLoading,
     refreshData: loadData,
+    switchSemester,
+    createSemester,
   };
 }

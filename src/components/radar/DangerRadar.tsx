@@ -43,7 +43,7 @@ export function DangerRadar({
   return (
     <div className="space-y-6">
       {/* Top Banner de Diagnóstico */}
-      <div className="card-cambas p-6 sm:p-8 bg-[var(--surface)] border border-[var(--border)] transition-colors">
+      <div className="card-academic p-6 sm:p-8 bg-[var(--surface)] border border-[var(--border)] transition-colors">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs font-mono font-bold tracking-wider uppercase text-[#3b3abf] dark:text-[#a0a0ff]">

@@ -1,6 +1,6 @@
 {
-  "name": "CAMBAS+ ICESI — Sistema Operativo Estudiantil",
-  "short_name": "CAMBAS+",
+  "name": "Mi Semestre | ICESI — Sistema Operativo Estudiantil",
+  "short_name": "Mi Semestre",
   "description": "Tu centro de control académico inteligente: horario interactivo, cálculo de tiempo disponible y radar de riesgo.",
   "start_url": "/dashboard",
   "display": "standalone",

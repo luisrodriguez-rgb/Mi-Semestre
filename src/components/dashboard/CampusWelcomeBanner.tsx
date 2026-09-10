@@ -10,19 +10,18 @@ interface CampusWelcomeBannerProps {
 export function CampusWelcomeBanner({ studentName }: CampusWelcomeBannerProps) {
   const { profile } = useSemesterData();
 
-  const displayName =
-    studentName ||
-    profile?.name?.split(' ')[0] ||
-    'Diego';
+  // Tomar solo el primer nombre para evitar desbordes visuales
+  const rawName = studentName || profile?.name || 'Luis';
+  const firstName = rawName.trim().split(' ')[0] || 'Luis';
 
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-[#0b102b] text-white border border-[#1c224b] shadow-sm min-h-[110px] flex items-center">
+    <div className="relative overflow-hidden rounded-2xl bg-[#0b102b] text-white border border-[#1c224b] shadow-xs min-h-[96px] flex items-center">
       {/* Texto de bienvenida en el lado izquierdo */}
-      <div className="relative z-10 p-6 max-w-xl">
-        <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-          ¡Buenas tardes, {displayName}!
+      <div className="relative z-10 p-5 sm:p-6 max-w-sm sm:max-w-md lg:max-w-lg">
+        <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
+          ¡Buenas tardes, {firstName}!
         </h1>
-        <p className="text-xs sm:text-sm text-[#cbd5e1] mt-1.5 leading-relaxed font-normal">
+        <p className="text-xs sm:text-[13px] text-[#cbd5e1] mt-1 leading-relaxed font-normal">
           Tu centro de control académico. Consulta tu horario en tiempo real, detecta tus huecos
           disponibles y toma decisiones claras sobre qué estudiar hoy.
         </p>
