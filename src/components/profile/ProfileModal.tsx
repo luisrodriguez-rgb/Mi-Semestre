@@ -2,19 +2,27 @@
 
 import { useState, useEffect } from 'react';
 import { useUIStore } from '@/stores/uiStore';
-import { profileRepository, semesterRepository } from '@/lib/storage';
+import { profileRepository } from '@/lib/storage';
 import { Profile } from '@/types';
 import { defaultProfile } from '@/lib/mockData';
+import { syncService } from '@/lib/supabase/syncService';
 import {
   X,
   User,
   ShieldCheck,
-  GraduationCap,
   Building,
   Mail,
   UserPlus,
   Users,
   Check,
+  Cloud,
+  CloudUpload,
+  CloudDownload,
+  Key,
+  LogIn,
+  LogOut,
+  AlertCircle,
+  Loader2,
 } from 'lucide-react';
 
 interface ProfileModalProps {
@@ -36,9 +44,20 @@ export function ProfileModal({ onProfileUpdated }: ProfileModalProps) {
   const [email, setEmail] = useState('');
   const [savedSuccess, setSavedSuccess] = useState(false);
 
+  // Supabase states
+  const [isCloudConfigured, setIsCloudConfigured] = useState(false);
+  const [cloudUser, setCloudUser] = useState<any>(null);
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
+  const [isSyncLoading, setIsSyncLoading] = useState(false);
+  const [syncStatusMsg, setSyncStatusMsg] = useState<{ text: string; isError?: boolean } | null>(null);
+  const [showAuthForm, setShowAuthForm] = useState(false);
+
   useEffect(() => {
     if (isProfileOpen) {
       loadProfileData();
+      checkCloudState();
     }
   }, [isProfileOpen]);
 
@@ -52,6 +71,19 @@ export function ProfileModal({ onProfileUpdated }: ProfileModalProps) {
     setProgram(current.program);
     setSemesterNumber(current.semesterNumber);
     setEmail(current.email || '');
+  };
+
+  const checkCloudState = async () => {
+    const configured = syncService.isConfigured();
+    setIsCloudConfigured(configured);
+    if (configured) {
+      try {
+        const user = await syncService.getCurrentUser();
+        setCloudUser(user);
+      } catch (e) {
+        setCloudUser(null);
+      }
+    }
   };
 
   const handleSwitchProfile = async (id: string) => {
@@ -88,11 +120,71 @@ export function ProfileModal({ onProfileUpdated }: ProfileModalProps) {
     }, 1500);
   };
 
+  // Supabase Auth
+  const handleCloudSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!authEmail || !authPassword) return;
+    setIsAuthLoading(true);
+    setSyncStatusMsg(null);
+    try {
+      await syncService.signIn(authEmail, authPassword);
+      await checkCloudState();
+      setShowAuthForm(false);
+      setSyncStatusMsg({ text: '¡Sesión iniciada en Supabase!' });
+    } catch (err: any) {
+      setSyncStatusMsg({ text: err.message || 'Error al iniciar sesión.', isError: true });
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
+  const handleCloudSignUp = async () => {
+    if (!authEmail || !authPassword) return;
+    setIsAuthLoading(true);
+    setSyncStatusMsg(null);
+    try {
+      await syncService.signUp(authEmail, authPassword, profile.name);
+      await checkCloudState();
+      setSyncStatusMsg({ text: '¡Cuenta creada! Revisa tu correo si se requiere confirmación.' });
+    } catch (err: any) {
+      setSyncStatusMsg({ text: err.message || 'Error al registrarse.', isError: true });
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
+  const handleCloudSignOut = async () => {
+    await syncService.signOut();
+    setCloudUser(null);
+    setSyncStatusMsg({ text: 'Sesión cerrada.' });
+  };
+
+  // Supabase Sync
+  const handlePushToCloud = async () => {
+    setIsSyncLoading(true);
+    setSyncStatusMsg(null);
+    const res = await syncService.pushLocalToCloud();
+    setSyncStatusMsg({ text: res.message, isError: !res.success });
+    setIsSyncLoading(false);
+  };
+
+  const handlePullFromCloud = async () => {
+    setIsSyncLoading(true);
+    setSyncStatusMsg(null);
+    const res = await syncService.pullCloudToLocal();
+    setSyncStatusMsg({ text: res.message, isError: !res.success });
+    setIsSyncLoading(false);
+    if (res.success) {
+      await loadProfileData();
+      onProfileUpdated?.();
+    }
+  };
+
   if (!isProfileOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-lg rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-2xl p-6 relative overflow-hidden transition-colors">
+      <div className="w-full max-w-lg rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-2xl p-6 relative overflow-hidden transition-colors max-h-[92vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-[var(--border)]">
           <div className="flex items-center gap-2.5">
@@ -104,7 +196,7 @@ export function ProfileModal({ onProfileUpdated }: ProfileModalProps) {
                 Perfil y Autenticación del Estudiante
               </h3>
               <p className="text-xs text-[var(--muted)]">
-                Base de datos local y sincronización por usuario
+                Gestión local e integración en la nube con Supabase
               </p>
             </div>
           </div>
@@ -116,7 +208,7 @@ export function ProfileModal({ onProfileUpdated }: ProfileModalProps) {
           </button>
         </div>
 
-        {/* Estado activo de sesión */}
+        {/* Estado activo de sesión local */}
         <div className="mt-4 p-4 rounded-xl bg-[var(--paper)] border border-[var(--border)] flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-xl bg-[#1e1e8a] text-white font-black text-sm flex items-center justify-center shadow-md">
@@ -137,12 +229,159 @@ export function ProfileModal({ onProfileUpdated }: ProfileModalProps) {
           <div className="flex flex-col items-end gap-1">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#f0fdf4] dark:bg-[#072714] text-[#16a34a] dark:text-[#4ade80] border border-[#dcfce7] dark:border-[#14532d] text-[10px] font-mono font-bold tracking-wider uppercase">
               <ShieldCheck className="w-3 h-3 text-[#16a34a]" />
-              ESTUDIANTE ACTIVO
+              ACTIVO
             </span>
             <span className="text-[10px] text-[var(--muted)] font-mono">
               Semestre {profile.semesterNumber}
             </span>
           </div>
+        </div>
+
+        {/* SECCIÓN NUBE SUPABASE */}
+        <div className="mt-4 p-4 rounded-xl bg-[var(--paper)] border border-[var(--border)] space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Cloud className="w-4 h-4 text-[#3b3abf] dark:text-[#a0a0ff]" />
+              <span className="text-xs font-bold text-[var(--ink)]">
+                Nube Supabase PostgreSQL
+              </span>
+            </div>
+            <span
+              className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                isCloudConfigured
+                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                  : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+              }`}
+            >
+              {isCloudConfigured ? 'Conectado' : 'Faltan variables .env'}
+            </span>
+          </div>
+
+          {syncStatusMsg && (
+            <div
+              className={`p-2.5 rounded-lg text-xs flex items-center gap-2 ${
+                syncStatusMsg.isError
+                  ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                  : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+              }`}
+            >
+              {syncStatusMsg.isError ? <AlertCircle className="w-3.5 h-3.5 shrink-0" /> : <Check className="w-3.5 h-3.5 shrink-0" />}
+              <span>{syncStatusMsg.text}</span>
+            </div>
+          )}
+
+          {isCloudConfigured ? (
+            <div>
+              {cloudUser ? (
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-[var(--muted)] truncate">
+                      Usuario: <strong className="text-[var(--ink)]">{cloudUser.email}</strong>
+                    </span>
+                    <button
+                      onClick={handleCloudSignOut}
+                      className="text-xs text-rose-500 hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <LogOut className="w-3 h-3" />
+                      <span>Salir</span>
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      onClick={handlePushToCloud}
+                      disabled={isSyncLoading}
+                      className="flex-1 py-2 rounded-xl bg-[#3b3abf] hover:bg-[#2828a8] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      {isSyncLoading ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <CloudUpload className="w-3.5 h-3.5" />
+                      )}
+                      <span>Respaldar en la Nube</span>
+                    </button>
+
+                    <button
+                      onClick={handlePullFromCloud}
+                      disabled={isSyncLoading}
+                      className="flex-1 py-2 rounded-xl bg-[var(--surface)] hover:bg-[var(--paper)] text-[var(--ink)] text-xs font-bold border border-[var(--border)] transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      <CloudDownload className="w-3.5 h-3.5 text-[#3b3abf] dark:text-[#a0a0ff]" />
+                      <span>Descargar a este equipo</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs text-[var(--muted)]">
+                    Inicia sesión en Supabase para habilitar las políticas de seguridad (RLS) y sincronizar entre dispositivos:
+                  </p>
+                  {!showAuthForm ? (
+                    <button
+                      onClick={() => setShowAuthForm(true)}
+                      className="w-full py-2 rounded-xl bg-[#3b3abf] hover:bg-[#2828a8] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <LogIn className="w-3.5 h-3.5" />
+                      <span>Iniciar Sesión en Supabase</span>
+                    </button>
+                  ) : (
+                    <form onSubmit={handleCloudSignIn} className="space-y-2 pt-1">
+                      <input
+                        type="email"
+                        required
+                        placeholder="tu.correo@u.icesi.edu.co"
+                        value={authEmail}
+                        onChange={(e) => setAuthEmail(e.target.value)}
+                        className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5 text-xs text-[var(--ink)] focus:outline-none focus:border-[#3b3abf]"
+                      />
+                      <input
+                        type="password"
+                        required
+                        placeholder="Contraseña"
+                        value={authPassword}
+                        onChange={(e) => setAuthPassword(e.target.value)}
+                        className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5 text-xs text-[var(--ink)] focus:outline-none focus:border-[#3b3abf]"
+                      />
+                      <div className="flex items-center gap-2 pt-1">
+                        <button
+                          type="submit"
+                          disabled={isAuthLoading}
+                          className="flex-1 py-1.5 rounded-lg bg-[#3b3abf] hover:bg-[#2828a8] text-white text-xs font-bold transition-all cursor-pointer"
+                        >
+                          {isAuthLoading ? 'Entrando...' : 'Entrar'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCloudSignUp}
+                          disabled={isAuthLoading}
+                          className="flex-1 py-1.5 rounded-lg bg-[var(--surface)] hover:bg-[var(--paper)] text-[var(--ink)] text-xs font-bold border border-[var(--border)] cursor-pointer"
+                        >
+                          Registrarse
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowAuthForm(false)}
+                          className="px-2 text-xs text-[var(--muted)] hover:text-[var(--ink)]"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-xs text-[var(--muted)] space-y-1">
+              <p>
+                Para activar la nube en Vercel, agrega estas variables en <strong>Settings &gt; Environment Variables</strong>:
+              </p>
+              <code className="text-[10px] block p-2 rounded bg-[var(--surface)] border border-[var(--border)] font-mono text-[#3b3abf] dark:text-[#a0a0ff]">
+                NEXT_PUBLIC_SUPABASE_URL<br />
+                NEXT_PUBLIC_SUPABASE_ANON_KEY
+              </code>
+            </div>
+          )}
         </div>
 
         {/* Modo Vista Normal o Edición */}
