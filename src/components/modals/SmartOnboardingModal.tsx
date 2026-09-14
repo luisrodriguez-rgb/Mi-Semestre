@@ -4,12 +4,14 @@ import { useState, useRef } from 'react';
 import { useUIStore } from '@/stores/uiStore';
 import { useSemesterData } from '@/hooks/useSemesterData';
 import {
-  smartIngest,
-  ParsedAcademicData,
-} from '@/lib/importer/smartAcademicIngester';
+  ingestAcademicEvidence,
+  commitAcademicDataAtomically,
+  IngestResult,
+  RawEvidence,
+  CommitResult,
+} from '@/lib/importer/universal';
 import {
   applyAcademicTemplate,
-  applyParsedAcademicData,
   startFreshEmptySemester,
 } from '@/lib/importer/templateLoader';
 import { ACADEMIC_TEMPLATES } from '@/lib/templates/academicTemplates';
@@ -22,7 +24,15 @@ import {
   Trash2,
   ArrowRight,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   ImageIcon,
+  FileText,
+  Calendar,
+  AlertTriangle,
+  Info,
+  ShieldCheck,
+  Upload,
 } from 'lucide-react';
 
 const DAYS = [
@@ -38,15 +48,17 @@ export function SmartOnboardingModal() {
   const { isOnboardingOpen, closeOnboarding } = useUIStore();
   const { refreshData } = useSemesterData();
 
-  const [activeTab, setActiveTab] = useState<'ia' | 'templates' | 'zero'>('ia');
+  const [activeTab, setActiveTab] = useState<'universal' | 'templates' | 'zero'>('universal');
 
-  // Estado pestaña IA
+  // Estado del Motor Universal de Ingesta ("Configurar mi semestre")
+  const [stagedFiles, setStagedFiles] = useState<File[]>([]);
   const [pastedText, setPastedText] = useState('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [filePreview, setFilePreview] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [parsedResult, setParsedResult] = useState<ParsedAcademicData | null>(null);
+  const [processingStage, setProcessingStage] = useState('');
+  const [ingestResult, setIngestResult] = useState<IngestResult | null>(null);
+  const [commitResult, setCommitResult] = useState<CommitResult | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const [loadingTemplateId, setLoadingTemplateId] = useState<string | null>(null);
   const [loadedTemplateId, setLoadedTemplateId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -90,51 +102,71 @@ export function SmartOnboardingModal() {
 
   if (!isOnboardingOpen) return null;
 
-  // Manejador de subida de imagen
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      const url = URL.createObjectURL(file);
-      setFilePreview(url);
+  // Manejador de subida múltiple de archivos
+  const handleFilesAdded = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      setStagedFiles((prev) => [...prev, ...files]);
     }
   };
 
-  // Procesar con IA (texto o imagen)
-  const handleProcessSmart = async () => {
-    if (!pastedText.trim() && !selectedFile) return;
+  const removeStagedFile = (index: number) => {
+    setStagedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Procesar con Universal Academic Ingest
+  const handleProcessUniversal = async () => {
+    if (stagedFiles.length === 0 && !pastedText.trim()) return;
     setIsProcessing(true);
+    setProcessingStage('Detectando contenedores y firmas académicas...');
 
     try {
-      const result = await smartIngest({
-        text: pastedText,
-        imageFile: selectedFile || undefined,
-      });
-      setParsedResult(result);
+      const evidenceList: RawEvidence[] = [];
+
+      for (const file of stagedFiles) {
+        evidenceList.push({ file });
+      }
+
+      if (pastedText.trim()) {
+        evidenceList.push({ text: pastedText.trim() });
+      }
+
+      setProcessingStage('Resolviendo asignaturas y consolidando evidencias...');
+      const result = await ingestAcademicEvidence(evidenceList);
+      setIngestResult(result);
     } catch (err) {
-      console.error('Error al procesar con IA:', err);
+      console.error('Error al procesar evidencia con Universal Academic Ingest:', err);
     } finally {
       setIsProcessing(false);
+      setProcessingStage('');
     }
   };
 
-  // Confirmar y aplicar datos extraídos por IA
-  const handleConfirmParsed = async () => {
-    if (!parsedResult) return;
+  // Confirmar y aplicar con Commit Atómico Dexie
+  const handleConfirmCommit = async () => {
+    if (!ingestResult) return;
     setIsProcessing(true);
-    await applyParsedAcademicData(parsedResult);
-    await refreshData();
-    setIsSuccess(true);
-    setIsProcessing(false);
+    setProcessingStage('Ejecutando commit atómico local...');
 
-    setTimeout(() => {
-      setIsSuccess(false);
-      setParsedResult(null);
-      setPastedText('');
-      setSelectedFile(null);
-      setFilePreview(null);
-      closeOnboarding();
-    }, 1200);
+    try {
+      const result = await commitAcademicDataAtomically(ingestResult.data);
+      setCommitResult(result);
+      await refreshData();
+      setIsSuccess(true);
+
+      setTimeout(() => {
+        setIsSuccess(false);
+        setIngestResult(null);
+        setStagedFiles([]);
+        setPastedText('');
+        closeOnboarding();
+      }, 1500);
+    } catch (err) {
+      console.error('Error en commit atómico:', err);
+    } finally {
+      setIsProcessing(false);
+      setProcessingStage('');
+    }
   };
 
   // Cargar una plantilla oficial
@@ -188,10 +220,10 @@ export function SmartOnboardingModal() {
             </div>
             <div>
               <h2 className="text-xl font-black tracking-tight">
-                Asistente de Configuración Inicial
+                Configurar mi semestre
               </h2>
               <p className="text-xs text-[#c5c5ff] mt-0.5 font-medium">
-                Inicializa tu semestre con IA, selecciona plantillas oficiales o empieza desde cero
+                Sube o pega tu evidencia académica. Mi Semestre detectará y unificará todo sin inventar datos.
               </p>
             </div>
           </div>
@@ -208,17 +240,17 @@ export function SmartOnboardingModal() {
           <div className="flex gap-2 p-1 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
             <button
               onClick={() => {
-                setActiveTab('ia');
-                setParsedResult(null);
+                setActiveTab('universal');
+                setIngestResult(null);
               }}
               className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                activeTab === 'ia'
+                activeTab === 'universal'
                   ? 'bg-[#3b3abf] text-white shadow-md shadow-[#3b3abf]/30'
                   : 'text-[var(--muted)] hover:text-[var(--ink)]'
               }`}
             >
               <Sparkles className="w-4 h-4 text-amber-300" />
-              <span>Asistente IA (Imagen / Balance)</span>
+              <span>Universal (PDF / ICS / Texto / Foto)</span>
             </button>
             <button
               onClick={() => setActiveTab('templates')}
@@ -248,22 +280,22 @@ export function SmartOnboardingModal() {
         {/* Contenido Scrolleable */}
         <div className="p-6 overflow-y-auto flex-1 space-y-6">
           {/* ══════════════════════════════════════════════════════════
-              PESTAÑA 1: ASISTENTE IA (IMAGEN O BALANCE TEXTUAL)
+              PASO 1: ENTRADA UNIVERSAL (DROPZONE + TEXTO)
              ══════════════════════════════════════════════════════════ */}
-          {activeTab === 'ia' && !parsedResult && (
+          {activeTab === 'universal' && !ingestResult && (
             <div className="space-y-6 animate-in fade-in duration-200">
               <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-700 dark:text-blue-300 flex items-start gap-3">
-                <Sparkles className="w-5 h-5 shrink-0 text-[#3b3abf] dark:text-[#a0a0ff] mt-0.5" />
+                <ShieldCheck className="w-5 h-5 shrink-0 text-[#3b3abf] dark:text-[#a0a0ff] mt-0.5" />
                 <div>
-                  <strong className="block font-bold">Algoritmo Inteligente de Extracción:</strong>
-                  Sube una foto o captura de tu horario, o pega el texto del Balance Académico Jasper / Banner de Icesi. Nuestro motor estructurará tu perfil, materias, códigos y franjas horarias al instante.
+                  <strong className="block font-bold">Sin decisiones técnicas ni datos inventados:</strong>
+                  Sube cualquier combinación de archivos (PDF de Balance Jasper, calendario .ICS, captura de horario o notas) o pega el texto directamente. El motor resolverá tus asignaturas de forma transparente.
                 </div>
               </div>
 
-              {/* Subida de Imagen (Drag & Drop) */}
+              {/* Zona de Arrastre / Selección Múltiple */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-2 font-mono">
-                  Opción A: Subir Captura de Imagen (Horario o Balance)
+                  Archivos Académicos (.PDF, .ICS, Imagen o Texto)
                 </label>
                 <div
                   onClick={() => fileInputRef.current?.click()}
@@ -272,47 +304,63 @@ export function SmartOnboardingModal() {
                   <input
                     type="file"
                     ref={fileInputRef}
-                    onChange={handleFileChange}
-                    accept="image/png,image/jpeg,image/webp,image/jpg"
+                    onChange={handleFilesAdded}
+                    multiple
+                    accept=".pdf,.ics,.txt,.png,.jpg,.jpeg,.webp"
                     className="hidden"
                   />
-                  {filePreview ? (
-                    <div className="flex flex-col items-center gap-3">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={filePreview}
-                        alt="Preview"
-                        className="max-h-40 rounded-xl object-contain border border-[var(--border)] shadow-md"
-                      />
-                      <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                        <Check className="w-4 h-4" /> Imagen lista: {selectedFile?.name}
-                      </span>
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="p-3 rounded-2xl bg-[var(--surface)] text-[#3b3abf] dark:text-[#a0a0ff] shadow-sm group-hover:scale-110 transition-transform">
+                      <Upload className="w-6 h-6" />
                     </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="p-3 rounded-2xl bg-[var(--surface)] text-[#3b3abf] dark:text-[#a0a0ff] shadow-sm group-hover:scale-110 transition-transform">
-                        <ImageIcon className="w-6 h-6" />
-                      </div>
-                      <span className="text-xs font-bold text-[var(--ink)]">
-                        Haz clic o arrastra aquí tu horario o balance
-                      </span>
-                      <span className="text-[11px] text-[var(--muted)] font-mono">
-                        PNG, JPG o WEBP hasta 10MB
-                      </span>
-                    </div>
-                  )}
+                    <span className="text-xs font-bold text-[var(--ink)]">
+                      Arrastra tus archivos aquí o haz clic para explorar
+                    </span>
+                    <span className="text-[11px] text-[var(--muted)] font-mono">
+                      Soporta PDF de Balance, archivos .ics de calendario, capturas y syllabus
+                    </span>
+                  </div>
                 </div>
+
+                {/* Lista de Archivos Cargados */}
+                {stagedFiles.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <div className="text-[11px] font-mono font-bold text-[var(--muted)] uppercase">
+                      Archivos listos para procesar ({stagedFiles.length}):
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {stagedFiles.map((file, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-xs font-mono text-[var(--ink)]"
+                        >
+                          <FileText className="w-3.5 h-3.5 text-[#3b3abf] dark:text-[#a0a0ff]" />
+                          <span className="max-w-[200px] truncate">{file.name}</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeStagedFile(idx);
+                            }}
+                            className="text-[var(--muted)] hover:text-red-500 cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Pegar Texto */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] font-mono">
-                    Opción B: Pegar Texto de Banner, Jasper o Canvas
+                    O Pega el Texto Directamente
                   </label>
                   <button
                     onClick={() => {
-                      setPastedText(`SISTEMA DE REGISTRO ACADÉMICO\nBalance académico\n1110295145\nEstudiante: A00414805 - RODRIGUEZ GURRUTE LUIS ERNESTO\nSemestre: 4\nCohorte: 202510\nPromedio: 4.3\nPrograma: IND - Ingeniería Industrial\nMaterias por aprobar\n5 CFT 11373 Estadística aplicada II 04\n6 CFT 11370 Física II 04\n7 IND 05359 Optimización 04\n8 CFT 11356 Matemáticas aplicadas III 04\n4 IND 05358 Optativa profesional 04`);
+                      setPastedText(`UNIVERSIDAD ICESI\nSISTEMA DE REGISTRO ACADÉMICO - RRBANBALACA\nBalance académico del estudiante\nEstudiante: A00414805 - RODRIGUEZ GURRUTE LUIS ERNESTO\nPrograma: ING - Ingeniería Industrial\nSemestre: 4\nCohorte: 202510\nPromedio: 4.35\nMaterias matriculadas:\n11373 Estadística Aplicada II 04\n05359 Optimización 04\n11239 Electricidad y Laboratorio 04`);
                     }}
                     className="text-[11px] font-mono text-[#3b3abf] dark:text-[#a0a0ff] hover:underline cursor-pointer"
                   >
@@ -323,184 +371,218 @@ export function SmartOnboardingModal() {
                   value={pastedText}
                   onChange={(e) => setPastedText(e.target.value)}
                   rows={4}
-                  placeholder="Pega aquí el contenido de tu Balance Académico oficial o las materias de tu horario..."
+                  placeholder="Pega aquí el contenido de tu Balance Académico, tabla de horario de Banner o notas de clase..."
                   className="w-full rounded-2xl border border-[var(--border)] bg-[var(--paper)] p-3 text-xs text-[var(--ink)] font-mono placeholder:text-[var(--muted)] focus:outline-none focus:border-[#3b3abf] focus:ring-1 focus:ring-[#3b3abf]"
                 />
               </div>
 
               {/* Botón de Procesamiento */}
               <button
-                onClick={handleProcessSmart}
-                disabled={(!pastedText.trim() && !selectedFile) || isProcessing}
+                onClick={handleProcessUniversal}
+                disabled={(stagedFiles.length === 0 && !pastedText.trim()) || isProcessing}
                 className="w-full py-3.5 px-6 rounded-2xl bg-[#3b3abf] hover:bg-[#2828a8] disabled:opacity-50 text-white text-sm font-black shadow-lg shadow-[#3b3abf]/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 {isProcessing ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Analizando con Motor Inteligente...</span>
+                    <span>{processingStage || 'Procesando evidencia académica...'}</span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4 text-amber-300" />
-                    <span>Analizar y Extraer Semestre</span>
+                    <span>Procesar mi evidencia</span>
                   </>
                 )}
               </button>
             </div>
           )}
 
-          {/* VISTA PREVIA EDITABLE TRAS EL ANÁLISIS IA */}
-          {activeTab === 'ia' && parsedResult && (
+          {/* ══════════════════════════════════════════════════════════
+              PASO 2: PANTALLA DE REVISIÓN ("RESUMEN + EXCEPCIONES")
+             ══════════════════════════════════════════════════════════ */}
+          {activeTab === 'universal' && ingestResult && (
             <div className="space-y-6 animate-in fade-in duration-300">
               <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
                 <div>
                   <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                    Extracción Exitosa ({parsedResult.sourceType})
+                    Evidencia Consolidada · Confianza {ingestResult.confidence.toUpperCase()}
                   </span>
-                  <h3 className="text-lg font-black text-[var(--ink)] mt-1">
-                    Revisa y Confirma tu Semestre
+                  <h3 className="text-xl font-black text-[var(--ink)] mt-1">
+                    Tu semestre
                   </h3>
                 </div>
                 <button
-                  onClick={() => setParsedResult(null)}
+                  onClick={() => setIngestResult(null)}
                   className="text-xs font-mono text-[var(--muted)] hover:text-[var(--ink)] underline cursor-pointer"
                 >
-                  Volver a cargar
+                  Modificar evidencias
                 </button>
               </div>
 
-              {/* Tarjeta Perfil Detectado */}
-              <div className="p-4 rounded-2xl bg-[var(--paper)] border border-[var(--border)] space-y-3">
-                <div className="text-xs font-mono font-bold uppercase text-[#3b3abf] dark:text-[#a0a0ff]">
-                  Datos de Estudiante Detectados
+              {/* Tarjetas de Resumen Principal */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-4 rounded-2xl bg-[var(--paper)] border border-[var(--border)] flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-black">
+                    ✓
+                  </div>
+                  <div>
+                    <div className="text-base font-black text-[var(--ink)]">
+                      {ingestResult.summary.subjectsCount} materias
+                    </div>
+                    <div className="text-[11px] text-[var(--muted)]">Consolidadas y listas</div>
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                  <div>
-                    <label className="text-[10px] text-[var(--muted)] block">Estudiante</label>
-                    <input
-                      type="text"
-                      value={parsedResult.profile.name || ''}
-                      onChange={(e) =>
-                        setParsedResult({
-                          ...parsedResult,
-                          profile: { ...parsedResult.profile, name: e.target.value },
-                        })
-                      }
-                      className="w-full font-bold bg-[var(--surface)] p-2 rounded-xl border border-[var(--border)] mt-0.5 text-[var(--ink)]"
-                    />
+
+                <div className="p-4 rounded-2xl bg-[var(--paper)] border border-[var(--border)] flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-black">
+                    ✓
                   </div>
                   <div>
-                    <label className="text-[10px] text-[var(--muted)] block">Código Banner</label>
-                    <input
-                      type="text"
-                      value={parsedResult.profile.studentCode || ''}
-                      onChange={(e) =>
-                        setParsedResult({
-                          ...parsedResult,
-                          profile: { ...parsedResult.profile, studentCode: e.target.value },
-                        })
-                      }
-                      className="w-full font-mono bg-[var(--surface)] p-2 rounded-xl border border-[var(--border)] mt-0.5 text-[var(--ink)]"
-                    />
+                    <div className="text-base font-black text-[var(--ink)]">
+                      {ingestResult.summary.scheduleBlocksCount} clases
+                    </div>
+                    <div className="text-[11px] text-[var(--muted)]">Franjas de horario</div>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-[var(--paper)] border border-[var(--border)] flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center font-black">
+                    ✓
                   </div>
                   <div>
-                    <label className="text-[10px] text-[var(--muted)] block">Programa</label>
-                    <input
-                      type="text"
-                      value={parsedResult.profile.program || ''}
-                      onChange={(e) =>
-                        setParsedResult({
-                          ...parsedResult,
-                          profile: { ...parsedResult.profile, program: e.target.value },
-                        })
-                      }
-                      className="w-full font-bold bg-[var(--surface)] p-2 rounded-xl border border-[var(--border)] mt-0.5 text-[var(--ink)]"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-[var(--muted)] block">Promedio GPA</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={parsedResult.profile.gpa || 4.0}
-                      onChange={(e) =>
-                        setParsedResult({
-                          ...parsedResult,
-                          profile: { ...parsedResult.profile, gpa: parseFloat(e.target.value) },
-                        })
-                      }
-                      className="w-full font-mono font-bold text-amber-600 dark:text-amber-400 bg-[var(--surface)] p-2 rounded-xl border border-[var(--border)] mt-0.5"
-                    />
+                    <div className="text-base font-black text-[var(--ink)] truncate max-w-[140px]">
+                      {ingestResult.data.student?.name || 'Estudiante'}
+                    </div>
+                    <div className="text-[11px] text-[var(--muted)] font-mono">
+                      {ingestResult.data.student?.studentCode || 'Perfil detectado'}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Materias y Horarios Detectados */}
-              <div className="space-y-3">
-                <div className="text-xs font-mono font-bold uppercase text-[var(--muted)] flex items-center justify-between">
-                  <span>Materias y Bloques Horarios ({parsedResult.subjects.length})</span>
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
-                    {parsedResult.scheduleBlocks.length} franjas semanales
-                  </span>
+              {/* Excepciones y Diagnóstico Transparente */}
+              <div className="space-y-2">
+                <div className="text-xs font-mono font-bold uppercase text-[var(--muted)]">
+                  Diagnóstico y Excepciones Detectadas:
                 </div>
 
-                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                  {parsedResult.subjects.map((sub) => {
-                    const blocks = parsedResult.scheduleBlocks.filter(
-                      (b) => b.subjectId === sub.id
-                    );
+                {/* Salones Pendientes */}
+                {ingestResult.summary.missingRoomsCount > 0 && (
+                  <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-3 text-xs text-amber-800 dark:text-amber-200">
+                    <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="font-bold block">
+                        ⚠ {ingestResult.summary.missingRoomsCount} salón(es) pendiente(s)
+                      </strong>
+                      <span className="text-[11px] text-amber-700 dark:text-amber-300">
+                        Algunas clases no tienen salón asignado en la evidencia cargada. Podrás editar el aula en cualquier momento desde tu horario.
+                      </span>
+                    </div>
+                  </div>
+                )}
 
-                    return (
-                      <div
-                        key={sub.id}
-                        className="p-3 rounded-xl bg-[var(--paper)] border border-[var(--border)] flex items-center justify-between gap-3"
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <span
-                            className="w-3 h-3 rounded-full shrink-0"
-                            style={{ backgroundColor: sub.color }}
-                          />
-                          <div className="min-w-0">
-                            <div className="text-xs font-bold text-[var(--ink)] truncate">
-                              {sub.name}
-                            </div>
-                            <div className="text-[10px] font-mono text-[var(--muted)]">
-                              {sub.code} · {sub.credits} créditos
+                {/* Evaluaciones Ausentes vs Vacías */}
+                {ingestResult.summary.examsCount === null && (
+                  <div className="p-3.5 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-start gap-3 text-xs text-blue-800 dark:text-blue-200">
+                    <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="font-bold block">
+                        ℹ Evaluaciones: No encontradas en la evidencia cargada
+                      </strong>
+                      <span className="text-[11px] text-blue-700 dark:text-blue-300">
+                        Mi Semestre no inventa parciales ficticios. Podrás registrar tus entregas y exámenes más adelante o cargar el syllabus de cada materia.
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Otras Advertencias Transparentes */}
+                {ingestResult.warnings
+                  .filter((w) => w.code !== 'MISSING_ROOMS' && w.code !== 'EXAMS_NOT_EVIDENCED')
+                  .map((w, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-xl bg-[var(--paper)] border border-[var(--border)] text-xs text-[var(--ink)] flex items-center gap-2"
+                    >
+                      <span className="text-amber-500">⚠</span>
+                      <span>{w.message}</span>
+                    </div>
+                  ))}
+              </div>
+
+              {/* Acordeón de Detalles de Asignaturas */}
+              <div className="border border-[var(--border)] rounded-2xl overflow-hidden bg-[var(--paper)]">
+                <button
+                  onClick={() => setShowDetails(!showDetails)}
+                  className="w-full p-4 flex items-center justify-between text-xs font-bold text-[var(--ink)] hover:bg-[var(--surface)] transition-colors cursor-pointer"
+                >
+                  <span className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-[#3b3abf]" />
+                    <span>Ver detalle completo de asignaturas ({ingestResult.data.subjects.length})</span>
+                  </span>
+                  {showDetails ? (
+                    <ChevronUp className="w-4 h-4 text-[var(--muted)]" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-[var(--muted)]" />
+                  )}
+                </button>
+
+                {showDetails && (
+                  <div className="p-4 pt-0 border-t border-[var(--border)] space-y-2 max-h-60 overflow-y-auto">
+                    {ingestResult.data.subjects.map((sub) => {
+                      const blocks = ingestResult.data.scheduleBlocks.filter(
+                        (b) => b.subjectId === sub.id
+                      );
+                      return (
+                        <div
+                          key={sub.id}
+                          className="p-3 rounded-xl bg-[var(--surface)] border border-[var(--border)] flex items-center justify-between gap-3 text-xs"
+                        >
+                          <div>
+                            <div className="font-bold text-[var(--ink)]">{sub.name}</div>
+                            <div className="text-[11px] font-mono text-[var(--muted)]">
+                              {sub.code || 'Sin código'} · {sub.credits || 3} créditos · {sub.professor || 'Docente titular'}
                             </div>
                           </div>
+                          <div className="flex flex-wrap gap-1 justify-end">
+                            {blocks.length > 0 ? (
+                              blocks.map((b, bIdx) => (
+                                <span
+                                  key={bIdx}
+                                  className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-[var(--paper)] border border-[var(--border)] text-[var(--ink)]"
+                                >
+                                  {DAYS.find((d) => d.id === b.dayOfWeek)?.name.slice(0, 3)} {b.startTime}-{b.endTime}
+                                  {b.location ? ` (${b.location})` : ''}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-[10px] font-mono text-amber-600">Sin horario</span>
+                            )}
+                          </div>
                         </div>
-
-                        <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
-                          {blocks.map((b, bIdx) => (
-                            <span
-                              key={bIdx}
-                              className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)]"
-                            >
-                              {DAYS.find((d) => d.id === b.dayOfWeek)?.name.slice(0, 3)} {b.startTime}-{b.endTime} ({b.location})
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
-              {/* Botón de Confirmación Definitiva */}
+              {/* Botón de Confirmación Definitiva (Dexie Atomic Commit) */}
               <button
-                onClick={handleConfirmParsed}
+                onClick={handleConfirmCommit}
                 disabled={isProcessing || isSuccess}
-                className="w-full py-3.5 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black shadow-lg shadow-emerald-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-4 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black shadow-lg shadow-emerald-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 {isSuccess ? (
                   <>
                     <Check className="w-5 h-5" />
-                    <span>¡Semestre Configurado con Éxito!</span>
+                    <span>
+                      ¡Semestre guardado! ({commitResult?.created.subjects || ingestResult.summary.subjectsCount} materias, {commitResult?.created.scheduleBlocks || ingestResult.summary.scheduleBlocksCount} clases)
+                    </span>
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4 text-amber-300" />
-                    <span>Confirmar y Configurar Mi Semestre</span>
+                    <Check className="w-5 h-5" />
+                    <span>Empezar mi semestre</span>
                   </>
                 )}
               </button>
