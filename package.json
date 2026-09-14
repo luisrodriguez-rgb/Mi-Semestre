@@ -8,7 +8,8 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx src/tests/academic-engine/engine.test.ts && tsx src/tests/importer/smartIngester.test.ts && tsx src/tests/importer/deduplication.test.ts && tsx src/tests/importer/icsParser.test.ts && tsx src/tests/ai/inboxPreprocessor.test.ts && tsx src/tests/ai/geminiProvider.test.ts && tsx src/tests/academic-engine/studyGapPlanner.test.ts && tsx src/tests/academic-engine/academicScenarios.test.ts && tsx src/tests/academic-engine/plannerBoundaries.test.ts && tsx src/tests/academic-engine/decisionTracker.test.ts && tsx src/tests/e2e/academicLifecycle.test.ts"
+    "test:universal": "tsx src/tests/importer/universalDetector.test.ts && tsx src/tests/importer/entityResolution.test.ts && tsx src/tests/importer/mergeEvidence.test.ts && tsx src/tests/importer/deduplicationAcrossSources.test.ts && tsx src/tests/importer/validator.test.ts && tsx src/tests/importer/atomicCommit.test.ts && tsx src/tests/importer/multiInputPipeline.test.ts && tsx src/tests/importer/universalPipeline.test.ts",
+    "test": "npm run test:universal && tsx src/tests/academic-engine/engine.test.ts && tsx src/tests/importer/smartIngester.test.ts && tsx src/tests/importer/deduplication.test.ts && tsx src/tests/importer/icsParser.test.ts && tsx src/tests/ai/inboxPreprocessor.test.ts && tsx src/tests/ai/geminiProvider.test.ts && tsx src/tests/academic-engine/studyGapPlanner.test.ts && tsx src/tests/academic-engine/academicScenarios.test.ts && tsx src/tests/academic-engine/plannerBoundaries.test.ts && tsx src/tests/academic-engine/decisionTracker.test.ts && tsx src/tests/e2e/academicLifecycle.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.21.0",
