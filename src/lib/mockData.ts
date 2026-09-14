@@ -279,6 +279,8 @@ export const mockExams: Exam[] = [
     title: 'Primer Parcial: Muestreo y Estimación por Intervalos',
     date: `${addDays(4)}T14:00:00`,
     weight: 20,
+    location: 'Laboratorio de Cómputo 3',
+    notes: 'Llevar carné estudiantil, calculadora con funciones estadísticas y formulario impreso.',
     topics: ['Distribuciones muestrales', 'Intervalos de confianza', 'Estimación de proporciones'],
   },
   {
@@ -287,6 +289,8 @@ export const mockExams: Exam[] = [
     title: 'Sustentación Proyecto Integrador de Análisis Estadístico',
     date: `${addDays(14)}T15:00:00`,
     weight: 20,
+    location: 'Edificio C · Salón 201',
+    notes: 'Presentación en diapositivas (máximo 12 min por grupo). Llevar computador con notebook listo.',
     topics: ['Modelo aplicado', 'Interpretación en R / Python', 'Conclusiones gerenciales'],
   },
 
@@ -297,6 +301,8 @@ export const mockExams: Exam[] = [
     title: 'Jornada de Solución de Problemas - Unidad 1',
     date: `${addDays(6)}T07:00:00`,
     weight: 20,
+    location: 'Edificio D · Aula 305',
+    notes: 'Evaluación individual a libro cerrado. Se permite regla y calculadora.',
     topics: ['Modelación matemática', 'Método Simplex', 'Dualidad y Sensibilidad'],
   },
 
@@ -307,6 +313,8 @@ export const mockExams: Exam[] = [
     title: 'Examen Parcial 1: Ley de Coulomb y Campo Eléctrico',
     date: `${addDays(9)}T11:00:00`,
     weight: 25,
+    location: 'Edificio B · Aula 104',
+    notes: 'Llevar hojas cuadriculadas de examen y calculadora científica.',
     topics: ['Ley de Gauss', 'Potencial eléctrico', 'Capacitancia y Dieléctricos'],
   },
 
@@ -317,6 +325,8 @@ export const mockExams: Exam[] = [
     title: 'Parcial 1: Ecuaciones Diferenciales Lineales y Laplace',
     date: `${addDays(12)}T07:00:00`,
     weight: 20,
+    location: 'Edificio E · Salón 102',
+    notes: 'Llevar tabla oficial de transformadas de Laplace sin anotaciones adicionales.',
     topics: ['Transformada de Laplace', 'Problemas con valor inicial', 'Convolución'],
   },
 
@@ -327,6 +337,8 @@ export const mockExams: Exam[] = [
     title: 'Final Term Project Presentation (Global Supply Chains)',
     date: `${addDays(18)}T14:00:00`,
     weight: 35,
+    location: 'Centro de Idiomas · Aula 302',
+    notes: 'Formal dress code. Bring printed executive summary for the professor.',
     topics: ['Academic speaking', 'Persuasive writing', 'Data visualization in English'],
   },
 ];
@@ -344,6 +356,8 @@ export const mockAssignments: Assignment[] = [
     priority: 'high',
     estimatedMinutes: 90,
     status: 'pending',
+    location: 'Plataforma Moodle / Enlace Colab',
+    notes: 'Subir enlace público de Colab con permisos de lectura y PDF descargado.',
   },
   {
     id: 'ass-est-propuesta',
@@ -354,6 +368,8 @@ export const mockAssignments: Assignment[] = [
     priority: 'high',
     estimatedMinutes: 60,
     status: 'pending',
+    location: 'Teams - Canal del Proyecto',
+    notes: 'Documento en formato IEEE, máximo 4 páginas.',
   },
   {
     id: 'ass-elect-practica-s8',
@@ -364,6 +380,8 @@ export const mockAssignments: Assignment[] = [
     priority: 'medium',
     estimatedMinutes: 75,
     status: 'pending',
+    location: 'Laboratorio de Física II',
+    notes: 'Llevar bata blanca de laboratorio y guía de práctica impresa.',
   },
   {
     id: 'ass-mat3-quices',

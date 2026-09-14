@@ -270,16 +270,24 @@ export function ClassDetailModal({
                 {subjectExams.map((exam) => (
                   <div
                     key={exam.id}
-                    className="p-3 rounded-xl bg-[var(--paper)] border border-[var(--border)] flex items-center justify-between"
+                    className="p-3 rounded-xl bg-[var(--paper)] border border-[var(--border)]"
                   >
-                    <div>
+                    <div className="flex items-center justify-between gap-2">
                       <div className="text-xs font-bold text-[var(--ink)]">{exam.title}</div>
-                      <div className="text-[11px] text-[var(--muted)] font-mono mt-0.5 flex items-center gap-2">
-                        <span>{new Date(exam.date).toLocaleDateString('es-CO', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
-                        <span>·</span>
-                        <span className="font-bold text-amber-600 dark:text-amber-400">Peso: {exam.weight}%</span>
-                      </div>
+                      <span className="font-bold text-xs text-amber-600 dark:text-amber-400 font-mono shrink-0">
+                        {exam.weight}%
+                      </span>
                     </div>
+                    <div className="text-[11px] text-[var(--muted)] font-mono mt-0.5 flex items-center gap-2 flex-wrap">
+                      <span>{new Date(exam.date).toLocaleDateString('es-CO', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                      {exam.location && <span>· 📍 {exam.location}</span>}
+                    </div>
+                    {exam.notes && (
+                      <div className="text-[11px] text-[var(--ink)] bg-[var(--surface)] p-1.5 rounded-lg border border-[var(--border)] mt-1.5">
+                        <span className="font-semibold text-[10px] uppercase text-[var(--muted)] font-mono block">Notas / Qué llevar:</span>
+                        <span>{exam.notes}</span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -304,25 +312,35 @@ export function ClassDetailModal({
                 {subjectTasks.map((task) => (
                   <div
                     key={task.id}
-                    className="p-3 rounded-xl bg-[var(--paper)] border border-[var(--border)] flex items-center justify-between gap-3"
+                    className="p-3 rounded-xl bg-[var(--paper)] border border-[var(--border)]"
                   >
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-[var(--ink)] truncate">{task.title}</div>
-                      <div className="text-[11px] text-[var(--muted)] font-mono mt-0.5 flex items-center gap-2">
-                        <span>Entrega: {new Date(task.dueDate).toLocaleDateString('es-CO', { month: 'short', day: 'numeric' })}</span>
-                        <span>·</span>
-                        <span>~{formatMinutesHuman(task.estimatedMinutes)}</span>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-bold text-[var(--ink)] truncate">{task.title}</div>
+                        <div className="text-[11px] text-[var(--muted)] font-mono mt-0.5 flex items-center gap-2 flex-wrap">
+                          <span>Entrega: {new Date(task.dueDate).toLocaleDateString('es-CO', { month: 'short', day: 'numeric' })}</span>
+                          <span>·</span>
+                          <span>~{formatMinutesHuman(task.estimatedMinutes)}</span>
+                          {task.location && <span>· 📍 {task.location}</span>}
+                        </div>
                       </div>
+
+                      <button
+                        onClick={() => handleStartTaskFocus(task)}
+                        className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#3b3abf] hover:bg-[#2828a8] text-white text-xs font-bold transition-all cursor-pointer"
+                        title="Iniciar Pomodoro para esta tarea"
+                      >
+                        <Play className="w-3 h-3 fill-white" />
+                        <span>Enfocar</span>
+                      </button>
                     </div>
 
-                    <button
-                      onClick={() => handleStartTaskFocus(task)}
-                      className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#3b3abf] hover:bg-[#2828a8] text-white text-xs font-bold transition-all cursor-pointer"
-                      title="Iniciar Pomodoro para esta tarea"
-                    >
-                      <Play className="w-3 h-3 fill-white" />
-                      <span>Enfocar</span>
-                    </button>
+                    {(task.notes || task.description) && (
+                      <div className="text-[11px] text-[var(--ink)] bg-[var(--surface)] p-1.5 rounded-lg border border-[var(--border)] mt-1.5">
+                        <span className="font-semibold text-[10px] uppercase text-[var(--muted)] font-mono block">Notas / Qué llevar:</span>
+                        <span>{task.notes || task.description}</span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

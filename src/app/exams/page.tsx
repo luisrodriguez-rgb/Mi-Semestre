@@ -12,12 +12,15 @@ import {
   Search,
   Clock,
   Sparkles,
+  Pencil,
+  MapPin,
+  FileText,
 } from 'lucide-react';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 
 export default function ExamsPage() {
   const { exams, subjects, subjectsMap, refreshData, isLoading } = useSemesterData();
-  const { openAddExam, startFocusSession } = useUIStore();
+  const { openAddExam, openEditExam, startFocusSession } = useUIStore();
 
   const [filterSubject, setFilterSubject] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -190,17 +193,49 @@ export default function ExamsPage() {
                         <h3 className="text-sm font-extrabold text-[var(--ink)] mt-1.5 group-hover:text-[#3b3abf] dark:group-hover:text-[#a0a0ff] transition-colors">
                           {exam.title}
                         </h3>
+
+                        {exam.location && (
+                          <div className="flex items-center gap-1.5 text-xs text-[var(--ink)] mt-1 font-medium">
+                            <MapPin className="w-3.5 h-3.5 text-[#3b3abf] dark:text-[#a0a0ff] shrink-0" />
+                            <span>{exam.location}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => handleDelete(exam.id)}
-                      className="p-2 text-[var(--muted)] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition-colors cursor-pointer"
-                      title="Eliminar examen"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => openEditExam(exam)}
+                        className="p-2 text-[var(--muted)] hover:text-[#3b3abf] hover:bg-[#3b3abf]/10 rounded-xl transition-colors cursor-pointer"
+                        title="Editar evaluación"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        onClick={() => handleDelete(exam.id)}
+                        className="p-2 text-[var(--muted)] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition-colors cursor-pointer"
+                        title="Eliminar examen"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Notas o Requerimientos / Qué llevar */}
+                  {exam.notes && (
+                    <div className="mt-3.5 p-3 rounded-xl bg-[var(--paper)] border border-[var(--border)] text-xs flex items-start gap-2.5">
+                      <FileText className="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0 mt-0.5" />
+                      <div className="min-w-0">
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--muted)] block">
+                          Requerimientos / Qué llevar:
+                        </span>
+                        <p className="text-xs text-[var(--ink)] mt-0.5 whitespace-pre-line leading-relaxed">
+                          {exam.notes}
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Temas si están especificados */}
                   {exam.topics && exam.topics.length > 0 && (

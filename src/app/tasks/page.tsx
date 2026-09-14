@@ -14,12 +14,15 @@ import {
   Search,
   Timer,
   Check,
+  Pencil,
+  MapPin,
+  FileText,
 } from 'lucide-react';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 
 export default function TasksPage() {
   const { assignments, subjects, subjectsMap, refreshData, isLoading } = useSemesterData();
-  const { openAddTask, startFocusSession } = useUIStore();
+  const { openAddTask, openEditTask, startFocusSession } = useUIStore();
 
   const [filterSubject, setFilterSubject] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'completed'>('all');
@@ -202,93 +205,132 @@ export default function TasksPage() {
                 })
               : 'Sin fecha límite';
 
+            const dueObj = task.dueDate ? new Date(task.dueDate) : null;
+            const dueTime = dueObj && !isNaN(dueObj.getTime())
+              ? dueObj.toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true })
+              : '';
+
             const priorityBadge = {
               high: { label: 'Alta', bg: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20' },
               medium: { label: 'Media', bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' },
               low: { label: 'Baja', bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' },
             }[task.priority || 'medium'];
 
+            const taskNotes = task.notes || task.description;
+
             return (
               <div
                 key={task.id}
-                className={`p-4 rounded-2xl bg-[var(--surface)] border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group ${
+                className={`p-4 rounded-2xl bg-[var(--surface)] border transition-all flex flex-col justify-between gap-3 group ${
                   isCompleted
                     ? 'border-[var(--border)] opacity-60'
                     : 'border-[var(--border)] hover:border-[#3b3abf]/50 shadow-xs'
                 }`}
               >
-                <div className="flex items-start sm:items-center gap-3 min-w-0">
-                  {/* Checkbox de toggle */}
-                  <button
-                    onClick={() => handleToggle(task.id)}
-                    className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all shrink-0 mt-0.5 sm:mt-0 cursor-pointer ${
-                      isCompleted
-                        ? 'bg-[#3b3abf] border-[#3b3abf] text-white'
-                        : 'border-[var(--border)] bg-[var(--paper)] group-hover:border-[#3b3abf]'
-                    }`}
-                  >
-                    {isCompleted && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                  </button>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
+                    {/* Checkbox de toggle */}
+                    <button
+                      onClick={() => handleToggle(task.id)}
+                      className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all shrink-0 mt-0.5 sm:mt-0 cursor-pointer ${
+                        isCompleted
+                          ? 'bg-[#3b3abf] border-[#3b3abf] text-white'
+                          : 'border-[var(--border)] bg-[var(--paper)] group-hover:border-[#3b3abf]'
+                      }`}
+                    >
+                      {isCompleted && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                    </button>
 
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span
-                        className={`text-sm font-bold leading-tight ${
-                          isCompleted
-                            ? 'line-through text-[var(--muted)]'
-                            : 'text-[var(--ink)]'
-                        }`}
-                      >
-                        {task.title}
-                      </span>
-                      {priorityBadge && (
-                        <span className={`text-[10px] font-mono font-bold px-2 py-0.2 rounded-full border ${priorityBadge.bg}`}>
-                          {priorityBadge.label}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2 text-xs font-mono text-[var(--muted)] mt-1 flex-wrap">
-                      {sub && (
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span
-                          className="px-2 py-0.5 rounded-md font-bold text-[10px] text-white shadow-2xs"
-                          style={{ backgroundColor: sub.color }}
+                          className={`text-sm font-bold leading-tight ${
+                            isCompleted
+                              ? 'line-through text-[var(--muted)]'
+                              : 'text-[var(--ink)]'
+                          }`}
                         >
-                          {sub.name}
+                          {task.title}
                         </span>
-                      )}
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        <span>{dueFormatted}</span>
-                      </span>
-                      {task.estimatedMinutes && (
-                        <span>· ~{task.estimatedMinutes} min</span>
-                      )}
+                        {priorityBadge && (
+                          <span className={`text-[10px] font-mono font-bold px-2 py-0.2 rounded-full border ${priorityBadge.bg}`}>
+                            {priorityBadge.label}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 text-xs font-mono text-[var(--muted)] mt-1 flex-wrap">
+                        {sub && (
+                          <span
+                            className="px-2 py-0.5 rounded-md font-bold text-[10px] text-white shadow-2xs"
+                            style={{ backgroundColor: sub.color }}
+                          >
+                            {sub.name}
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          <span>{dueFormatted}</span>
+                          {dueTime && <span>({dueTime})</span>}
+                        </span>
+                        {task.estimatedMinutes && (
+                          <span>· ~{task.estimatedMinutes} min</span>
+                        )}
+                        {task.location && (
+                          <span className="flex items-center gap-1 text-[var(--ink)] font-sans font-medium">
+                            <MapPin className="w-3 h-3 text-[#3b3abf] dark:text-[#a0a0ff]" />
+                            <span>{task.location}</span>
+                          </span>
+                        )}
+                      </div>
                     </div>
+                  </div>
+
+                  {/* Acciones */}
+                  <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                    <button
+                      onClick={() =>
+                        startFocusSession(task.title, sub?.name || 'Estudio', task.estimatedMinutes || 25)
+                      }
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[var(--paper)] hover:bg-[#3b3abf] hover:text-white text-[#3b3abf] dark:text-[#a0a0ff] text-xs font-bold transition-all cursor-pointer border border-[var(--border)] shadow-2xs"
+                      title="Iniciar sesión Pomodoro con esta tarea"
+                    >
+                      <Timer className="w-3.5 h-3.5" />
+                      <span className="hidden md:inline">Enfocar</span>
+                    </button>
+
+                    <button
+                      onClick={() => openEditTask(task)}
+                      className="p-2 rounded-xl text-[var(--muted)] hover:text-[#3b3abf] hover:bg-[#3b3abf]/10 transition-colors cursor-pointer"
+                      title="Editar tarea"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+
+                    <button
+                      onClick={() => handleDelete(task.id)}
+                      className="p-2 rounded-xl text-[var(--muted)] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
+                      title="Eliminar tarea"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
 
-                {/* Acciones */}
-                <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                  <button
-                    onClick={() =>
-                      startFocusSession(task.title, sub?.name || 'Estudio', task.estimatedMinutes || 25)
-                    }
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[var(--paper)] hover:bg-[#3b3abf] hover:text-white text-[#3b3abf] dark:text-[#a0a0ff] text-xs font-bold transition-all cursor-pointer border border-[var(--border)] shadow-2xs"
-                    title="Iniciar sesión Pomodoro con esta tarea"
-                  >
-                    <Timer className="w-3.5 h-3.5" />
-                    <span className="hidden md:inline">Enfocar</span>
-                  </button>
-
-                  <button
-                    onClick={() => handleDelete(task.id)}
-                    className="p-2 rounded-xl text-[var(--muted)] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
-                    title="Eliminar tarea"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                {/* Notas / Qué llevar / Indicaciones de la tarea */}
+                {taskNotes && (
+                  <div className="mt-1 pt-2.5 border-t border-[var(--border)]/70 text-xs flex items-start gap-2 bg-[var(--paper)]/50 p-2.5 rounded-xl">
+                    <FileText className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--muted)] block">
+                        Notas / Qué llevar:
+                      </span>
+                      <p className="text-xs text-[var(--ink)] mt-0.5 whitespace-pre-line leading-relaxed">
+                        {taskNotes}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })

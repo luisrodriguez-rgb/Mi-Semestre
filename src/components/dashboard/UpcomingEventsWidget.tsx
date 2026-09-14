@@ -96,7 +96,7 @@ export function UpcomingEventsWidget({ exams: propExams }: UpcomingEventsWidgetP
                     </span>
                   </div>
                   <div className="text-[10px] text-[#626c96] dark:text-[#8b95c2] truncate mt-0.5">
-                    {sub?.name || 'Materia'} {timeStr ? `· ${timeStr}` : ''}
+                    {sub?.name || 'Materia'} {timeStr ? `· ${timeStr}` : ''} {exam.location ? `· 📍 ${exam.location}` : ''}
                   </div>
                 </div>
               </div>
