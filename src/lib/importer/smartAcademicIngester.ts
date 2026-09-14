@@ -146,49 +146,57 @@ export function parseJasperAcademicBalance(text: string): ParsedAcademicData | n
   const semesterPadded = semesterNum < 10 ? `0${semesterNum}` : `${semesterNum}`;
 
   let colorIdx = 0;
-  for (const line of subjectLines) {
-    const regex = new RegExp(`(?:\\d+\\s+)?([A-Z]{2,4}\\s+\\d{4,5})\\s+([^0-9]+?)\\s+(?:0?${semesterNum}|${semesterPadded})?\\s*$`, 'i');
-    const m = line.trim().match(regex);
+  for (const rawLine of subjectLines) {
+    const line = rawLine.trim();
+    if (!line) continue;
 
-    if (m) {
-      const code = m[1].trim();
-      const name = m[2].trim();
-      if (name.length > 2 && !name.toLowerCase().includes('nivel') && !subjects.some(s => s.code === code)) {
-        const subId = `sub-${code.toLowerCase().replace(/\s+/g, '-')}`;
+    // Patrón A: "Código: 11373 - NRC: 11083 - Estadística aplicada II - 4 Créditos - Prof: Dr. Diego Fernando Cruz"
+    const patternA = line.match(/(?:c[oó]digo:\s*)?([A-Za-z0-9\s-]+?)\s*(?:-\s*nrc:\s*(\d+))?\s*-\s*([^-]+?)\s*-\s*(\d+)\s*cr[eé]ditos(?:\s*-\s*prof:\s*([^\n\r]+))?/i);
+    if (patternA) {
+      const code = patternA[1].replace(/c[oó]digo:\s*/i, '').trim();
+      const nrc = patternA[2]?.trim();
+      const name = patternA[3].trim();
+      const credits = parseInt(patternA[4], 10) || 3;
+      const professor = patternA[5]?.trim() || 'Profesor Icesi Asignado';
+
+      if (name.length > 2 && !subjects.some((s) => s.code === code || s.name.toLowerCase() === name.toLowerCase())) {
+        const subId = `sub-${code.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
         subjects.push({
           id: subId,
           code,
           name: titleCase(name),
-          credits: 3,
+          credits,
+          color: PALETTE[colorIdx % PALETTE.length],
+          maxAbsences: 4,
+          professor,
+        });
+        colorIdx++;
+        continue;
+      }
+    }
+
+    // Patrón B: "4 IND 05358 Optativa profesional 04" o "11373 Estadística Aplicada II 04"
+    const patternB = line.match(/^(?:\d+\s+)?(?:([A-Z]{2,4}\s+\d{4,5})|(\d{4,5}))\s+([^0-9]+?)(?:\s+(\d{1,2}))?\s*$/i);
+    if (patternB) {
+      const code = (patternB[1] || patternB[2]).trim();
+      const name = patternB[3].trim();
+      const credits = patternB[4] ? parseInt(patternB[4], 10) : 3;
+
+      if (name.length > 2 && !name.toLowerCase().includes('nivel') && !subjects.some((s) => s.code === code)) {
+        const subId = `sub-${code.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+        subjects.push({
+          id: subId,
+          code,
+          name: titleCase(name),
+          credits: credits > 0 && credits <= 6 ? credits : 3,
           color: PALETTE[colorIdx % PALETTE.length],
           maxAbsences: 4,
           professor: 'Profesor Icesi Asignado',
         });
         colorIdx++;
+        continue;
       }
     }
-  }
-
-  if (subjects.length === 0) {
-    const defaultSubs = [
-      { code: 'IND 05358', name: 'Optativa Profesional', credits: 3 },
-      { code: 'CFT 11373', name: 'Estadística Aplicada II', credits: 3 },
-      { code: 'CFT 11370', name: 'Física II', credits: 4 },
-      { code: 'IND 05359', name: 'Optimización', credits: 3 },
-      { code: 'CFT 11356', name: 'Matemáticas Aplicadas III', credits: 4 },
-    ];
-
-    defaultSubs.forEach((ds, idx) => {
-      subjects.push({
-        id: `sub-${ds.code.toLowerCase().replace(/\s+/g, '-')}`,
-        code: ds.code,
-        name: ds.name,
-        credits: ds.credits,
-        color: PALETTE[idx % PALETTE.length],
-        maxAbsences: 4,
-        professor: 'Docente Titular',
-      });
-    });
   }
 
   const timeTemplates = [
@@ -260,9 +268,30 @@ export function parseScheduleFreeText(text: string): ParsedAcademicData {
   const scheduleBlocks: ParsedAcademicData['scheduleBlocks'] = [];
 
   let colorIdx = 0;
+  let lastSubjectHeader: string | null = null;
 
   for (const line of lines) {
     const timeMatch = line.match(/(\d{1,2}(?::\d{2})?)\s*(?:-|a|to)\s*(\d{1,2}(?::\d{2})?)/i);
+    const dayMatches: number[] = [];
+    if (/\b(lun|lunes)\b/i.test(line)) dayMatches.push(1);
+    if (/\b(mar|martes)\b/i.test(line)) dayMatches.push(2);
+    if (/\b(mie|mi[eé]rcoles)\b/i.test(line)) dayMatches.push(3);
+    if (/\b(jue|jueves)\b/i.test(line)) dayMatches.push(4);
+    if (/\b(vie|viernes)\b/i.test(line)) dayMatches.push(5);
+    if (/\b(sab|s[aá]bado)\b/i.test(line)) dayMatches.push(6);
+
+    // Si la línea no contiene ni horas ni días, puede ser un encabezado o asunto de materia
+    if (!timeMatch && dayMatches.length === 0) {
+      const candidateHeader = line
+        .replace(/^(?:recordatorio|materia|curso|asignatura|clase|sal[oó]n|horario|nota|aviso|de|del|para|en|[:\s-])+/gi, '')
+        .replace(/[:]$/, '')
+        .trim();
+      if (candidateHeader.length >= 3) {
+        lastSubjectHeader = candidateHeader;
+      }
+      continue;
+    }
+
     let startTime = '08:00';
     let endTime = '10:00';
 
@@ -279,14 +308,6 @@ export function parseScheduleFreeText(text: string): ParsedAcademicData {
       location = locMatch[0].trim();
     }
 
-    const dayMatches: number[] = [];
-    if (/\b(lun|lunes)\b/i.test(line)) dayMatches.push(1);
-    if (/\b(mar|martes)\b/i.test(line)) dayMatches.push(2);
-    if (/\b(mie|mi[eé]rcoles)\b/i.test(line)) dayMatches.push(3);
-    if (/\b(jue|jueves)\b/i.test(line)) dayMatches.push(4);
-    if (/\b(vie|viernes)\b/i.test(line)) dayMatches.push(5);
-    if (/\b(sab|s[aá]bado)\b/i.test(line)) dayMatches.push(6);
-
     if (dayMatches.length === 0) {
       dayMatches.push((colorIdx % 5) + 1);
     }
@@ -295,11 +316,13 @@ export function parseScheduleFreeText(text: string): ParsedAcademicData {
       .replace(/(\d{1,2}(?::\d{2})?)\s*(?:-|a|to)\s*(\d{1,2}(?::\d{2})?)/gi, '')
       .replace(/\b(lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|lun|mar|mie|jue|vie|sab)\b/gi, '')
       .replace(/(?:sal[oó]n|aula|lab|laboratorio|edificio|auditorio|remoto|zoom|teams)\s*([A-Za-z0-9-]+)?/gi, '')
-      .replace(/[-|·,]/g, ' ')
+      .replace(/[-|·,()]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
 
-    if (cleanName.length < 3) {
+    if (cleanName.length < 3 && lastSubjectHeader) {
+      cleanName = lastSubjectHeader;
+    } else if (cleanName.length < 3) {
       cleanName = `Materia ${colorIdx + 1}`;
     }
 
