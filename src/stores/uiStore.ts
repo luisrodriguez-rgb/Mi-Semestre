@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { ScheduleBlock, FixedRoutine } from '@/types';
+import { ScheduleBlock, FixedRoutine, Exam, Assignment } from '@/types';
 
 export interface FocusSessionState {
   isActive: boolean;
@@ -23,7 +23,9 @@ interface UIState {
   isImporterOpen: boolean;
   isOnboardingOpen: boolean;
   isAddTaskOpen: boolean;
+  editingTask: Assignment | null;
   isAddExamOpen: boolean;
+  editingExam: Exam | null;
   isAddClassOpen: boolean;
   isEditClassOpen: boolean;
   editingScheduleBlock: ScheduleBlock | null;
@@ -45,8 +47,10 @@ interface UIState {
   openOnboarding: () => void;
   closeOnboarding: () => void;
   openAddTask: () => void;
+  openEditTask: (task: Assignment) => void;
   closeAddTask: () => void;
   openAddExam: () => void;
+  openEditExam: (exam: Exam) => void;
   closeAddExam: () => void;
   openAddClass: () => void;
   closeAddClass: () => void;
@@ -85,7 +89,9 @@ export const useUIStore = create<UIState>((set) => ({
   isImporterOpen: false,
   isOnboardingOpen: false,
   isAddTaskOpen: false,
+  editingTask: null,
   isAddExamOpen: false,
+  editingExam: null,
   isAddClassOpen: false,
   isEditClassOpen: false,
   editingScheduleBlock: null,
@@ -114,10 +120,12 @@ export const useUIStore = create<UIState>((set) => ({
   closeImporter: () => set({ isImporterOpen: false }),
   openOnboarding: () => set({ isOnboardingOpen: true }),
   closeOnboarding: () => set({ isOnboardingOpen: false }),
-  openAddTask: () => set({ isAddTaskOpen: true }),
-  closeAddTask: () => set({ isAddTaskOpen: false }),
-  openAddExam: () => set({ isAddExamOpen: true }),
-  closeAddExam: () => set({ isAddExamOpen: false }),
+  openAddTask: () => set({ isAddTaskOpen: true, editingTask: null }),
+  openEditTask: (task) => set({ isAddTaskOpen: true, editingTask: task }),
+  closeAddTask: () => set({ isAddTaskOpen: false, editingTask: null }),
+  openAddExam: () => set({ isAddExamOpen: true, editingExam: null }),
+  openEditExam: (exam) => set({ isAddExamOpen: true, editingExam: exam }),
+  closeAddExam: () => set({ isAddExamOpen: false, editingExam: null }),
   openAddClass: () => set({ isAddClassOpen: true }),
   closeAddClass: () => set({ isAddClassOpen: false }),
   openEditClass: (block) => set({ isEditClassOpen: true, editingScheduleBlock: block || null }),

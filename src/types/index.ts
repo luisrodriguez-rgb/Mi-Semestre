@@ -98,6 +98,8 @@ export interface Assignment extends Partial<ImportedEventMetadata> {
   priority: TaskPriority;
   estimatedMinutes: number;
   status: TaskStatus;
+  location?: string;
+  notes?: string;
 }
 
 export interface Exam extends Partial<ImportedEventMetadata> {
@@ -107,6 +109,8 @@ export interface Exam extends Partial<ImportedEventMetadata> {
   date: string;  // YYYY-MM-DD HH:mm
   weight: number; // Porcentaje, ej. 25
   topics?: string[];
+  location?: string;
+  notes?: string;
 }
 
 export type AttendanceStatus = 'present' | 'absent' | 'excused';
