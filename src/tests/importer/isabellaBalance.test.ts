@@ -79,7 +79,7 @@ No. Período Código Grupo Materia Cred. Forma Tipo electiva Mod. Nota
   if (parsed.profile.studentCode !== 'A00414870') {
     throw new Error(`Código esperado A00414870, obtenido ${parsed.profile.studentCode}`);
   }
-  if (!parsed.profile.name.includes('Palomino')) {
+  if (!parsed.profile.name || !parsed.profile.name.includes('Palomino')) {
     throw new Error(`Nombre esperado Isabella Palomino, obtenido ${parsed.profile.name}`);
   }
   if (parsed.profile.gpa !== 4.5) {
@@ -88,7 +88,7 @@ No. Período Código Grupo Materia Cred. Forma Tipo electiva Mod. Nota
   if (parsed.profile.semesterNumber !== 4) {
     throw new Error(`Semestre esperado 4, obtenido ${parsed.profile.semesterNumber}`);
   }
-  if (!parsed.profile.program.includes('Economía')) {
+  if (!parsed.profile.program || !parsed.profile.program.includes('Economía')) {
     throw new Error(`Programa esperado Economía y Negocios Internacionales, obtenido ${parsed.profile.program}`);
   }
   console.log(`✓ Perfil verificado: ${parsed.profile.name} (${parsed.profile.studentCode}) · ${parsed.profile.program}`);

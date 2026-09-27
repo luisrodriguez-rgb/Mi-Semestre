@@ -6,6 +6,7 @@ export interface ParsedAcademicData {
   subjects: Array<{
     id: string;
     code: string;
+    nrc?: string;
     name: string;
     credits: number;
     color: string;

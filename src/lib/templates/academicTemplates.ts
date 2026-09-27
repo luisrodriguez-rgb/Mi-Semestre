@@ -435,8 +435,8 @@ export const ACADEMIC_TEMPLATES: AcademicTemplate[] = [
       { id: 'sb-ecohiphop-1', subjectId: 'sub-eco-hiphop', dayOfWeek: 5, startTime: '09:00', endTime: '12:00', location: 'Salón Multipropósito' },
     ],
     routines: [
-      { id: 'rt-eco-gym', title: 'Entrenamiento Gimnasio Campus', dayOfWeek: 1, startTime: '17:00', endTime: '18:30', category: 'exercise' },
-      { id: 'rt-eco-study', title: 'Bloque de Estudio Autónomo', dayOfWeek: 3, startTime: '14:00', endTime: '16:00', category: 'study' },
+      { id: 'rt-eco-gym', title: 'Entrenamiento Gimnasio Campus', dayOfWeek: 1, startTime: '17:00', endTime: '18:30', type: 'gym' },
+      { id: 'rt-eco-rest', title: 'Pausa y Descanso Activo', dayOfWeek: 3, startTime: '14:00', endTime: '15:00', type: 'rest' },
     ],
     exams: [
       { id: 'ex-ecomat-1', subjectId: 'sub-eco-mat', title: 'Parcial 1: Optimización Estática y Multiplicadores de Lagrange', date: addDays(6), weight: 25 },
