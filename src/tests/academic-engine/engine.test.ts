@@ -94,14 +94,44 @@ function runTests() {
   console.assert(risk.signals.pendingTasksCount === 3, 'Expected 3 pending tasks');
   console.log('✓ calculateSubjectRisk passed with signal breakdown');
 
-  // Test 6: Semester Progress
+  // Test 6: Semester Progress & Boundary Dates
   const metrics = calculateSemesterMetrics({
     startDate: '2026-08-01',
     endDate: '2026-11-30',
     currentDate: new Date('2026-09-08'),
   });
   console.assert(metrics.currentWeek >= 5 && metrics.currentWeek <= 7, `Expected week ~6, got ${metrics.currentWeek}`);
-  console.log('✓ calculateSemesterMetrics passed');
+
+  // Test exact calendar boundary for semester starting Monday Aug 3, 2026
+  const week1Sunday = calculateSemesterMetrics({
+    startDate: '2026-08-03',
+    endDate: '2026-12-05',
+    currentDate: new Date('2026-08-09T23:59:00'),
+  });
+  console.assert(week1Sunday.currentWeek === 1, `Expected Sunday Aug 9 to be Week 1, got ${week1Sunday.currentWeek}`);
+
+  const week2Monday = calculateSemesterMetrics({
+    startDate: '2026-08-03',
+    endDate: '2026-12-05',
+    currentDate: new Date('2026-08-10T08:00:00'),
+  });
+  console.assert(week2Monday.currentWeek === 2, `Expected Monday Aug 10 to be Week 2, got ${week2Monday.currentWeek}`);
+
+  const week8Sunday = calculateSemesterMetrics({
+    startDate: '2026-08-03',
+    endDate: '2026-12-05',
+    currentDate: new Date('2026-09-27T18:30:00'),
+  });
+  console.assert(week8Sunday.currentWeek === 8, `Expected Sunday Sept 27 to be Week 8, got ${week8Sunday.currentWeek}`);
+
+  const week9Monday = calculateSemesterMetrics({
+    startDate: '2026-08-03',
+    endDate: '2026-12-05',
+    currentDate: new Date('2026-09-28T08:00:00'),
+  });
+  console.assert(week9Monday.currentWeek === 9, `Expected Monday Sept 28 to be Week 9, got ${week9Monday.currentWeek}`);
+
+  console.log('✓ calculateSemesterMetrics passed with boundary calendar tests');
 
   console.log('ALL ACADEMIC ENGINE TESTS PASSED SUCCESSFULLY! 🎉');
 }

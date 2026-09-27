@@ -1,16 +1,34 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Semester, Exam, Assignment, Subject } from '@/types';
 import { calculateSemesterMetrics } from '@/lib/academic-engine';
 import { semesterRepository } from '@/lib/storage';
-import { Layers, Calendar, CheckCircle2 } from 'lucide-react';
+import { Layers, Calendar, CheckCircle2, Clock } from 'lucide-react';
 
 interface SemesterTimelineProps {
   semester: Semester | null;
   subjectsMap: Record<string, Subject>;
   exams: Exam[];
   assignments: Assignment[];
+}
+
+function parseLocalDate(dateInput: string | Date): Date {
+  if (dateInput instanceof Date) {
+    return new Date(dateInput.getFullYear(), dateInput.getMonth(), dateInput.getDate());
+  }
+  const match = dateInput.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    return new Date(parseInt(match[1], 10), parseInt(match[2], 10) - 1, parseInt(match[3], 10));
+  }
+  const d = new Date(dateInput);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function getCalendarDaysDiff(start: Date, target: Date): number {
+  const utcStart = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+  const utcTarget = Date.UTC(target.getFullYear(), target.getMonth(), target.getDate());
+  return Math.floor((utcTarget - utcStart) / (1000 * 60 * 60 * 24));
 }
 
 export function SemesterTimeline({
@@ -21,19 +39,6 @@ export function SemesterTimeline({
 }: SemesterTimelineProps) {
   const [customTotalWeeks, setCustomTotalWeeks] = useState<number | null>(null);
   const totalWeeks = customTotalWeeks ?? semester?.totalWeeks ?? 16;
-  const [selectedWeek, setSelectedWeek] = useState<number>(6);
-
-  const handleUpdateTotalWeeks = async (newTotal: number) => {
-    setCustomTotalWeeks(newTotal);
-    if (selectedWeek > newTotal) {
-      setSelectedWeek(newTotal);
-    }
-    if (semester) {
-      const updated = { ...semester, totalWeeks: newTotal };
-      await semesterRepository.save(updated);
-      window.dispatchEvent(new CustomEvent('semester-data-updated'));
-    }
-  };
 
   const metrics = useMemo(() => {
     if (!semester) return null;
@@ -44,27 +49,72 @@ export function SemesterTimeline({
     });
   }, [semester, totalWeeks]);
 
+  const currentWeekNumber = metrics?.currentWeek ?? 1;
+
+  // Estado de la semana seleccionada por el usuario (null = seguir la semana actual calculada)
+  const [userSelectedWeek, setUserSelectedWeek] = useState<number | null>(null);
+  const selectedWeek = userSelectedWeek ?? currentWeekNumber;
+
+  // Resetear selección manual si cambia el semestre
+  useEffect(() => {
+    setUserSelectedWeek(null);
+  }, [semester?.id]);
+
+  const handleUpdateTotalWeeks = async (newTotal: number) => {
+    setCustomTotalWeeks(newTotal);
+    if (selectedWeek > newTotal) {
+      setUserSelectedWeek(newTotal);
+    }
+    if (semester) {
+      const updated = { ...semester, totalWeeks: newTotal };
+      await semesterRepository.save(updated);
+      window.dispatchEvent(new CustomEvent('semester-data-updated'));
+    }
+  };
+
+  // Helper para calcular el rango de fechas de una semana dada
+  const getWeekRange = (w: number) => {
+    if (!semester?.startDate) return { label: '', shortLabel: '', start: null, end: null };
+    const semStart = parseLocalDate(semester.startDate);
+    const start = new Date(semStart);
+    start.setDate(semStart.getDate() + (w - 1) * 7);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+
+    const fmtShort = (d: Date) =>
+      d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+    const fmtFull = (d: Date) =>
+      d.toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' });
+
+    return {
+      label: `${fmtFull(start)} – ${fmtFull(end)}`,
+      shortLabel: `${fmtShort(start)} – ${fmtShort(end)}`,
+      start,
+      end,
+    };
+  };
+
   // Generar array dinámico de semanas
   const weeks = useMemo(() => Array.from({ length: totalWeeks }, (_, i) => i + 1), [totalWeeks]);
 
-  // Mapear eventos a semanas
+  // Mapear eventos a semanas usando diferencia de días calendarios sin sesgos de zona horaria
   const milestonesByWeek = useMemo(() => {
     const map: Record<number, { exams: Exam[]; tasks: Assignment[] }> = {};
     weeks.forEach((w) => (map[w] = { exams: [], tasks: [] }));
 
     if (!semester) return map;
-    const startMs = new Date(semester.startDate).getTime();
+    const startDay = parseLocalDate(semester.startDate);
 
     exams.forEach((e) => {
-      const eMs = new Date(e.date).getTime();
-      const diffDays = Math.max(0, Math.floor((eMs - startMs) / (1000 * 60 * 60 * 24)));
+      const eDay = parseLocalDate(e.date);
+      const diffDays = Math.max(0, getCalendarDaysDiff(startDay, eDay));
       const w = Math.min(totalWeeks, Math.max(1, Math.floor(diffDays / 7) + 1));
       if (map[w]) map[w].exams.push(e);
     });
 
     assignments.forEach((a) => {
-      const aMs = new Date(a.dueDate).getTime();
-      const diffDays = Math.max(0, Math.floor((aMs - startMs) / (1000 * 60 * 60 * 24)));
+      const aDay = parseLocalDate(a.dueDate);
+      const diffDays = Math.max(0, getCalendarDaysDiff(startDay, aDay));
       const w = Math.min(totalWeeks, Math.max(1, Math.floor(diffDays / 7) + 1));
       if (map[w]) map[w].tasks.push(a);
     });
@@ -94,12 +144,14 @@ export function SemesterTimeline({
 
           {metrics && (
             <div className="bg-white/10 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/20 text-right">
-              <div className="text-xs font-mono uppercase text-[#c5c5ff]">Semana Actual</div>
+              <div className="text-xs font-mono uppercase text-[#c5c5ff]">
+                Semana Actual {metrics.hasStarted && `(Día ${metrics.daysElapsed + 1} de ${metrics.totalDays})`}
+              </div>
               <div className="text-2xl font-black text-white mt-0.5">
                 Semana {metrics.currentWeek} <span className="text-sm font-normal text-[#c5c5ff]">/ {totalWeeks}</span>
               </div>
               <div className="text-[11px] text-[#a0a0ff] font-mono mt-0.5">
-                {metrics.daysRemaining} días restantes para finalizar
+                {getWeekRange(metrics.currentWeek).shortLabel} · {metrics.daysRemaining} días restantes para finalizar
               </div>
             </div>
           )}
@@ -159,16 +211,18 @@ export function SemesterTimeline({
 
         <div className="grid grid-cols-4 sm:grid-cols-8 md:grid-cols-12 lg:grid-cols-16 gap-2">
           {weeks.map((w) => {
-            const isCurrent = metrics?.currentWeek === w;
+            const isCurrent = currentWeekNumber === w;
             const isSelected = selectedWeek === w;
             const hasExams = (milestonesByWeek[w]?.exams.length || 0) > 0;
             const hasTasks = (milestonesByWeek[w]?.tasks.length || 0) > 0;
+            const range = getWeekRange(w);
 
             return (
               <button
                 key={w}
-                onClick={() => setSelectedWeek(w)}
-                className={`py-3 px-2 rounded-xl text-center transition-all flex flex-col items-center justify-center relative cursor-pointer ${
+                onClick={() => setUserSelectedWeek(w)}
+                title={`Semana ${w}: ${range.label}`}
+                className={`py-2.5 px-2 rounded-xl text-center transition-all flex flex-col items-center justify-center relative cursor-pointer ${
                   isSelected
                     ? 'bg-[#3b3abf] text-white shadow-md shadow-[#3b3abf]/30 scale-105 z-10'
                     : isCurrent
@@ -179,6 +233,15 @@ export function SemesterTimeline({
                 <span className="text-[10px] font-mono font-bold leading-none">
                   S{w}
                 </span>
+                {range.shortLabel && (
+                  <span
+                    className={`text-[8px] font-mono mt-0.5 leading-none opacity-80 ${
+                      isSelected ? 'text-[#e0e0ff]' : 'text-[var(--muted)]'
+                    }`}
+                  >
+                    {range.shortLabel.split('–')[0]?.trim()}
+                  </span>
+                )}
 
                 {/* Dots indicadores de hitos */}
                 <div className="flex items-center gap-1 mt-1.5 h-1.5">
@@ -199,7 +262,7 @@ export function SemesterTimeline({
                 </div>
 
                 {isCurrent && (
-                  <span className="absolute -top-1 -right-1 px-1 rounded bg-[#3b3abf] text-white text-[8px] font-mono font-black">
+                  <span className="absolute -top-1 -right-1 px-1 rounded bg-[#3b3abf] text-white text-[8px] font-mono font-black shadow-xs">
                     Hoy
                   </span>
                 )}
@@ -211,12 +274,28 @@ export function SemesterTimeline({
 
       {/* Detalle de la Semana Seleccionada */}
       <div className="card-academic p-6 bg-[var(--surface)] border border-[var(--border)]">
-        <div className="flex items-center justify-between pb-4 border-b border-[var(--border)]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[var(--border)] gap-2">
           <div>
-            <h4 className="text-base font-bold text-[var(--ink)]">
-              Hitos y Compromisos de la Semana {selectedWeek}
-            </h4>
-            <p className="text-xs text-[var(--muted)] mt-0.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h4 className="text-base font-bold text-[var(--ink)]">
+                Hitos y Compromisos de la Semana {selectedWeek}
+              </h4>
+              {selectedWeek === currentWeekNumber ? (
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                  Semana Actual (En curso)
+                </span>
+              ) : (
+                <button
+                  onClick={() => setUserSelectedWeek(null)}
+                  className="text-[11px] font-mono font-bold text-[#3b3abf] dark:text-[#a0a0ff] hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <Clock className="w-3 h-3" />
+                  <span>Volver a semana actual (Semana {currentWeekNumber})</span>
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-[var(--muted)] mt-1 font-mono">
+              {getWeekRange(selectedWeek).label && `${getWeekRange(selectedWeek).label} · `}
               {currentWeekMilestones.exams.length} exámenes programados · {currentWeekMilestones.tasks.length} entregas pendientes
             </p>
           </div>

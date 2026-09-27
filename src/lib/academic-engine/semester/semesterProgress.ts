@@ -16,22 +16,40 @@ export interface SemesterMetricsResult {
   hasStarted: boolean;
 }
 
+function parseLocalDate(dateInput: string | Date): Date {
+  if (dateInput instanceof Date) {
+    return new Date(dateInput.getFullYear(), dateInput.getMonth(), dateInput.getDate());
+  }
+  const match = dateInput.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    return new Date(parseInt(match[1], 10), parseInt(match[2], 10) - 1, parseInt(match[3], 10));
+  }
+  const d = new Date(dateInput);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function getCalendarDaysDiff(start: Date, target: Date): number {
+  const utcStart = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+  const utcTarget = Date.UTC(target.getFullYear(), target.getMonth(), target.getDate());
+  return Math.floor((utcTarget - utcStart) / (1000 * 60 * 60 * 24));
+}
+
 export function calculateSemesterMetrics({
   startDate,
   endDate,
   currentDate = new Date(),
   totalWeeks = 16,
 }: SemesterMetricsParams): SemesterMetricsResult {
-  const start = new Date(startDate).getTime();
-  const end = new Date(endDate).getTime();
-  const current = currentDate.getTime();
+  const startDay = parseLocalDate(startDate);
+  const endDay = parseLocalDate(endDate);
+  const currentDay = parseLocalDate(currentDate);
 
-  const totalDays = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)));
-  const daysElapsed = Math.max(0, Math.round((current - start) / (1000 * 60 * 60 * 24)));
-  const daysRemaining = Math.max(0, Math.round((end - current) / (1000 * 60 * 60 * 24)));
+  const totalDays = Math.max(1, getCalendarDaysDiff(startDay, endDay));
+  const daysElapsed = Math.max(0, getCalendarDaysDiff(startDay, currentDay));
+  const daysRemaining = Math.max(0, getCalendarDaysDiff(currentDay, endDay));
 
-  const hasStarted = current >= start;
-  const isFinished = current > end;
+  const hasStarted = currentDay >= startDay;
+  const isFinished = currentDay > endDay;
 
   let progressPercentage = 0;
   if (isFinished) {
