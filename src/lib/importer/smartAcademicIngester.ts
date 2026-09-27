@@ -132,69 +132,124 @@ export function parseJasperAcademicBalance(text: string): ParsedAcademicData | n
     gpa = parseFloat(gpaMatch[1].replace(',', '.'));
   }
 
-  let program = 'Ingeniería Industrial';
+  let program = 'Economía y Negocios Internacionales';
   const progMatch = text.match(/Programa:\s*([^\n\r]+)/i);
   if (progMatch) {
-    program = progMatch[1].replace(/^[A-Z]{3}\s*-\s*/, '').trim();
+    let rawProg = progMatch[1].replace(/^[A-Z]{2,4}\s*-\s*/, '').trim();
+    // Guardrail contra desalineación de columnas en PDF (cuando Programa captura el código o nombre del alumno)
+    if (/A\d{8}/i.test(rawProg) || (studentCode && rawProg.includes(studentCode))) {
+      const realProgMatch = text.match(/\b([A-Z]{2,4}\s*-\s*[A-Za-zÁ-ÿ\s]{6,})/);
+      if (realProgMatch) {
+        rawProg = realProgMatch[1].replace(/^[A-Z]{2,4}\s*-\s*/, '').trim();
+      } else {
+        rawProg = 'Economía y Negocios Internacionales';
+      }
+    }
+    program = titleCase(rawProg);
   }
 
   // 3. Extraer Materias activas del semestre indicado
   const subjects: ParsedAcademicData['subjects'] = [];
   const scheduleBlocks: ParsedAcademicData['scheduleBlocks'] = [];
 
-  const subjectLines = text.split('\n');
-  const semesterPadded = semesterNum < 10 ? `0${semesterNum}` : `${semesterNum}`;
+  // SECCIÓN PRIORITARIA: "Materias matriculadas"
+  // En el Balance Oficial de Universidad Icesi, las materias matriculadas representan la carga del semestre activo
+  // Las secciones "Materias por aprobar" y "Materias cursadas" corresponden a la ruta futura y al historial previo.
+  const hasEnrolledSection = /Materias\s+matriculadas/i.test(text);
 
   let colorIdx = 0;
-  for (const rawLine of subjectLines) {
-    const line = rawLine.trim();
-    if (!line) continue;
 
-    // Patrón A: "Código: 11373 - NRC: 11083 - Estadística aplicada II - 4 Créditos - Prof: Dr. Diego Fernando Cruz"
-    const patternA = line.match(/(?:c[oó]digo:\s*)?([A-Za-z0-9\s-]+?)\s*(?:-\s*nrc:\s*(\d+))?\s*-\s*([^-]+?)\s*-\s*(\d+)\s*cr[eé]ditos(?:\s*-\s*prof:\s*([^\n\r]+))?/i);
-    if (patternA) {
-      const code = patternA[1].replace(/c[oó]digo:\s*/i, '').trim();
-      const nrc = patternA[2]?.trim();
-      const name = patternA[3].trim();
-      const credits = parseInt(patternA[4], 10) || 3;
-      const professor = patternA[5]?.trim() || 'Profesor Icesi Asignado';
+  if (hasEnrolledSection) {
+    // Aislar exclusivamente el bloque de materias matriculadas hasta la siguiente sección
+    const enrolledBlockMatch = text.match(/Materias\s+matriculadas\s*[\n\r]+([\s\S]*?)(?:Materias\s+cursadas|Materias\s+por\s+aprobar|$)/i);
+    const enrolledText = enrolledBlockMatch ? enrolledBlockMatch[1] : '';
+    const enrolledLines = enrolledText.split('\n');
 
-      if (name.length > 2 && !subjects.some((s) => s.code === code || s.name.toLowerCase() === name.toLowerCase())) {
-        const subId = `sub-${code.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
-        subjects.push({
-          id: subId,
-          code,
-          name: titleCase(name),
-          credits,
-          color: PALETTE[colorIdx % PALETTE.length],
-          maxAbsences: 4,
-          professor,
-        });
-        colorIdx++;
-        continue;
+    for (const rawLine of enrolledLines) {
+      const line = rawLine.trim();
+      if (!line || /^(?:No\.|Per[ií]odo|C[oó]digo|NRC|Materia|\s)+$/i.test(line)) continue;
+
+      // Formato oficial Icesi: "1 202620 08322 11805 Economía matemática"
+      // o "202620 08322 11805 Economía matemática"
+      // o "1 202620 ECO 08322 11805 Economía matemática"
+      const mEnrolled = line.match(/^(?:(\d+)\s+)?(?:(\d{6})\s+)?([A-Za-z0-9\s-]{4,10})\s+(\d{4,6})\s+([^\n\r]+)$/);
+      if (mEnrolled) {
+        const code = mEnrolled[3].trim();
+        const nrc = mEnrolled[4].trim();
+        const name = mEnrolled[5].trim();
+
+        if (name.length > 2 && !subjects.some((s) => s.code === code || s.nrc === nrc)) {
+          const subId = `sub-${code.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+          subjects.push({
+            id: subId,
+            code,
+            nrc,
+            name: titleCase(name),
+            credits: 3,
+            color: PALETTE[colorIdx % PALETTE.length],
+            maxAbsences: 4,
+            professor: 'Docente Titular',
+          });
+          colorIdx++;
+        }
       }
     }
+  }
 
-    // Patrón B: "4 IND 05358 Optativa profesional 04" o "11373 Estadística Aplicada II 04"
-    const patternB = line.match(/^(?:\d+\s+)?(?:([A-Z]{2,4}\s+\d{4,5})|(\d{4,5}))\s+([^0-9]+?)(?:\s+(\d{1,2}))?\s*$/i);
-    if (patternB) {
-      const code = (patternB[1] || patternB[2]).trim();
-      const name = patternB[3].trim();
-      const credits = patternB[4] ? parseInt(patternB[4], 10) : 3;
+  // Fallback si no había bloque estructurado "Materias matriculadas"
+  if (subjects.length === 0) {
+    const subjectLines = text.split('\n');
+    for (const rawLine of subjectLines) {
+      const line = rawLine.trim();
+      if (!line) continue;
 
-      if (name.length > 2 && !name.toLowerCase().includes('nivel') && !subjects.some((s) => s.code === code)) {
-        const subId = `sub-${code.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
-        subjects.push({
-          id: subId,
-          code,
-          name: titleCase(name),
-          credits: credits > 0 && credits <= 6 ? credits : 3,
-          color: PALETTE[colorIdx % PALETTE.length],
-          maxAbsences: 4,
-          professor: 'Profesor Icesi Asignado',
-        });
-        colorIdx++;
-        continue;
+      // Patrón A: "Código: 11373 - NRC: 11083 - Estadística aplicada II - 4 Créditos - Prof: Dr. Diego Fernando Cruz"
+      const patternA = line.match(/(?:c[oó]digo:\s*)?([A-Za-z0-9\s-]+?)\s*(?:-\s*nrc:\s*(\d+))?\s*-\s*([^-]+?)\s*-\s*(\d+)\s*cr[eé]ditos(?:\s*-\s*prof:\s*([^\n\r]+))?/i);
+      if (patternA) {
+        const code = patternA[1].replace(/c[oó]digo:\s*/i, '').trim();
+        const nrc = patternA[2]?.trim();
+        const name = patternA[3].trim();
+        const credits = parseInt(patternA[4], 10) || 3;
+        const professor = patternA[5]?.trim() || 'Profesor Icesi Asignado';
+
+        if (name.length > 2 && !subjects.some((s) => s.code === code || s.name.toLowerCase() === name.toLowerCase())) {
+          const subId = `sub-${code.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+          subjects.push({
+            id: subId,
+            code,
+            nrc,
+            name: titleCase(name),
+            credits,
+            color: PALETTE[colorIdx % PALETTE.length],
+            maxAbsences: 4,
+            professor,
+          });
+          colorIdx++;
+          continue;
+        }
+      }
+
+      // Patrón B: "4 IND 05358 Optativa profesional 04" o "11373 Estadística Aplicada II 04"
+      const patternB = line.match(/^(?:\d+\s+)?(?:([A-Z]{2,4}\s+\d{4,5})|(\d{4,5}))\s+([^0-9]+?)(?:\s+(\d{1,2}))?\s*$/i);
+      if (patternB) {
+        const code = (patternB[1] || patternB[2]).trim();
+        const name = patternB[3].trim();
+        const credits = patternB[4] ? parseInt(patternB[4], 10) : 3;
+
+        if (name.length > 2 && !name.toLowerCase().includes('nivel') && !subjects.some((s) => s.code === code)) {
+          const subId = `sub-${code.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+          subjects.push({
+            id: subId,
+            code,
+            name: titleCase(name),
+            credits: credits > 0 && credits <= 6 ? credits : 3,
+            color: PALETTE[colorIdx % PALETTE.length],
+            maxAbsences: 4,
+            professor: 'Profesor Icesi Asignado',
+          });
+          colorIdx++;
+          continue;
+        }
       }
     }
   }
@@ -248,7 +303,7 @@ export function parseJasperAcademicBalance(text: string): ParsedAcademicData | n
       avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(studentName)}`,
     },
     semester: {
-      name: `Semestre 2026-2 (${program})`,
+      name: `${semesterNum}° Semestre · 2026-2 (${program})`,
       startDate: '2026-08-01',
       endDate: '2026-12-05',
       isActive: true,
