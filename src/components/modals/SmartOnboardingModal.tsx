@@ -15,6 +15,7 @@ import {
   startFreshEmptySemester,
 } from '@/lib/importer/templateLoader';
 import { ACADEMIC_TEMPLATES } from '@/lib/templates/academicTemplates';
+import { autofillDataFromTemplate } from '@/lib/importer/templateMatcher';
 import {
   Sparkles,
   Check,
@@ -61,6 +62,7 @@ export function SmartOnboardingModal() {
   const [showDetails, setShowDetails] = useState(false);
   const [loadingTemplateId, setLoadingTemplateId] = useState<string | null>(null);
   const [loadedTemplateId, setLoadedTemplateId] = useState<string | null>(null);
+  const [isAutofilled, setIsAutofilled] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Estado pestaña Desde Cero (Wizard)
@@ -167,6 +169,29 @@ export function SmartOnboardingModal() {
       setIsProcessing(false);
       setProcessingStage('');
     }
+  };
+
+  // Autocompletar con plantilla oficial detectada
+  const handleApplyAutofillFromTemplate = () => {
+    if (!ingestResult?.matchedTemplate) return;
+    const template = ACADEMIC_TEMPLATES.find((t) => t.id === ingestResult.matchedTemplate?.id);
+    if (!template) return;
+
+    const enrichedData = autofillDataFromTemplate(ingestResult.data, template);
+    const updatedSummary = {
+      ...ingestResult.summary,
+      scheduleBlocksCount: enrichedData.scheduleBlocks.length,
+      examsCount: enrichedData.exams?.length ?? null,
+      assignmentsCount: enrichedData.assignments?.length ?? null,
+      missingRoomsCount: enrichedData.scheduleBlocks.filter((b) => !b.location).length,
+    };
+
+    setIngestResult({
+      ...ingestResult,
+      data: enrichedData,
+      summary: updatedSummary,
+    });
+    setIsAutofilled(true);
   };
 
   // Cargar una plantilla oficial
@@ -433,15 +458,43 @@ export function SmartOnboardingModal() {
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-[var(--paper)] border border-[var(--border)] flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-black">
-                    ✓
+                <div
+                  className={`p-4 rounded-2xl border flex items-center gap-3 transition-colors ${
+                    ingestResult.summary.scheduleBlocksCount > 0
+                      ? 'bg-[var(--paper)] border-[var(--border)]'
+                      : 'bg-amber-500/10 border-amber-500/25'
+                  }`}
+                >
+                  <div
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center font-black ${
+                      ingestResult.summary.scheduleBlocksCount > 0
+                        ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                        : 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
+                    }`}
+                  >
+                    {ingestResult.summary.scheduleBlocksCount > 0 ? '✓' : '!'}
                   </div>
                   <div>
-                    <div className="text-base font-black text-[var(--ink)]">
+                    <div
+                      className={`text-base font-black ${
+                        ingestResult.summary.scheduleBlocksCount > 0
+                          ? 'text-[var(--ink)]'
+                          : 'text-amber-700 dark:text-amber-300'
+                      }`}
+                    >
                       {ingestResult.summary.scheduleBlocksCount} clases
                     </div>
-                    <div className="text-[11px] text-[var(--muted)]">Franjas de horario</div>
+                    <div
+                      className={`text-[11px] ${
+                        ingestResult.summary.scheduleBlocksCount > 0
+                          ? 'text-[var(--muted)]'
+                          : 'text-amber-600 dark:text-amber-400 font-medium'
+                      }`}
+                    >
+                      {ingestResult.summary.scheduleBlocksCount > 0
+                        ? 'Franjas de horario'
+                        : 'Horario pendiente'}
+                    </div>
                   </div>
                 </div>
 
@@ -459,6 +512,54 @@ export function SmartOnboardingModal() {
                   </div>
                 </div>
               </div>
+
+              {/* Banner de Enriquecimiento Inteligente (Plantilla Oficial Detectada) */}
+              {ingestResult.matchedTemplate && (
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-[#3b3abf]/15 via-purple-500/10 to-indigo-500/15 border border-[#3b3abf]/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-[#3b3abf] text-white flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+                      <Sparkles className="w-5 h-5 text-amber-300" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#3b3abf] text-white">
+                          Plantilla Oficial Calibrada
+                        </span>
+                        <span className="text-xs font-mono font-bold text-[#3b3abf] dark:text-[#a0a0ff]">
+                          {ingestResult.matchedTemplate.name}
+                        </span>
+                      </div>
+                      <p className="text-xs text-[var(--muted)] mt-1">
+                        {ingestResult.summary.scheduleBlocksCount > 0
+                          ? 'Tus clases y materias ya están vinculadas. Puedes además enriquecer tus parciales y rutinas de estudio en 1 clic.'
+                          : 'Tu balance tiene las materias pero no las horas de clase de Banner. Puedes autocompletar horarios, salones y parciales al instante.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleApplyAutofillFromTemplate}
+                    disabled={isAutofilled}
+                    className={`py-2 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer ${
+                      isAutofilled
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'bg-[#3b3abf] hover:bg-[#2828a8] text-white shadow-md shadow-[#3b3abf]/20'
+                    }`}
+                  >
+                    {isAutofilled ? (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>¡Datos Enriquecidos!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4 text-amber-300" />
+                        <span>Autocompletar en 1 Clic</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
 
               {/* Excepciones y Diagnóstico Transparente */}
               <div className="space-y-2">
