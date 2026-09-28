@@ -108,12 +108,60 @@ No. Período Código Grupo Materia Cred. Forma Tipo electiva Mod. Nota
     }
   }
 
-  console.log(`✓ 7 Asignaturas matriculadas correctamente aisladas sin mezclar historial ni malla curricular:`);
+  console.log('✓ 7 Asignaturas matriculadas correctamente aisladas sin mezclar historial ni malla curricular:');
   parsed.subjects.forEach((s, idx) => {
     console.log(`   ${idx + 1}. [NRC ${s.nrc} | Código ${s.code}] ${s.name}`);
   });
+}
 
-  console.log('ALL ISABELLA BALANCE PARSING TESTS PASSED SUCCESSFULLY! 🎉');
+async function testIsabellaUniversalPipeline() {
+  const { ingestAcademicEvidence } = await import('../../lib/importer/universal/pipeline');
+
+  const sampleBalance = `
+sep 27, 2026 1:43:17 PM
+SISTEMA DE REGISTRO ACADÉMICO
+Balance académico
+RRBANBALACA - JASPER 1097497195 Página 1 de 3
+
+Estudiante: A00414870 - PALOMINO ORTEGA ISABELLA
+Semestre: 4 Cohorte: 202510 Promedio: 4.5
+Programa: ENI - Economía Y Negocios Internacionales
+
+Materias matriculadas
+No. Período Código NRC Materia
+1 202620 08322 11805 Economía matemática
+2 202620 04258 11602 Contabilidad gerencial
+3 202620 06326 11950 Estadística para la toma de decisiones
+4 202620 06311 11961 Pensamiento y contexto económico II
+5 202620 06302 11959 Comportamiento de las firmas y el consumidor
+6 202620 02810 12485 Recordar y olvidar: identidad, cultura y comunicación
+7 202620 40074 12027 Hip Hop: cultura, industria y territorio
+  `;
+
+  const result = await ingestAcademicEvidence({ text: sampleBalance });
+
+  if (result.data.subjects.length !== 7) {
+    throw new Error(`Se esperaban 7 materias, se obtuvieron ${result.data.subjects.length}`);
+  }
+
+  // Verificar resolución automática de horarios desde catálogo de NRCs
+  if (result.summary.scheduleBlocksCount !== 13) {
+    throw new Error(`Se esperaban 13 bloques de horario resueltos por NRCs, se obtuvieron ${result.summary.scheduleBlocksCount}`);
+  }
+
+  // Verificar detección de plantilla oficial
+  if (!result.matchedTemplate) {
+    throw new Error('Se esperaba detectar plantilla oficial para Economía y Negocios Internacionales Semestre 4');
+  }
+
+  console.log(`✓ Pipeline Universal con NRC Catalog: ${result.summary.scheduleBlocksCount} bloques de horario resueltos automáticamente.`);
+  console.log(`✓ Coincidencia con plantilla oficial: ${result.matchedTemplate.name} (Confianza: ${result.matchedTemplate.confidence})`);
+  console.log('ALL ISABELLA BALANCE PARSING & UNIVERSAL PIPELINE TESTS PASSED SUCCESSFULLY! 🎉');
 }
 
 testIsabellaBalanceParsing();
+testIsabellaUniversalPipeline().catch((err) => {
+  console.error('Test failed:', err);
+  process.exit(1);
+});
+

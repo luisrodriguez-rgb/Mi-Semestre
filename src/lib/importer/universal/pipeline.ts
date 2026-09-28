@@ -11,6 +11,8 @@ import { validateAndBuildIngestResult } from './validator';
 import { parseJasperAcademicBalance, parseScheduleFreeText } from '../smartAcademicIngester';
 import { parseIcsCalendar } from '../icsParser';
 import { titleCase } from './normalizer';
+import { lookupNRCCourse } from '../nrcCatalog';
+import { findBestTemplateMatch } from '../templateMatcher';
 
 /**
  * Lee el contenido textual de un archivo en el navegador
@@ -94,6 +96,55 @@ export function extractRealJasperData(text: string): ParsedAcademicData | null {
   const parsed = parseJasperAcademicBalance(text);
   if (!parsed || parsed.subjects.length === 0) return null;
 
+  const subjects: ParsedAcademicData['subjects'] = [];
+  const scheduleBlocks: ParsedAcademicData['scheduleBlocks'] = [];
+
+  for (const s of parsed.subjects) {
+    const subObj: ParsedAcademicData['subjects'][0] = {
+      id: s.id,
+      code: s.code,
+      nrc: s.nrc,
+      name: s.name,
+      credits: s.credits,
+      color: s.color,
+      professor: s.professor,
+      maxAbsences: s.maxAbsences,
+    };
+
+    // Si viene con NRC explícito en la matrícula, buscar en el catálogo oficial de NRCs
+    if (s.nrc) {
+      const nrcInfo = lookupNRCCourse(s.nrc);
+      if (nrcInfo) {
+        if (nrcInfo.professor && (!s.professor || s.professor === 'Docente Titular' || s.professor === 'Profesor Icesi Asignado')) {
+          subObj.professor = nrcInfo.professor;
+        }
+
+        nrcInfo.blocks.forEach((b, bIdx) => {
+          scheduleBlocks.push({
+            id: `sb-nrc-${s.id}-${bIdx}`,
+            subjectId: s.id,
+            dayOfWeek: b.dayOfWeek,
+            startTime: b.startTime,
+            endTime: b.endTime,
+            location: b.location,
+            evidence: [
+              {
+                id: `ev-nrc-${s.id}-${bIdx}`,
+                sourceContainer: 'text',
+                field: 'scheduleBlocks',
+                extractedValue: `${b.startTime}-${b.endTime} (${b.location})`,
+                confidence: 'high',
+                sourceText: `Resuelto automáticamente desde Catálogo Oficial de NRC: ${s.nrc}`,
+              },
+            ],
+          });
+        });
+      }
+    }
+
+    subjects.push(subObj);
+  }
+
   return {
     student: {
       name: parsed.profile.name,
@@ -107,17 +158,9 @@ export function extractRealJasperData(text: string): ParsedAcademicData | null {
       avatarUrl: parsed.profile.avatarUrl,
     },
     semester: parsed.semester,
-    subjects: parsed.subjects.map((s) => ({
-      id: s.id,
-      code: s.code,
-      name: s.name,
-      credits: s.credits,
-      color: s.color,
-      professor: s.professor,
-      maxAbsences: s.maxAbsences,
-    })),
-    scheduleBlocks: [], // No evidenciado en el reporte de balance de materias
-    exams: undefined,   // Explícitamente no evidenciado
+    subjects,
+    scheduleBlocks,
+    exams: undefined,   // Explícitamente no inventar exámenes falsos
     assignments: undefined,
     rawEvidenceSnippet: text.slice(0, 250),
   };
@@ -210,6 +253,20 @@ export async function ingestAcademicEvidence(
   // 2. Normalización de formato
   const normalizedData = normalizeParsedAcademicData(resolvedData);
 
-  // 3. Validación y diagnóstico transparente
-  return validateAndBuildIngestResult(normalizedData, detections, ambiguities, evidenceGraph);
+  // 3. Verificación de plantilla oficial compatible
+  const templateMatch = findBestTemplateMatch(normalizedData);
+
+  // 4. Validación y diagnóstico transparente
+  const result = validateAndBuildIngestResult(normalizedData, detections, ambiguities, evidenceGraph);
+
+  if (templateMatch) {
+    result.matchedTemplate = {
+      id: templateMatch.template.id,
+      name: templateMatch.template.name,
+      matchScore: templateMatch.matchScore,
+      confidence: templateMatch.confidence,
+    };
+  }
+
+  return result;
 }

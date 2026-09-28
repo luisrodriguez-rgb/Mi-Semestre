@@ -144,6 +144,12 @@ export interface IngestResult {
     missingRoomsCount: number;
     hasStudentProfile: boolean;
   };
+  matchedTemplate?: {
+    id: string;
+    name: string;
+    matchScore: number;
+    confidence: 'exact' | 'high' | 'partial';
+  };
 }
 
 export interface CommitResult {
