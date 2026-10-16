@@ -24,7 +24,7 @@ export function useMySkinSync() {
     const currentHash = JSON.stringify({
       subs: subjects.map((s) => ({ id: s.id, name: s.name, code: s.code })),
       blocks: scheduleBlocks.map((b) => ({ id: b.id, sId: b.subjectId, d: b.dayOfWeek, t: b.startTime })),
-      asg: assignments.map((a) => ({ id: a.id, title: a.title, due: a.dueDate, c: a.completed })),
+      asg: assignments.map((a) => ({ id: a.id, title: a.title, due: a.dueDate, status: a.status })),
       ex: exams.map((e) => ({ id: e.id, date: e.date, title: e.title })),
     });
 

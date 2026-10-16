@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCachedFeed, saveCachedFeed } from '@/lib/myskin/store';
-import { Subject, ScheduleBlock } from '@/types';
+import { Subject, ScheduleBlock, Assignment, Exam } from '@/types';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -74,8 +74,8 @@ export async function GET() {
     });
 
     const pendingAssignments = (cached.assignments || [])
-      .filter((a) => !a.completed)
-      .map((a) => {
+      .filter((a: Assignment) => a.status !== 'completed')
+      .map((a: Assignment) => {
         const subject = subjectsMap[a.subjectId];
         const dueAt = new Date(a.dueDate).getTime();
         const diffHours = (dueAt - now.getTime()) / (1000 * 3600);
@@ -88,13 +88,13 @@ export async function GET() {
           dueDate: a.dueDate,
           urgent: diffHours > 0 && diffHours <= 48,
           completed: false,
-          weight: a.weight || 0,
+          priority: a.priority,
         };
       })
       .sort((a, b) => a.dueAt - b.dueAt);
 
     const upcomingExams = (cached.exams || [])
-      .map((e) => {
+      .map((e: Exam) => {
         const subject = subjectsMap[e.subjectId];
         const timestamp = new Date(e.date).getTime();
         return {
