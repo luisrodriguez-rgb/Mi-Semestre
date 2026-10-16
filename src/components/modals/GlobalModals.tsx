@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { MySkinSyncBridge } from '@/components/common/MySkinSyncBridge';
 
 // Modales globales cargados bajo demanda en el cliente
 const QuickScheduleImporterModal = dynamic(
@@ -63,6 +64,7 @@ const CareerSwitchModal = dynamic(
 export function GlobalModals() {
   return (
     <>
+      <MySkinSyncBridge />
       <SmartOnboardingModal />
       <QuickScheduleImporterModal />
       <AddTaskModal />
