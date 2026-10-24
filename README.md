@@ -56,7 +56,7 @@ RECALCULA ──► Al completar la sesión, actualiza el estado académico y aj
 
 ```mermaid
 flowchart TD
-    A[Onboarding Inteligente] -->|Jasper Icesi / OCR / Plantillas| B[(IndexedDB Local-First)]
+    A[Onboarding Inteligente] -->|Jasper Icesi / Calendario ICS / Plantillas| B[(IndexedDB Local-First)]
     B --> C[Horario Semanal Interactivo]
     B --> D[Rutinas Fijas & Compromisos]
     C & D --> E[Motor Académico Determinístico]
@@ -92,7 +92,7 @@ El flujo de bienvenida guía al estudiante en menos de 60 segundos desde la pers
     8. *Biología* (Biología Celular, Genética General, Ecología de Poblaciones, Botánica Aplicada, Zoología).
     9. *Derecho* (Derecho Constitucional Colombiano, Obligaciones Civiles, Derecho Penal General, Teoría del Estado).
     10. *Psicología* (Procesos Cognitivos, Psicología del Desarrollo, Neuropsicología, Métodos de Investigación).
-  * **Reconocimiento Óptico (OCR Local de Imágenes):** Arrastra o pega capturas de pantalla de horarios (.png, .jpg, .webp) procesadas localmente en el cliente.
+  * **Importación de Calendarios Externos (.ICS / .TXT):** Soporte estándar RFC 5545 para calendarios exportados desde Google Calendar, Banner o archivos de texto plano sin intermediarios.
   * **Configurador Manual Asistido:** Wizard paso a paso para estudiantes que deseen estructurar su horario desde cero.
 * **Paso 3: Revelación de Valor & Diagnóstico Inicial:** Muestra antes de ingresar al dashboard el diagnóstico de horas libres netas, huecos de estudio aprovechables y alertas de asignaturas de alto riesgo.
 
@@ -182,7 +182,7 @@ El informe completo de seguridad se encuentra disponible en:
 │   │
 │   ├── lib/
 │   │   ├── academic-engine/              # Lógica de cálculo pura sin dependencias de UI
-│   │   ├── importer/                     # Parser Jasper Icesi, OCR y catálogo de NRCs (nrcCatalog.ts)
+│   │   ├── importer/                     # Parser Jasper Icesi, ingesta ICS y catálogo de NRCs (nrcCatalog.ts)
 │   │   ├── templates/                    # Catálogo de 10 plantillas oficiales Icesi (academicTemplates.ts)
 │   │   ├── storage/                      # Repositorios tipados en IndexedDB (Dexie.js)
 │   │   └── supabase/                     # Cliente singleton y servicio de sincronización cloud
