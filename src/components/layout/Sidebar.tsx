@@ -12,6 +12,7 @@ import {
   GraduationCap,
   Settings,
   ListTodo,
+  Calculator,
 } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { useSemesterData } from '@/hooks/useSemesterData';
@@ -19,7 +20,7 @@ import { CustomSelect } from '@/components/ui/CustomSelect';
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { openCareerSwitchModal, openProfile } = useUIStore();
+  const { openCareerSwitchModal, openProfile, openGradeCalculator } = useUIStore();
   const { profile, semester, allSemesters, switchSemester } = useSemesterData();
 
   const isCurrent = (path: string) =>
@@ -85,6 +86,15 @@ export function Sidebar() {
               </Link>
             );
           })}
+
+          <button
+            type="button"
+            onClick={() => openGradeCalculator()}
+            className="w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-[#8b96c8] hover:text-white hover:bg-white/5 transition-all cursor-pointer text-left"
+          >
+            <Calculator className="w-4 h-4 text-[#6b76ad]" />
+            <span>Calculadora de Notas</span>
+          </button>
         </nav>
 
         {/* Sección "MI SEMESTRE" & Multi-Semestre Switcher */}

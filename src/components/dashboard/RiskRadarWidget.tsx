@@ -1,16 +1,16 @@
-'use client';
-
 import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Target, ChevronRight, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react';
-import { Subject, Assignment, Exam, AttendanceRecord } from '@/types';
-import { calculateSubjectRisk } from '@/lib/academic-engine';
+import { Target, ChevronRight, ArrowRight, ChevronDown, ChevronUp, Calculator } from 'lucide-react';
+import { Subject, Assignment, Exam, AttendanceRecord, Grade } from '@/types';
+import { calculateSubjectRisk, buildEvaluationPlanFromExams } from '@/lib/academic-engine';
+import { useUIStore } from '@/stores/uiStore';
 
 interface RiskRadarWidgetProps {
   subjects?: Subject[];
   assignments?: Assignment[];
   exams?: Exam[];
   attendance?: AttendanceRecord[];
+  grades?: Grade[];
 }
 
 export function RiskRadarWidget({
@@ -18,7 +18,9 @@ export function RiskRadarWidget({
   assignments = [],
   exams = [],
   attendance = [],
+  grades = [],
 }: RiskRadarWidgetProps) {
+  const { openGradeCalculator } = useUIStore();
   const [prioritySubjectId, setPrioritySubjectId] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -35,19 +37,32 @@ export function RiskRadarWidget({
     if (!subjects || subjects.length === 0) return [];
 
     return subjects.map((sub) => {
+      const evaluations = buildEvaluationPlanFromExams(sub, exams, grades);
       const evaluation = calculateSubjectRisk({
         subject: sub,
         exams,
         assignments,
         attendanceRecords: attendance,
+        evaluations,
       });
 
       const status = evaluation.level;
       const statusColor: 'red' | 'amber' | 'green' =
         status === 'CRÍTICO' ? 'red' : status === 'ATENCIÓN' ? 'amber' : 'green';
 
-      // Detalle legible y conciso
-      const detail = evaluation.reasons[0] || 'Todo al día';
+      // Detalle legible y conciso incorporando notas si existen
+      let detail = evaluation.reasons[0] || 'Todo al día';
+      if (evaluation.signals.gradeStatus === 'INVIABLE_MATEMATICAMENTE') {
+        detail = 'Inviable (> 5.0) · Hablar con profesor o cancelar';
+      } else if (
+        typeof evaluation.signals.requiredGrade === 'number' &&
+        evaluation.signals.requiredGrade > 0 &&
+        evaluation.signals.requiredGrade <= 5.0
+      ) {
+        detail = `Req: ${evaluation.signals.requiredGrade.toFixed(2)} para pasar (${evaluation.signals.evaluatedWeight || 0}% evaluado)`;
+      } else if (evaluation.signals.gradeStatus === 'APROBADA_ANTICIPADA') {
+        detail = 'Materia asegurada anticipadamente';
+      }
 
       return {
         id: sub.id,
@@ -59,7 +74,7 @@ export function RiskRadarWidget({
         detail,
       };
     }).sort((a, b) => b.score - a.score);
-  }, [subjects, assignments, exams, attendance]);
+  }, [subjects, assignments, exams, attendance, grades]);
 
   const atRiskCount = useMemo(() => {
     return evaluatedSubjects.filter((s) => s.status !== 'ESTABLE').length;
@@ -120,13 +135,24 @@ export function RiskRadarWidget({
             {subjects.length} materias
           </span>
         </div>
-        <Link
-          href="/radar"
-          className="text-xs font-semibold text-[#3b43a8] dark:text-[#8e98ec] hover:underline flex items-center gap-0.5"
-        >
-          <span>Ver detalle</span>
-          <ArrowRight className="w-3 h-3" />
-        </Link>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => openGradeCalculator()}
+            className="text-xs font-semibold text-[#3b43a8] dark:text-[#8e98ec] hover:underline flex items-center gap-1 cursor-pointer"
+            title="Abrir calculadora de notas"
+          >
+            <Calculator className="w-3.5 h-3.5" />
+            <span>Notas</span>
+          </button>
+          <Link
+            href="/radar"
+            className="text-xs font-semibold text-[#3b43a8] dark:text-[#8e98ec] hover:underline flex items-center gap-0.5"
+          >
+            <span>Ver radar</span>
+            <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
       </div>
 
       {/* Lista de Materias con Indicador Vertical - Con Progressive Disclosure */}
@@ -172,7 +198,21 @@ export function RiskRadarWidget({
                   </div>
                 </div>
 
-                <ChevronRight className="w-4 h-4 text-[#a0a8d6] group-hover:text-[#3b43a8] group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+                <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      openGradeCalculator(item.id);
+                    }}
+                    className="p-1 rounded-lg text-[#626c96] hover:text-[#3b43a8] dark:hover:text-[#a0a0ff] hover:bg-white/10 transition-colors"
+                    title="Calcular y simular notas"
+                  >
+                    <Calculator className="w-3.5 h-3.5" />
+                  </button>
+                  <ChevronRight className="w-4 h-4 text-[#a0a8d6] group-hover:text-[#3b43a8] group-hover:translate-x-0.5 transition-all" />
+                </div>
               </Link>
             ))}
 
@@ -219,7 +259,21 @@ export function RiskRadarWidget({
                       </div>
                     </div>
 
-                    <ChevronRight className="w-4 h-4 text-[#a0a8d6] group-hover:text-[#3b43a8] group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
+                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          openGradeCalculator(item.id);
+                        }}
+                        className="p-1 rounded-lg text-[#626c96] hover:text-[#3b43a8] dark:hover:text-[#a0a0ff] hover:bg-white/10 transition-colors"
+                        title="Calcular y simular notas"
+                      >
+                        <Calculator className="w-3.5 h-3.5" />
+                      </button>
+                      <ChevronRight className="w-4 h-4 text-[#a0a8d6] group-hover:text-[#3b43a8] group-hover:translate-x-0.5 transition-all" />
+                    </div>
                   </Link>
                 ))}
 

@@ -1,8 +1,9 @@
 'use client';
 
 import { RiskEvaluation, RiskLevel } from '@/types';
-import { AlertTriangle, CheckCircle, Clock, FileText, HelpCircle, Hourglass } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Clock, FileText, HelpCircle, Hourglass, Calculator } from 'lucide-react';
 import { formatMinutesHuman } from '@/lib/academic-engine/utils/timeHelpers';
+import { useUIStore } from '@/stores/uiStore';
 
 interface RiskCardProps {
   risk: RiskEvaluation;
@@ -10,6 +11,7 @@ interface RiskCardProps {
 }
 
 export function RiskCard({ risk, onPlanStudy }: RiskCardProps) {
+  const { openGradeCalculator } = useUIStore();
   const getBadgeStyles = (level: RiskLevel) => {
     switch (level) {
       case 'CRÍTICO':
@@ -137,6 +139,47 @@ export function RiskCard({ risk, onPlanStudy }: RiskCardProps) {
           </div>
         </div>
 
+        {/* Bloque de Calificaciones y Nota Necesaria */}
+        <div className="mt-4 p-3 rounded-xl bg-[var(--paper)] border border-[var(--border)] flex items-center justify-between gap-3 text-xs font-mono">
+          <div>
+            <span className="text-[10px] text-[var(--muted)] uppercase font-bold block">
+              Situación de Notas
+            </span>
+            <span className="font-black text-[var(--ink)] block mt-0.5">
+              {risk.signals.currentAccumulatedScore !== undefined && risk.signals.evaluatedWeight !== undefined && risk.signals.evaluatedWeight > 0 ? (
+                <>
+                  Llevas{' '}
+                  <span className="text-[#3b3abf] dark:text-[#a0a0ff]">
+                    {((risk.signals.currentAccumulatedScore / (risk.signals.evaluatedWeight / 100))).toFixed(2)}
+                  </span>{' '}
+                  en lo evaluado ({risk.signals.evaluatedWeight}%)
+                </>
+              ) : (
+                'Sin notas registradas'
+              )}
+            </span>
+            {risk.signals.requiredGrade !== undefined && risk.signals.requiredGrade !== null && risk.signals.requiredGrade > 0 && risk.signals.requiredGrade <= 5.0 && (
+              <span className="text-[11px] text-[#3b3abf] dark:text-[#a0a0ff] block mt-0.5 font-bold">
+                Necesitas promediar {risk.signals.requiredGrade.toFixed(2)} en lo restante
+              </span>
+            )}
+            {risk.signals.gradeStatus === 'INVIABLE_MATEMATICAMENTE' && (
+              <span className="text-[11px] text-rose-600 dark:text-rose-400 block mt-0.5 font-bold">
+                Inviable (&gt; 5.0) · Hablar con profesor o cancelar
+              </span>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => openGradeCalculator(risk.subjectId)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#3b3abf]/10 hover:bg-[#3b3abf]/20 text-[#3b3abf] dark:text-[#a0a0ff] font-bold text-xs transition-all border border-[#3b3abf]/20 cursor-pointer shrink-0"
+          >
+            <Calculator className="w-3.5 h-3.5" />
+            <span>Simular</span>
+          </button>
+        </div>
+
         {/* Bloque Explicable: ¿Por qué? */}
         <div className="mt-4 p-3 rounded-xl bg-[var(--paper)] border border-[var(--border)]">
           <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--ink)] uppercase font-mono tracking-wider">
@@ -154,14 +197,16 @@ export function RiskCard({ risk, onPlanStudy }: RiskCardProps) {
         </div>
       </div>
 
-      {onPlanStudy && risk.level !== 'ESTABLE' && (
-        <button
-          onClick={() => onPlanStudy(risk.subjectId)}
-          className="mt-4 w-full py-2.5 px-3 rounded-xl bg-[#f0f0ff] dark:bg-[#1c1e38] hover:bg-[#e8e8ff] dark:hover:bg-[#25284a] text-[#3b3abf] dark:text-[#a0a0ff] text-xs font-bold border border-[#c5c5ff] dark:border-[#333760] transition-all text-center cursor-pointer"
-        >
-          Organizar sesiones de estudio en huecos libres →
-        </button>
-      )}
+      <div className="space-y-2 mt-4">
+        {onPlanStudy && risk.level !== 'ESTABLE' && risk.signals.gradeStatus !== 'INVIABLE_MATEMATICAMENTE' && (
+          <button
+            onClick={() => onPlanStudy(risk.subjectId)}
+            className="w-full py-2.5 px-3 rounded-xl bg-[#f0f0ff] dark:bg-[#1c1e38] hover:bg-[#e8e8ff] dark:hover:bg-[#25284a] text-[#3b3abf] dark:text-[#a0a0ff] text-xs font-bold border border-[#c5c5ff] dark:border-[#333760] transition-all text-center cursor-pointer"
+          >
+            Organizar sesiones de estudio en huecos libres →
+          </button>
+        )}
+      </div>
     </div>
   );
 }

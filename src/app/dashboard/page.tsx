@@ -12,6 +12,7 @@ import { WeeklyScheduleWidget } from '@/components/dashboard/WeeklyScheduleWidge
 import { RiskRadarWidget } from '@/components/dashboard/RiskRadarWidget';
 import { UpcomingEventsWidget } from '@/components/dashboard/UpcomingEventsWidget';
 import { RecentTasksWidget } from '@/components/dashboard/RecentTasksWidget';
+import { GradeCalculatorQuickCard } from '@/components/dashboard/GradeCalculatorQuickCard';
 import { DashboardFooterQuote } from '@/components/dashboard/DashboardFooterQuote';
 import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow';
 
@@ -26,6 +27,7 @@ export default function DashboardPage() {
     exams,
     routines,
     attendance,
+    grades,
     refreshData,
     isLoading,
     needsOnboarding,
@@ -77,6 +79,11 @@ export default function DashboardPage() {
             assignments={assignments}
             exams={exams}
           />
+          <GradeCalculatorQuickCard
+            subjects={subjects}
+            exams={exams}
+            grades={grades}
+          />
         </div>
 
         {/* Columna Derecha Estrecha: Tu Progreso General y Estado del Semestre */}
@@ -113,6 +120,7 @@ export default function DashboardPage() {
             assignments={assignments}
             exams={exams}
             attendance={attendance}
+            grades={grades}
           />
         </div>
 
