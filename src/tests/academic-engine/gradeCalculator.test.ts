@@ -3,6 +3,7 @@ import {
   buildEvaluationPlanFromExams,
   simulateGrade,
   roundGrade,
+  ceilRequiredGrade,
   EvaluationItem,
 } from '../../lib/academic-engine/grades/gradeCalculator';
 import { Subject, Exam, Grade, TimeSlot, RiskEvaluation } from '../../types';
@@ -360,7 +361,7 @@ if (statusTalleres.currentWeightedGrade !== 4.5) {
 }
 console.log('✓ TEST 13: Grade con peso propio sin Exam asociado entra correctamente al plan de evaluacion');
 
-// TEST 14: Regla de redondeo a 2 decimales y precision configurable (Icesi y Standard)
+// TEST 14: Regla de redondeo a 2 decimales y precision configurable (Standard y Truncate)
 // Evitar artefactos como 2.9999999999999996
 const precisionVal = 1.0 - 0.7; // En JS da 0.30000000000000004
 const roundedStd = roundGrade(precisionVal, 2, 'standard');
@@ -368,14 +369,10 @@ if (roundedStd !== 0.30) {
   throw new Error(`TEST 14 Failed: Redondeo standard esperado 0.30, obtenido ${roundedStd}`);
 }
 
-// Regla Icesi: 2.95 redondea a 3.0
-const icesiRound1 = roundGrade(2.95, 2, 'icesi');
-if (icesiRound1 !== 3.0) {
-  throw new Error(`TEST 14 Failed: Regla Icesi debio redondear 2.95 a 3.0, obtenido ${icesiRound1}`);
-}
-const icesiRound2 = roundGrade(2.94, 2, 'icesi');
-if (icesiRound2 !== 2.9) {
-  throw new Error(`TEST 14 Failed: Regla Icesi debio mantener 2.94 en 2.9, obtenido ${icesiRound2}`);
+// Truncate
+const truncatedVal = roundGrade(2.999, 2, 'truncate');
+if (truncatedVal !== 2.99) {
+  throw new Error(`TEST 14 Failed: Truncate esperado 2.99, obtenido ${truncatedVal}`);
 }
 
 // Evaluacion con flotante 2.9999 no debe fallar la clasificacion contra 3.0
@@ -392,7 +389,7 @@ const statusFloat = calculateGradeStatus({
 if (statusFloat.status !== 'APROBADA_ANTICIPADA' || statusFloat.currentAccumulatedScore !== 3.0) {
   throw new Error(`TEST 14 Failed: Precision con decimales repetidos debio dar 3.00 APROBADA_ANTICIPADA, obtenido ${statusFloat.currentAccumulatedScore} ${statusFloat.status}`);
 }
-console.log('✓ TEST 14: Redondeo de precision y reglas configurables (Standard e Icesi) operando limpiamente');
+console.log('✓ TEST 14: Redondeo de precision y reglas configurables (Standard y Truncate) operando limpiamente');
 
 // TEST 15: Exclusion de materias INVIABLE_MATEMATICAMENTE de studyGapPlanner
 const subjectsMapTest: Record<string, Subject> = {
@@ -508,5 +505,211 @@ if (!hasSalvableRecommendation) {
   throw new Error('TEST 15 Failed: studyGapPlanner debe priorizar la materia salvable');
 }
 console.log('✓ TEST 15: Materia INVIABLE excluida del planificador de huecos y materia salvable priorizada con exito');
+
+// TEST 16: Renombrar el examen despues de guardar la nota no debe duplicar el item (vinculacion por examId)
+const subRenombrar: Subject = {
+  id: 'sub-renombrar',
+  semesterId: 'sem-1',
+  name: 'Calculo I',
+  code: 'MAT101',
+  credits: 3,
+  color: '#2563eb',
+  maxAbsences: 4,
+  passingGrade: 3.0,
+};
+
+// Examen que originalmente se llamaba "Parcial 1" y fue renombrado a "Parcial 1 (corte 1)"
+const examsRenombrados: Exam[] = [
+  { id: 'ex-parcial-1', subjectId: 'sub-renombrar', title: 'Parcial 1 (corte 1)', date: '2026-09-20', weight: 25 },
+  { id: 'ex-parcial-2', subjectId: 'sub-renombrar', title: 'Parcial 2', date: '2026-10-30', weight: 25 },
+];
+
+// Nota guardada previamente vinculada con examId: 'ex-parcial-1', pero con el nombre antiguo
+const gradesConExamId: Grade[] = [
+  { id: 'gr-ex-parcial-1', subjectId: 'sub-renombrar', name: 'Parcial 1', value: 4.5, weight: 25, examId: 'ex-parcial-1' },
+];
+
+const planRenombrado = buildEvaluationPlanFromExams(subRenombrar, examsRenombrados, gradesConExamId);
+if (planRenombrado.length !== 2) {
+  throw new Error(`TEST 16 Failed: Se esperaban 2 items, pero se obtuvieron ${planRenombrado.length} (posible duplicado por renombre)`);
+}
+const itemRenombrado = planRenombrado.find((it) => it.examId === 'ex-parcial-1');
+if (!itemRenombrado || itemRenombrado.grade !== 4.5 || itemRenombrado.weight !== 25) {
+  throw new Error('TEST 16 Failed: El examen renombrado no preservo su calificacion vinculada por examId');
+}
+const statusRenombrado = calculateGradeStatus({
+  subjectId: 'sub-renombrar',
+  evaluations: planRenombrado,
+  passingGrade: 3.0,
+});
+if (statusRenombrado.totalConfiguredWeight !== 50) {
+  throw new Error(`TEST 16 Failed: totalConfiguredWeight debio ser 50%, pero fue ${statusRenombrado.totalConfiguredWeight}% (posible doble conteo a 75%)`);
+}
+console.log('✓ TEST 16: Renombrar examen enlaza por examId y no duplica items ni altera porcentajes');
+
+// TEST 17: Avisar cuando los pesos suman MAS de 100%
+const testPlanOverweight: EvaluationItem[] = [
+  { id: 'ev-ov1', subjectId: 'sub-over', name: 'Parcial 1', weight: 60, grade: 3.5 },
+  { id: 'ev-ov2', subjectId: 'sub-over', name: 'Parcial 2', weight: 65 }, // Suma 125%
+];
+
+const statusOverweight = calculateGradeStatus({
+  subjectId: 'sub-over',
+  evaluations: testPlanOverweight,
+  passingGrade: 3.0,
+});
+if (statusOverweight.weightsIncomplete !== true || statusOverweight.totalConfiguredWeight !== 125) {
+  throw new Error(`TEST 17 Failed: Esperado totalConfiguredWeight 125 con weightsIncomplete true, obtenido ${statusOverweight.totalConfiguredWeight}`);
+}
+if (!statusOverweight.statusMessage.includes('exceden el 100% por 25%')) {
+  throw new Error(`TEST 17 Failed: Mensaje debe advertir sobrepeso explicito (> 100%), obtenido: ${statusOverweight.statusMessage}`);
+}
+console.log('✓ TEST 17: Pesos superiores al 100% generan advertencia explicita con el porcentaje excedido');
+
+// TEST 18: No descartar notas por tener nombres repetidos (ej. dos "Quiz" son dos notas distintas)
+const subQuices: Subject = {
+  id: 'sub-quices',
+  semesterId: 'sem-1',
+  name: 'Quimica General',
+  code: 'QUI101',
+  credits: 3,
+  color: '#059669',
+  maxAbsences: 4,
+  passingGrade: 3.0,
+};
+
+const gradesRepetidas: Grade[] = [
+  { id: 'gr-quiz-1', subjectId: 'sub-quices', name: 'Quiz', value: 4.5, weight: 10 },
+  { id: 'gr-quiz-2', subjectId: 'sub-quices', name: 'Quiz', value: 3.5, weight: 10 },
+  { id: 'gr-quiz-3', subjectId: 'sub-quices', name: 'Quiz', value: 5.0, weight: 10 },
+];
+
+const planQuicesRepetidos = buildEvaluationPlanFromExams(subQuices, [], gradesRepetidas);
+if (planQuicesRepetidos.length !== 3) {
+  throw new Error(`TEST 18 Failed: Se esperaban 3 evaluaciones para 3 quices distintos, obtenidos ${planQuicesRepetidos.length}`);
+}
+const statusQuicesRepetidos = calculateGradeStatus({
+  subjectId: 'sub-quices',
+  evaluations: planQuicesRepetidos,
+  passingGrade: 3.0,
+});
+if (statusQuicesRepetidos.evaluatedWeight !== 30) {
+  throw new Error(`TEST 18 Failed: evaluatedWeight debio ser 30%, obtenido ${statusQuicesRepetidos.evaluatedWeight}%`);
+}
+// Acumulado: (4.5 * 0.10) + (3.5 * 0.10) + (5.0 * 0.10) = 0.45 + 0.35 + 0.50 = 1.30
+if (Math.abs(statusQuicesRepetidos.currentAccumulatedScore - 1.30) > 0.001) {
+  throw new Error(`TEST 18 Failed: Acumulado esperado 1.30, obtenido ${statusQuicesRepetidos.currentAccumulatedScore}`);
+}
+console.log('✓ TEST 18: Multiples notas con nombres identicos ("Quiz") se preservan todas de forma independiente');
+
+// TEST 19: Persistencia y recarga de componentes pendientes (sin nota)
+const subPending: Subject = {
+  id: 'sub-pending',
+  semesterId: 'sem-1',
+  name: 'Programacion Avanzada',
+  code: 'SIS301',
+  credits: 4,
+  color: '#6366f1',
+  maxAbsences: 4,
+  passingGrade: 3.0,
+};
+
+const gradesWithPending: Grade[] = [
+  { id: 'gr-taller-1', subjectId: 'sub-pending', name: 'Talleres en Clase', value: null, weight: 20 },
+  { id: 'gr-proyecto', subjectId: 'sub-pending', name: 'Proyecto de Semestre', value: null, weight: 30 },
+];
+
+const planPending = buildEvaluationPlanFromExams(subPending, [], gradesWithPending);
+if (planPending.length !== 2) {
+  throw new Error(`TEST 19 Failed: Componentes pendientes no se deben perder, obtenidos ${planPending.length}`);
+}
+if (planPending[0].grade !== null || planPending[1].grade !== null) {
+  throw new Error('TEST 19 Failed: Componentes pendientes deben mantener grade null');
+}
+if (planPending[0].weight !== 20 || planPending[1].weight !== 30) {
+  throw new Error('TEST 19 Failed: Pesos de componentes pendientes deben preservarse intactos');
+}
+console.log('✓ TEST 19: Componentes pendientes (sin nota) se conservan y recargan correctamente en el plan');
+
+// TEST 20: No inventar pesos por defecto (20 / 15). Marcar como "sin porcentaje" y excluir del calculo
+const subNoWeights: Subject = {
+  id: 'sub-noweights',
+  semesterId: 'sem-1',
+  name: 'Historia Contemporanea',
+  code: 'SOC102',
+  credits: 2,
+  color: '#84cc16',
+  maxAbsences: 4,
+  passingGrade: 3.0,
+};
+
+const examsSinPeso: Exam[] = [
+  { id: 'ex-inbox-1', subjectId: 'sub-noweights', title: 'Parcial Sorpresa', date: '2026-10-15', weight: 0 },
+];
+
+const gradesSinPeso: Grade[] = [
+  { id: 'gr-inbox-2', subjectId: 'sub-noweights', name: 'Ensayo no ponderado', value: 4.0, weight: 0 },
+];
+
+const planSinPeso = buildEvaluationPlanFromExams(subNoWeights, examsSinPeso, gradesSinPeso);
+if (planSinPeso.length !== 2) {
+  throw new Error(`TEST 20 Failed: Se esperaban 2 items, obtenidos ${planSinPeso.length}`);
+}
+if (planSinPeso[0].weight !== 0 || planSinPeso[0].hasMissingWeight !== true) {
+  throw new Error(`TEST 20 Failed: Primer item no debe inventar 20%, peso debe ser 0 y hasMissingWeight true, obtenido ${planSinPeso[0].weight}`);
+}
+if (planSinPeso[1].weight !== 0 || planSinPeso[1].hasMissingWeight !== true) {
+  throw new Error(`TEST 20 Failed: Segundo item no debe inventar 15%, peso debe ser 0 y hasMissingWeight true, obtenido ${planSinPeso[1].weight}`);
+}
+
+const statusSinPeso = calculateGradeStatus({
+  subjectId: 'sub-noweights',
+  evaluations: planSinPeso,
+  passingGrade: 3.0,
+});
+if (statusSinPeso.hasMissingWeights !== true) {
+  throw new Error('TEST 20 Failed: hasMissingWeights debe ser true cuando hay items sin porcentaje');
+}
+if (statusSinPeso.totalConfiguredWeight !== 0) {
+  throw new Error(`TEST 20 Failed: totalConfiguredWeight debe ser 0 (excluyendo items sin porcentaje), obtenido ${statusSinPeso.totalConfiguredWeight}`);
+}
+if (!statusSinPeso.statusMessage.includes('sin porcentaje asignado')) {
+  throw new Error('TEST 20 Failed: Mensaje debe advertir componentes sin porcentaje');
+}
+console.log('✓ TEST 20: No se inventan pesos por defecto; items sin porcentaje son excluidos del calculo y advertidos');
+
+// TEST 21: La nota necesaria se redondea SIEMPRE hacia arriba (Math.ceil a 2 decimales, nunca hacia abajo)
+// Caso A: Matematicamente requiere 4.012 -> no debe redondearse hacia abajo a 4.00 ni 4.01
+const ceilTestA = ceilRequiredGrade(4.012, 2);
+if (ceilTestA !== 4.02) {
+  throw new Error(`TEST 21 Failed: ceilRequiredGrade(4.012) debio ser 4.02, obtenido ${ceilTestA}`);
+}
+
+// Caso B: Matematicamente requiere 4.001 -> no debe redondearse hacia abajo a 4.00
+const ceilTestB = ceilRequiredGrade(4.001, 2);
+if (ceilTestB !== 4.01) {
+  throw new Error(`TEST 21 Failed: ceilRequiredGrade(4.001) debio ser 4.01, obtenido ${ceilTestB}`);
+}
+
+// Caso C: En calculateGradeStatus, si se requiere 4.002, debe clasificar en RIESGO_CRITICO (> 4.0) y no EXIGE_ESFUERZO
+// Passing grade = 3.0. Evaluado: 50% con nota 1.998. Acumulado = 0.999.
+// Restante: 50%. Nota necesaria exacta: (3.0 - 0.999) / 0.50 = 2.001 / 0.50 = 4.002.
+// Redondeado al alza a 2 decimales = 4.01 (> 4.0) -> RIESGO_CRITICO.
+const testPlanCeil: EvaluationItem[] = [
+  { id: 'ev-c1', subjectId: 'sub-ceil', name: 'Corte 1', weight: 50, grade: 1.998 },
+  { id: 'ev-c2', subjectId: 'sub-ceil', name: 'Corte 2', weight: 50 },
+];
+const statusCeil = calculateGradeStatus({
+  subjectId: 'sub-ceil',
+  evaluations: testPlanCeil,
+  passingGrade: 3.0,
+});
+if (statusCeil.requiredGrade !== 4.01) {
+  throw new Error(`TEST 21 Failed: Nota necesaria debio redondearse al alza a 4.01, obtenido ${statusCeil.requiredGrade}`);
+}
+if (statusCeil.status !== 'RIESGO_CRITICO') {
+  throw new Error(`TEST 21 Failed: Con 4.01 el estatus debe ser RIESGO_CRITICO, obtenido ${statusCeil.status}`);
+}
+console.log('✓ TEST 21: Nota necesaria se redondea estrictamente hacia arriba (Math.ceil a 2 decimales)');
 
 console.log('ALL GRADE CALCULATOR & RISK INTEGRATION TESTS PASSED SUCCESSFULLY!');
