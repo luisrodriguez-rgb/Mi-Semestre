@@ -20,6 +20,34 @@ export interface EvaluationItem {
   date?: string;              // Fecha límite o de realización
 }
 
+export type RoundingRule = 'standard' | 'icesi' | 'truncate';
+
+/**
+ * Utilidad de redondeo configurable para calificaciones y umbrales académicos:
+ * - 'standard': Redondeo matemático clásico a N decimales (por defecto 2).
+ * - 'icesi': Regla institucional Icesi (las notas definitivas se expresan a 1 decimal, ej. 2.95 redondea a 3.0).
+ * - 'truncate': Truncado estricto a N decimales sin redondeo al alza.
+ */
+export function roundGrade(
+  value: number,
+  decimals: number = 2,
+  rule: RoundingRule = 'standard'
+): number {
+  if (isNaN(value) || !isFinite(value)) return value;
+
+  if (rule === 'icesi') {
+    // Redondeo institucional Icesi a 1 decimal con umbral de 0.05
+    return Math.round((value + Number.EPSILON) * 10) / 10;
+  }
+  if (rule === 'truncate') {
+    const factor = Math.pow(10, decimals);
+    return Math.floor(value * factor) / factor;
+  }
+  // Standard
+  const factor = Math.pow(10, decimals);
+  return Math.round((value + Number.EPSILON) * factor) / factor;
+}
+
 export interface GradeCalculationResult {
   subjectId: string;
   passingGrade: number;               // Por defecto 3.0
@@ -27,7 +55,7 @@ export interface GradeCalculationResult {
   evaluatedWeight: number;            // Suma de pesos que ya tienen nota asignada (ej: 50%)
   remainingWeight: number;            // Suma de pesos pendientes por evaluar (ej: 50%)
   currentAccumulatedScore: number;    // Σ(nota_i * peso_fraccion), ej: 3.2 * 0.25 = 0.80
-  currentWeightedGrade: number | null;// Promedio de notas evaluadas hasta ahora: acumulado / (evaluatedWeight / 100)
+  currentWeightedGrade: number | null;// Promedio en lo evaluado: acumulado / (evaluatedWeight / 100) (ej: 3.4)
   requiredGrade: number | null;       // Nota promedio necesaria en lo restante para aprobar
   status: GradeStatus;
   statusMessage: string;
@@ -39,6 +67,7 @@ export interface GradeStatusInput {
   subjectId: string;
   evaluations: EvaluationItem[];
   passingGrade?: number;
+  roundingRule?: RoundingRule;
 }
 
 /**
@@ -46,14 +75,19 @@ export interface GradeStatusInput {
  *
  * Fórmula estricta:
  *   acumulado = Σ(nota_i * (peso_i / 100))
+ *   promedioEvaluado = acumulado / (pesoEvaluado / 100)
  *   notaNecesaria = (notaAprobatoria - acumulado) / (pesoRestante / 100)
  */
 export function calculateGradeStatus({
   subjectId,
   evaluations,
   passingGrade = 3.0,
+  roundingRule = 'standard',
 }: GradeStatusInput): GradeCalculationResult {
-  const totalConfiguredWeight = evaluations.reduce((acc, ev) => acc + (ev.weight || 0), 0);
+  const totalConfiguredWeight = roundGrade(
+    evaluations.reduce((acc, ev) => acc + (ev.weight || 0), 0),
+    2
+  );
   const weightsIncomplete = Math.abs(totalConfiguredWeight - 100) > 0.001;
 
   if (evaluations.length === 0) {
@@ -78,20 +112,28 @@ export function calculateGradeStatus({
     (ev) => typeof ev.grade === 'number' && !isNaN(ev.grade) && ev.grade !== null
   );
 
-  const evaluatedWeight = evaluatedItems.reduce((acc, ev) => acc + (ev.weight || 0), 0);
+  const evaluatedWeight = roundGrade(
+    evaluatedItems.reduce((acc, ev) => acc + (ev.weight || 0), 0),
+    2
+  );
 
   // Acumulado exacto con pesos como fracción: Σ(nota_i * (peso_i / 100))
-  const currentAccumulatedScore = evaluatedItems.reduce((acc, ev) => {
+  const rawAccumulated = evaluatedItems.reduce((acc, ev) => {
     const fractionWeight = (ev.weight || 0) / 100;
     return acc + (ev.grade! * fractionWeight);
   }, 0);
 
-  // Promedio ponderado de lo que ya se evaluó
+  // Redondear acumulado antes de clasificar para evitar artefactos de punto flotante
+  const currentAccumulatedScore = roundGrade(rawAccumulated, 2, roundingRule);
+
+  // Promedio ponderado de lo que ya se evaluó (cifra primaria para la UI)
+  const rawWeightedGrade =
+    evaluatedWeight > 0 ? rawAccumulated / (evaluatedWeight / 100) : null;
   const currentWeightedGrade =
-    evaluatedWeight > 0 ? currentAccumulatedScore / (evaluatedWeight / 100) : null;
+    rawWeightedGrade !== null ? roundGrade(rawWeightedGrade, 2, roundingRule) : null;
 
   // Peso restante en el semestre (base 100)
-  const remainingWeight = Math.max(0, 100 - evaluatedWeight);
+  const remainingWeight = Math.max(0, roundGrade(100 - evaluatedWeight, 2));
   const isComplete = remainingWeight <= 0.0001;
 
   let warningSuffix = '';
@@ -101,7 +143,7 @@ export function calculateGradeStatus({
 
   // CASO 1: 100% Evaluado (Sin división por cero)
   if (isComplete) {
-    const passed = currentAccumulatedScore >= passingGrade - 0.001;
+    const passed = currentAccumulatedScore >= passingGrade;
     return {
       subjectId,
       passingGrade,
@@ -121,7 +163,7 @@ export function calculateGradeStatus({
   }
 
   // CASO 2: Aprobación Anticipada (acumulado actual >= nota aprobatoria)
-  if (currentAccumulatedScore >= passingGrade - 0.001) {
+  if (currentAccumulatedScore >= passingGrade) {
     return {
       subjectId,
       passingGrade,
@@ -140,23 +182,24 @@ export function calculateGradeStatus({
 
   // CASO 3: Cálculo de Nota Necesaria
   const remainingFraction = remainingWeight / 100;
-  const rawRequiredGrade = (passingGrade - currentAccumulatedScore) / remainingFraction;
+  const rawRequiredGrade = (passingGrade - rawAccumulated) / remainingFraction;
+  const roundedRequiredGrade = roundGrade(rawRequiredGrade, 2, roundingRule);
 
   let status: GradeStatus = 'TRAYECTORIA_SEGURA';
   let statusMessage = '';
 
-  if (rawRequiredGrade > 5.0) {
+  if (roundedRequiredGrade > 5.0) {
     status = 'INVIABLE_MATEMATICAMENTE';
-    statusMessage = `Matemáticamente inviable: requerirías una nota de ${rawRequiredGrade.toFixed(1)} en el ${remainingWeight.toFixed(0)}% restante (la nota máxima posible es 5.0). Te recomendamos consultar con el profesor o evaluar opciones de cancelación oportuna.${warningSuffix}`;
-  } else if (rawRequiredGrade > 4.0) {
+    statusMessage = `Matemáticamente inviable: requerirías una nota de ${roundedRequiredGrade.toFixed(1)} en el ${remainingWeight.toFixed(0)}% restante (la nota máxima posible es 5.0). Te recomendamos consultar con el profesor o evaluar opciones de cancelación oportuna.${warningSuffix}`;
+  } else if (roundedRequiredGrade > 4.0) {
     status = 'RIESGO_CRITICO';
-    statusMessage = `Riesgo académico alto: necesitas promediar ${rawRequiredGrade.toFixed(2)} en el ${remainingWeight.toFixed(0)}% restante para pasar la materia. Se recomienda intensificar sesiones de estudio prioritarias.${warningSuffix}`;
-  } else if (rawRequiredGrade > 3.0) {
+    statusMessage = `Riesgo académico alto: necesitas promediar ${roundedRequiredGrade.toFixed(2)} en el ${remainingWeight.toFixed(0)}% restante para pasar la materia. Se recomienda intensificar sesiones de estudio prioritarias.${warningSuffix}`;
+  } else if (roundedRequiredGrade > 3.0) {
     status = 'EXIGE_ESFUERZO';
-    statusMessage = `Requiere esfuerzo sostenido: necesitas promediar ${rawRequiredGrade.toFixed(2)} en el ${remainingWeight.toFixed(0)}% restante para asegurar la aprobación.${warningSuffix}`;
+    statusMessage = `Requiere esfuerzo sostenido: necesitas promediar ${roundedRequiredGrade.toFixed(2)} en el ${remainingWeight.toFixed(0)}% restante para asegurar la aprobación.${warningSuffix}`;
   } else {
     status = 'TRAYECTORIA_SEGURA';
-    statusMessage = `Vas por buen camino: necesitas promediar ${rawRequiredGrade.toFixed(2)} en el ${remainingWeight.toFixed(0)}% restante para aprobar con ${passingGrade.toFixed(1)}.${warningSuffix}`;
+    statusMessage = `Vas por buen camino: necesitas promediar ${roundedRequiredGrade.toFixed(2)} en el ${remainingWeight.toFixed(0)}% restante para aprobar con ${passingGrade.toFixed(1)}.${warningSuffix}`;
   }
 
   return {
@@ -167,7 +210,7 @@ export function calculateGradeStatus({
     remainingWeight,
     currentAccumulatedScore,
     currentWeightedGrade,
-    requiredGrade: rawRequiredGrade,
+    requiredGrade: roundedRequiredGrade,
     status,
     statusMessage,
     weightsIncomplete,
@@ -178,6 +221,7 @@ export function calculateGradeStatus({
 /**
  * Reutiliza los registros de exámenes existentes para construir el plan de evaluación
  * unificado sin obligar al estudiante a ingresar los porcentajes dos veces.
+ * Garantiza inmunidad ante doble conteo entre Exam.weight y Grade.weight.
  */
 export function buildEvaluationPlanFromExams(
   subject: Subject,
@@ -188,31 +232,40 @@ export function buildEvaluationPlanFromExams(
   const subjectGrades = grades.filter((g) => g.subjectId === subject.id);
 
   const items: EvaluationItem[] = [];
+  const mappedGradeIds = new Set<string>();
 
-  // Mapear cada examen con su peso
+  // 1. Mapear cada examen con su peso
   for (const exam of subjectExams) {
-    // Buscar si existe una calificación asociada por nombre o id
     const matchedGrade = subjectGrades.find(
       (g) =>
-        g.name.trim().toLowerCase() === exam.title.trim().toLowerCase() ||
-        (g as any).examId === exam.id
+        (g as any).examId === exam.id ||
+        g.id === exam.id ||
+        g.name.trim().toLowerCase() === exam.title.trim().toLowerCase()
     );
+
+    if (matchedGrade) {
+      mappedGradeIds.add(matchedGrade.id);
+    }
 
     items.push({
       id: exam.id,
       subjectId: subject.id,
       name: exam.title,
-      weight: exam.weight || 20,
+      weight: exam.weight || matchedGrade?.weight || 20,
       grade: matchedGrade ? matchedGrade.value : null,
       examId: exam.id,
       date: exam.date,
     });
   }
 
-  // Incorporar calificaciones que no vengan de exámenes (ej. Talleres, Quices generales)
+  // 2. Incorporar calificaciones que no vengan de exámenes (ej. "Talleres 20%", "Quices 15%")
   for (const grade of subjectGrades) {
-    const alreadyMapped = items.some((it) => it.examId && (grade as any).examId === it.examId);
-    if (!alreadyMapped && !items.some((it) => it.name === grade.name)) {
+    if (mappedGradeIds.has(grade.id)) continue;
+
+    const alreadyMappedByName = items.some(
+      (it) => it.name.trim().toLowerCase() === grade.name.trim().toLowerCase()
+    );
+    if (!alreadyMappedByName) {
       items.push({
         id: grade.id,
         subjectId: subject.id,
@@ -220,6 +273,7 @@ export function buildEvaluationPlanFromExams(
         weight: grade.weight || 15,
         grade: grade.value,
       });
+      mappedGradeIds.add(grade.id);
     }
   }
 
@@ -234,11 +288,13 @@ export function simulateGrade({
   targetItemId,
   simulatedGrade,
   passingGrade = 3.0,
+  roundingRule = 'standard',
 }: {
   evaluations: EvaluationItem[];
   targetItemId: string;
   simulatedGrade: number;
   passingGrade?: number;
+  roundingRule?: RoundingRule;
 }): GradeCalculationResult {
   const cloned = evaluations.map((item) => {
     if (item.id === targetItemId || item.examId === targetItemId) {
@@ -251,5 +307,6 @@ export function simulateGrade({
     subjectId: evaluations[0]?.subjectId || 'simulation',
     evaluations: cloned,
     passingGrade,
+    roundingRule,
   });
 }

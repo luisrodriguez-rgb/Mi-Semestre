@@ -77,11 +77,18 @@ export function planStudyGaps(input: StudyPlannerInput): StudyRecommendation[] {
 
   const recommendations: StudyRecommendation[] = [];
   const riskMap = new Map<string, number>();
+  const inviableSubjectIds = new Set<string>();
+
   for (const r of riskEvaluations) {
     riskMap.set(r.subjectId, r.riskScore);
+    if (r.signals?.gradeStatus === 'INVIABLE_MATEMATICAMENTE') {
+      inviableSubjectIds.add(r.subjectId);
+    }
   }
 
   // 1. Construir lista de metas académicas próximas (Exámenes y Tareas pendientes)
+  // Guardrail: Excluir asignaturas matemáticamente inviables para no desperdiciar huecos
+  // en materias ya perdidas; enfocar el esfuerzo en las asignaturas salvables.
   interface AcademicTarget {
     type: 'exam' | 'assignment';
     id: string;
@@ -99,6 +106,9 @@ export function planStudyGaps(input: StudyPlannerInput): StudyRecommendation[] {
   const baseTime = baseDate.getTime();
 
   for (const exam of exams) {
+    // Si la materia ya no se puede salvar matemáticamente, no planificar sesiones
+    if (inviableSubjectIds.has(exam.subjectId)) continue;
+
     const examTime = new Date(exam.date).getTime();
     const diffDays = Math.max(0, (examTime - baseTime) / (1000 * 60 * 60 * 24));
 
@@ -121,6 +131,7 @@ export function planStudyGaps(input: StudyPlannerInput): StudyRecommendation[] {
 
   for (const task of assignments) {
     if (task.status === 'completed') continue;
+    if (inviableSubjectIds.has(task.subjectId)) continue;
     const taskTime = new Date(task.dueDate).getTime();
     const diffDays = Math.max(0, (taskTime - baseTime) / (1000 * 60 * 60 * 24));
 

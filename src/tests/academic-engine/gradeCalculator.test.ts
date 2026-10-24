@@ -2,10 +2,12 @@ import {
   calculateGradeStatus,
   buildEvaluationPlanFromExams,
   simulateGrade,
+  roundGrade,
   EvaluationItem,
 } from '../../lib/academic-engine/grades/gradeCalculator';
-import { Subject, Exam, Grade } from '../../types';
+import { Subject, Exam, Grade, TimeSlot, RiskEvaluation } from '../../types';
 import { calculateSubjectRisk } from '../../lib/academic-engine/risk/calculateRisk';
+import { planStudyGaps } from '../../lib/academic-engine/planning/studyGapPlanner';
 
 console.log('--- Testing Grade Calculator & Passing Threshold Engine ---');
 
@@ -268,5 +270,243 @@ if (passedRisk.level !== 'ESTABLE' || (passedRisk.gradePressure || 0) !== 0) {
   throw new Error(`TEST 11 Failed: Materia aprobada anticipadamente debe tener nivel ESTABLE y gradePressure 0, obtenido ${passedRisk.level} ${passedRisk.gradePressure}`);
 }
 console.log('✓ TEST 11: Materia aprobada anticipadamente clasifica ESTABLE con gradePressure 0');
+
+// TEST 12: Inmunidad ante doble conteo (Grade vinculada a Exam con peso en ambos no duplica porcentaje)
+const subDobleConteo: Subject = {
+  id: 'sub-double',
+  semesterId: 'sem-1',
+  name: 'Calculo Multivariable',
+  code: 'MAT201',
+  credits: 4,
+  color: '#2563eb',
+  maxAbsences: 4,
+  passingGrade: 3.0,
+};
+
+const examsDobleConteo: Exam[] = [
+  { id: 'ex-parcial1', subjectId: 'sub-double', title: 'Parcial 1 (Vectores)', date: '2026-09-15', weight: 30 },
+  { id: 'ex-final', subjectId: 'sub-double', title: 'Examen Final', date: '2026-11-20', weight: 70 },
+];
+
+const gradesDobleConteo: Grade[] = [
+  // Esta nota está vinculada al examen 'ex-parcial1' y ambos especifican peso 30
+  { id: 'gr-parcial1', subjectId: 'sub-double', name: 'Parcial 1 (Vectores)', value: 4.0, weight: 30 },
+];
+
+const planDobleConteo = buildEvaluationPlanFromExams(subDobleConteo, examsDobleConteo, gradesDobleConteo);
+if (planDobleConteo.length !== 2) {
+  throw new Error(`TEST 12 Failed: Se esperaban 2 items en el plan (sin duplicar), obtenidos ${planDobleConteo.length}`);
+}
+
+const statusDobleConteo = calculateGradeStatus({
+  subjectId: 'sub-double',
+  evaluations: planDobleConteo,
+  passingGrade: 3.0,
+});
+
+if (statusDobleConteo.totalConfiguredWeight !== 100) {
+  throw new Error(`TEST 12 Failed: totalConfiguredWeight debio ser 100, obtenido ${statusDobleConteo.totalConfiguredWeight}`);
+}
+if (statusDobleConteo.evaluatedWeight !== 30) {
+  throw new Error(`TEST 12 Failed: evaluatedWeight debio ser 30 (no 60 por doble conteo), obtenido ${statusDobleConteo.evaluatedWeight}`);
+}
+if (statusDobleConteo.currentWeightedGrade !== 4.0) {
+  throw new Error(`TEST 12 Failed: currentWeightedGrade esperado 4.0, obtenido ${statusDobleConteo.currentWeightedGrade}`);
+}
+console.log('✓ TEST 12: Inmunidad ante doble conteo verificada (Exam.weight y Grade.weight no se suman dos veces)');
+
+// TEST 13: Grade con peso propio sin Exam asociado (ej. "Talleres 20%") entra al plan de evaluacion
+const subTalleres: Subject = {
+  id: 'sub-talleres',
+  semesterId: 'sem-1',
+  name: 'Estructuras de Datos',
+  code: 'SIS202',
+  credits: 3,
+  color: '#8b5cf6',
+  maxAbsences: 4,
+  passingGrade: 3.0,
+};
+
+const examsTalleres: Exam[] = [
+  { id: 'ex-midterm', subjectId: 'sub-talleres', title: 'Parcial Mitad de Semestre', date: '2026-10-10', weight: 40 },
+  { id: 'ex-final-proj', subjectId: 'sub-talleres', title: 'Proyecto Final', date: '2026-11-25', weight: 40 },
+];
+
+const gradesTalleres: Grade[] = [
+  // Nota sin ningun examen asociado
+  { id: 'gr-standalone-talleres', subjectId: 'sub-talleres', name: 'Talleres Continuos', value: 4.5, weight: 20 },
+];
+
+const planTalleres = buildEvaluationPlanFromExams(subTalleres, examsTalleres, gradesTalleres);
+if (planTalleres.length !== 3) {
+  throw new Error(`TEST 13 Failed: Se esperaban 3 items en el plan incluyendo el taller sin examen, obtenidos ${planTalleres.length}`);
+}
+
+const tallerItem = planTalleres.find((it) => it.name === 'Talleres Continuos');
+if (!tallerItem || tallerItem.weight !== 20 || tallerItem.grade !== 4.5) {
+  throw new Error('TEST 13 Failed: Taller independiente no quedo registrado con su nota 4.5 y peso 20%');
+}
+
+const statusTalleres = calculateGradeStatus({
+  subjectId: 'sub-talleres',
+  evaluations: planTalleres,
+  passingGrade: 3.0,
+});
+if (statusTalleres.evaluatedWeight !== 20 || statusTalleres.currentAccumulatedScore !== 0.90) {
+  throw new Error(`TEST 13 Failed: evaluatedWeight debio ser 20 y acumulado 0.90, obtenido peso ${statusTalleres.evaluatedWeight} acum ${statusTalleres.currentAccumulatedScore}`);
+}
+if (statusTalleres.currentWeightedGrade !== 4.5) {
+  throw new Error(`TEST 13 Failed: currentWeightedGrade esperado 4.5, obtenido ${statusTalleres.currentWeightedGrade}`);
+}
+console.log('✓ TEST 13: Grade con peso propio sin Exam asociado entra correctamente al plan de evaluacion');
+
+// TEST 14: Regla de redondeo a 2 decimales y precision configurable (Icesi y Standard)
+// Evitar artefactos como 2.9999999999999996
+const precisionVal = 1.0 - 0.7; // En JS da 0.30000000000000004
+const roundedStd = roundGrade(precisionVal, 2, 'standard');
+if (roundedStd !== 0.30) {
+  throw new Error(`TEST 14 Failed: Redondeo standard esperado 0.30, obtenido ${roundedStd}`);
+}
+
+// Regla Icesi: 2.95 redondea a 3.0
+const icesiRound1 = roundGrade(2.95, 2, 'icesi');
+if (icesiRound1 !== 3.0) {
+  throw new Error(`TEST 14 Failed: Regla Icesi debio redondear 2.95 a 3.0, obtenido ${icesiRound1}`);
+}
+const icesiRound2 = roundGrade(2.94, 2, 'icesi');
+if (icesiRound2 !== 2.9) {
+  throw new Error(`TEST 14 Failed: Regla Icesi debio mantener 2.94 en 2.9, obtenido ${icesiRound2}`);
+}
+
+// Evaluacion con flotante 2.9999 no debe fallar la clasificacion contra 3.0
+const testPlanFloat: EvaluationItem[] = [
+  { id: 'ev-f1', subjectId: 'sub-float', name: 'Componente 1', weight: 33.33, grade: 3.0 },
+  { id: 'ev-f2', subjectId: 'sub-float', name: 'Componente 2', weight: 33.33, grade: 3.0 },
+  { id: 'ev-f3', subjectId: 'sub-float', name: 'Componente 3', weight: 33.34, grade: 3.0 },
+];
+const statusFloat = calculateGradeStatus({
+  subjectId: 'sub-float',
+  evaluations: testPlanFloat,
+  passingGrade: 3.0,
+});
+if (statusFloat.status !== 'APROBADA_ANTICIPADA' || statusFloat.currentAccumulatedScore !== 3.0) {
+  throw new Error(`TEST 14 Failed: Precision con decimales repetidos debio dar 3.00 APROBADA_ANTICIPADA, obtenido ${statusFloat.currentAccumulatedScore} ${statusFloat.status}`);
+}
+console.log('✓ TEST 14: Redondeo de precision y reglas configurables (Standard e Icesi) operando limpiamente');
+
+// TEST 15: Exclusion de materias INVIABLE_MATEMATICAMENTE de studyGapPlanner
+const subjectsMapTest: Record<string, Subject> = {
+  'sub-inviable': {
+    id: 'sub-inviable',
+    semesterId: 'sem-1',
+    name: 'Materia Inviable',
+    code: 'INV100',
+    credits: 3,
+    color: '#ef4444',
+    maxAbsences: 4,
+    passingGrade: 3.0,
+  },
+  'sub-salvable': {
+    id: 'sub-salvable',
+    semesterId: 'sem-1',
+    name: 'Materia Salvable',
+    code: 'SAL200',
+    credits: 3,
+    color: '#3b82f6',
+    maxAbsences: 4,
+    passingGrade: 3.0,
+  },
+};
+
+const baseDateTest = new Date('2026-10-25T08:00:00');
+const testExamsGap: Exam[] = [
+  { id: 'ex-inv', subjectId: 'sub-inviable', title: 'Parcial Final Inviable', date: '2026-10-27T10:00:00', weight: 30 },
+  { id: 'ex-sal', subjectId: 'sub-salvable', title: 'Parcial Final Salvable', date: '2026-10-28T10:00:00', weight: 30 },
+];
+
+const testSlotsGap: Array<TimeSlot & { date: string }> = [
+  {
+    dayOfWeek: 1,
+    startTime: '14:00',
+    endTime: '15:30',
+    durationMinutes: 90,
+    transitionBufferMinutes: 15,
+    effectiveStudyMinutes: 75,
+    category: 'USABLE',
+    date: '2026-10-25',
+  },
+];
+
+const riskEvaluationsTest: RiskEvaluation[] = [
+  {
+    subjectId: 'sub-inviable',
+    subjectName: 'Materia Inviable',
+    subjectColor: '#ef4444',
+    riskScore: 90,
+    level: 'CRÍTICO',
+    deadlinePressure: 40,
+    workloadPressure: 0,
+    attendancePressure: 0,
+    gradePressure: 50,
+    signals: {
+      daysUntilExam: 2,
+      pendingTasksCount: 0,
+      estimatedStudyMinutes: 120,
+      availableMinutesThisWeek: 300,
+      attendanceRate: 100,
+      absencesCount: 0,
+      remainingAllowedAbsences: 4,
+      gradeStatus: 'INVIABLE_MATEMATICAMENTE',
+      requiredGrade: 6.5,
+    },
+    reasons: ['Inviable matemáticamente'],
+  },
+  {
+    subjectId: 'sub-salvable',
+    subjectName: 'Materia Salvable',
+    subjectColor: '#3b82f6',
+    riskScore: 65,
+    level: 'ATENCIÓN',
+    deadlinePressure: 30,
+    workloadPressure: 0,
+    attendancePressure: 0,
+    gradePressure: 35,
+    signals: {
+      daysUntilExam: 3,
+      pendingTasksCount: 0,
+      estimatedStudyMinutes: 120,
+      availableMinutesThisWeek: 300,
+      attendanceRate: 100,
+      absencesCount: 0,
+      remainingAllowedAbsences: 4,
+      gradeStatus: 'RIESGO_CRITICO',
+      requiredGrade: 4.2,
+    },
+    reasons: ['Requiere esfuerzo prioritario'],
+  },
+];
+
+const gapRecommendations = planStudyGaps({
+  subjectsMap: subjectsMapTest,
+  exams: testExamsGap,
+  assignments: [],
+  availableSlots: testSlotsGap,
+  riskEvaluations: riskEvaluationsTest,
+  baseDate: baseDateTest,
+  maxSessionsPerDay: 2,
+});
+
+if (gapRecommendations.length === 0) {
+  throw new Error('TEST 15 Failed: Se esperaba al menos 1 recomendacion para la materia salvable');
+}
+const hasInviableRecommendation = gapRecommendations.some((rec) => rec.subjectId === 'sub-inviable');
+if (hasInviableRecommendation) {
+  throw new Error('TEST 15 Failed: studyGapPlanner no debe recomendar estudiar una materia INVIABLE_MATEMATICAMENTE');
+}
+const hasSalvableRecommendation = gapRecommendations.some((rec) => rec.subjectId === 'sub-salvable');
+if (!hasSalvableRecommendation) {
+  throw new Error('TEST 15 Failed: studyGapPlanner debe priorizar la materia salvable');
+}
+console.log('✓ TEST 15: Materia INVIABLE excluida del planificador de huecos y materia salvable priorizada con exito');
 
 console.log('ALL GRADE CALCULATOR & RISK INTEGRATION TESTS PASSED SUCCESSFULLY!');
