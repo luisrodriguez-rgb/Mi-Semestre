@@ -21,12 +21,11 @@ export interface EvaluationItem {
   hasMissingWeight?: boolean; // Verdadero si el componente carece de porcentaje configurado
 }
 
-export type RoundingRule = 'standard' | 'icesi' | 'truncate';
+export type RoundingRule = 'standard' | 'truncate';
 
 /**
- * Utilidad de redondeo configurable para calificaciones y umbrales académicos:
+ * Utilidad de redondeo para calificaciones y umbrales académicos:
  * - 'standard': Redondeo matemático clásico a N decimales (por defecto 2).
- * - 'icesi': Regla institucional Icesi (las notas definitivas se expresan a 1 decimal, ej. 2.95 redondea a 3.0).
  * - 'truncate': Truncado estricto a N decimales sin redondeo al alza.
  */
 export function roundGrade(
@@ -36,10 +35,6 @@ export function roundGrade(
 ): number {
   if (isNaN(value) || !isFinite(value)) return value;
 
-  if (rule === 'icesi') {
-    // Redondeo institucional Icesi a 1 decimal con umbral de 0.05
-    return Math.round((value + Number.EPSILON) * 10) / 10;
-  }
   if (rule === 'truncate') {
     const factor = Math.pow(10, decimals);
     return Math.floor(value * factor) / factor;
@@ -47,6 +42,17 @@ export function roundGrade(
   // Standard
   const factor = Math.pow(10, decimals);
   return Math.round((value + Number.EPSILON) * factor) / factor;
+}
+
+/**
+ * Redondeo siempre hacia arriba a N decimales (por defecto 2) para notas necesarias.
+ * Principio protector: nunca decirle al estudiante que necesita menos de lo que matemáticamente requiere.
+ * Utiliza Math.ceil con compensación para precisión de punto flotante.
+ */
+export function ceilRequiredGrade(value: number, decimals: number = 2): number {
+  if (isNaN(value) || !isFinite(value)) return value;
+  const factor = Math.pow(10, decimals);
+  return Math.ceil((value - 1e-9) * factor) / factor;
 }
 
 export interface GradeCalculationResult {
@@ -200,10 +206,10 @@ export function calculateGradeStatus({
     };
   }
 
-  // CASO 3: Cálculo de Nota Necesaria
+  // CASO 3: Cálculo de Nota Necesaria (siempre redondeada al alza a 2 decimales)
   const remainingFraction = remainingWeight / 100;
   const rawRequiredGrade = (passingGrade - rawAccumulated) / remainingFraction;
-  const roundedRequiredGrade = roundGrade(rawRequiredGrade, 2, roundingRule);
+  const roundedRequiredGrade = ceilRequiredGrade(rawRequiredGrade, 2);
 
   let status: GradeStatus = 'TRAYECTORIA_SEGURA';
   let statusMessage = '';
