@@ -569,7 +569,7 @@ export function OnboardingFlow({ onComplete, onSelectDemo }: OnboardingFlowProps
                 </label>
                 <input
                   type="text"
-                  placeholder="Tu nombre (ej: Luis, Isabella, David...)"
+                  placeholder="Tu nombre (ej: Isabella, David, Camilo...)"
                   value={studentName}
                   onChange={(e) => setStudentName(e.target.value)}
                   className="w-full bg-[#080b20]/90 border border-[#232a58] rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-[#5b5be8] focus:ring-2 focus:ring-[#5b5be8]/20 transition-all font-medium"
@@ -730,7 +730,7 @@ export function OnboardingFlow({ onComplete, onSelectDemo }: OnboardingFlowProps
                     }`}
                   >
                     <UploadCloud className="w-3.5 h-3.5 text-indigo-300" />
-                    <span>Subir Archivo / Captura</span>
+                    <span>Importar Calendario (.ICS)</span>
                   </button>
 
                   <button
@@ -789,7 +789,7 @@ export function OnboardingFlow({ onComplete, onSelectDemo }: OnboardingFlowProps
                   </div>
                 )}
 
-                {/* 2. PESTAÑA: SUBIR ARCHIVO O IMAGEN */}
+                {/* 2. PESTAÑA: IMPORTAR CALENDARIO (.ICS) */}
                 {magicTab === 'file' && (
                   <div className="bg-[#0c102a]/85 backdrop-blur-2xl border border-[#232a58] rounded-3xl p-6 space-y-4 shadow-xl">
                     <div
@@ -799,7 +799,7 @@ export function OnboardingFlow({ onComplete, onSelectDemo }: OnboardingFlowProps
                       <input
                         ref={fileInputRef}
                         type="file"
-                        accept=".pdf,.ics,.txt,.png,.jpg,.jpeg"
+                        accept=".ics,.txt"
                         className="hidden"
                         onChange={(e) => {
                           const file = e.target.files?.[0];
@@ -813,7 +813,7 @@ export function OnboardingFlow({ onComplete, onSelectDemo }: OnboardingFlowProps
                         Arrastra tu archivo o haz clic para seleccionar
                       </p>
                       <p className="text-[11px] text-[#7a85b8] mt-1">
-                        Soporta capturas de pantalla (.PNG, .JPG), PDF de matrícula Banner o calendarios .ICS
+                        Soporta archivos de calendario exportados (.ICS) o reportes en texto plano (.TXT)
                       </p>
                     </div>
                   </div>

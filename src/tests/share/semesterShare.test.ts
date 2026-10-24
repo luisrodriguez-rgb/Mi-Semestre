@@ -13,7 +13,7 @@ function runShareTests() {
     c: 'Ingeniería Industrial',
     s: 4,
     nrcs: ['05359', '42002', '11805', '11602'],
-    author: 'Luis Ernesto',
+    author: 'Camilo Andres',
     exams: [
       { title: 'Parcial 1 Optimización', nrc: '05359', date: '2026-10-20T07:00:00', weight: 20 },
     ],

@@ -22,19 +22,19 @@ import {
 } from './storage';
 
 // ═════════════════════════════════════════════════════════════
-// PLANTILLA DEMOSTRATIVA (Icesi - Luis Ernesto Rodríguez)
+// PLANTILLA DEMOSTRATIVA (Icesi - Perfil Demo)
 // ═════════════════════════════════════════════════════════════
 export const demoIcesiProfile: Profile = {
-  id: 'user-luis-ernesto-rodriguez',
-  name: 'Luis Ernesto Rodríguez Gurrute',
-  studentCode: 'A00414805',
+  id: 'user-demo-industrial',
+  name: 'Estudiante Demo',
+  studentCode: 'EST-202610',
   documentId: '1110295145',
   university: 'Universidad Icesi',
   program: 'IND - Ingeniería Industrial',
   semesterNumber: 4,
   cohort: '202510',
   gpa: 4.3,
-  email: 'luis.rodriguez14@u.icesi.edu.co',
+  email: 'estudiante.demo@u.icesi.edu.co',
 };
 
 // ═════════════════════════════════════════════════════════════
@@ -58,7 +58,7 @@ export const defaultProfile: Profile = {
 // ═════════════════════════════════════════════════════════════
 export const mockSemester: Semester = {
   id: 'sem-2026-2-pre',
-  userId: 'user-luis-ernesto-rodriguez',
+  userId: 'user-demo-industrial',
   name: 'Segundo Semestre De 2026 - PRE',
   startDate: '2026-08-03',
   endDate: '2026-11-27',

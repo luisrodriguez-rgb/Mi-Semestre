@@ -331,7 +331,7 @@ export function SmartOnboardingModal() {
                     ref={fileInputRef}
                     onChange={handleFilesAdded}
                     multiple
-                    accept=".pdf,.ics,.txt,.png,.jpg,.jpeg,.webp"
+                    accept=".ics,.txt"
                     className="hidden"
                   />
                   <div className="flex flex-col items-center gap-2">
@@ -342,7 +342,7 @@ export function SmartOnboardingModal() {
                       Arrastra tus archivos aquí o haz clic para explorar
                     </span>
                     <span className="text-[11px] text-[var(--muted)] font-mono">
-                      Soporta PDF de Balance, archivos .ics de calendario, capturas y syllabus
+                      Soporta archivos .ics de calendario exportado o reportes en texto plano .txt
                     </span>
                   </div>
                 </div>
@@ -385,7 +385,7 @@ export function SmartOnboardingModal() {
                   </label>
                   <button
                     onClick={() => {
-                      setPastedText(`UNIVERSIDAD ICESI\nSISTEMA DE REGISTRO ACADÉMICO - RRBANBALACA\nBalance académico del estudiante\nEstudiante: A00414805 - RODRIGUEZ GURRUTE LUIS ERNESTO\nPrograma: ING - Ingeniería Industrial\nSemestre: 4\nCohorte: 202510\nPromedio: 4.35\nMaterias matriculadas:\n11373 Estadística Aplicada II 04\n05359 Optimización 04\n11239 Electricidad y Laboratorio 04`);
+                      setPastedText(`UNIVERSIDAD ICESI\nSISTEMA DE REGISTRO ACADÉMICO - RRBANBALACA\nBalance académico del estudiante\nEstudiante: A00123456 - PEREZ GOMEZ CAMILO ANDRES\nPrograma: ING - Ingeniería Industrial\nSemestre: 4\nCohorte: 202510\nPromedio: 4.35\nMaterias matriculadas:\n11373 Estadística Aplicada II 04\n05359 Optimización 04\n11239 Electricidad y Laboratorio 04`);
                     }}
                     className="text-[11px] font-mono text-[#3b3abf] dark:text-[#a0a0ff] hover:underline cursor-pointer"
                   >
@@ -818,7 +818,7 @@ export function SmartOnboardingModal() {
                       <label className="font-bold text-[var(--ink)] block mb-1">Nombre Completo *</label>
                       <input
                         type="text"
-                        placeholder="Ej. Luis Felipe Rodríguez"
+                        placeholder="Ej. Camilo Andrés Pérez"
                         value={zeroProfile.name}
                         onChange={(e) => setZeroProfile({ ...zeroProfile, name: e.target.value })}
                         className="w-full p-2.5 rounded-xl border border-[var(--border)] bg-[var(--paper)] text-[var(--ink)] font-bold focus:outline-none focus:border-[#3b3abf]"
@@ -828,7 +828,7 @@ export function SmartOnboardingModal() {
                       <label className="font-bold text-[var(--ink)] block mb-1">Código Estudiantil *</label>
                       <input
                         type="text"
-                        placeholder="Ej. A00414805"
+                        placeholder="Ej. A00123456"
                         value={zeroProfile.studentCode}
                         onChange={(e) => setZeroProfile({ ...zeroProfile, studentCode: e.target.value })}
                         className="w-full p-2.5 rounded-xl border border-[var(--border)] bg-[var(--paper)] text-[var(--ink)] font-mono focus:outline-none focus:border-[#3b3abf]"

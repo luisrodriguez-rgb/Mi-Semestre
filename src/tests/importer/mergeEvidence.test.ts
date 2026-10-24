@@ -7,8 +7,8 @@ function runMergeEvidenceTests() {
   // Fuente 1: Balance Jasper (Aporta estudiante, materias, códigos y créditos)
   const balanceSource: ParsedAcademicData = {
     student: {
-      name: 'Luis Ernesto Rodríguez',
-      studentCode: 'A00414805',
+      name: 'Camilo Andres Perez',
+      studentCode: 'A00123456',
       program: 'Ingeniería Industrial',
       gpa: 4.35,
     },

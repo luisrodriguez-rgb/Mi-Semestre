@@ -183,7 +183,7 @@ export async function applyParsedAcademicData(parsed: ParsedAcademicData): Promi
   const profile: Profile = {
     id: profileId,
     name: parsed.profile.name || 'Estudiante',
-    studentCode: parsed.profile.studentCode || 'A00414805',
+    studentCode: parsed.profile.studentCode || 'EST-202610',
     documentId: parsed.profile.documentId || '1110295145',
     university: parsed.profile.university || 'Universidad Icesi',
     program: parsed.profile.program || 'Ingeniería',

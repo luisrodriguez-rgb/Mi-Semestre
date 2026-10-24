@@ -17,7 +17,7 @@ export default function BalanceAcademicoPage() {
   const [activeTab, setActiveTab] = useState<'matriculadas' | 'historial' | 'pendientes'>('matriculadas');
 
   const studentName = profile?.name || 'Estudiante';
-  const studentCode = profile?.studentCode || 'A00414805';
+  const studentCode = profile?.studentCode || 'EST-202610';
   const studentProgram = profile?.program || 'Ingeniería de Sistemas';
   const studentGpa = profile?.gpa || 4.3;
 

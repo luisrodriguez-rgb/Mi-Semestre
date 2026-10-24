@@ -22,7 +22,7 @@ function runUniversalPipelineTests() {
 UNIVERSIDAD ICESI
 SISTEMA DE REGISTRO ACADÉMICO - RRBANBALACA
 Balance académico del estudiante
-Estudiante: A00414805 - RODRIGUEZ GURRUTE LUIS ERNESTO
+Estudiante: A00123456 - GARCIA PEREZ JUAN CAMILO
 Programa: ING - Ingeniería Industrial
 Semestre: 4
 Cohorte: 202510

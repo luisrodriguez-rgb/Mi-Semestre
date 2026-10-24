@@ -7,8 +7,8 @@ async function runAtomicCommitTests() {
 
   const mockAcademicData: ParsedAcademicData = {
     student: {
-      name: 'Luis Rodriguez',
-      studentCode: 'A00414805',
+      name: 'Camilo Andres Perez',
+      studentCode: 'A00123456',
       program: 'Ingeniería Industrial',
       semesterNumber: 4,
       gpa: 4.35,

@@ -10,7 +10,7 @@ async function runMultiInputPipelineTests() {
 UNIVERSIDAD ICESI
 SISTEMA DE REGISTRO ACADÉMICO - RRBANBALACA
 Balance académico del estudiante
-Estudiante: A00414805 - LUIS ERNESTO RODRIGUEZ GURRUTE
+Estudiante: A00123456 - CAMILO ANDRES PEREZ GOMEZ
 Programa: ING - Ingeniería Industrial
 Semestre: 4
 Cohorte: 202510
@@ -77,9 +77,9 @@ Martes y Jueves 10:00 - 12:00 Salón 102B (Edificio C)
   }
   console.log(`✓ Materias consolidadas: ${result.data.subjects.map((s) => s.name).join(', ')}`);
 
-  // 3. Verificación de Perfil de Estudiante
-  if (result.data.student?.studentCode !== 'A00414805') {
-    throw new Error(`Código de estudiante esperado A00414805, obtenido ${result.data.student?.studentCode}`);
+// 3. Verificación de Perfil de Estudiante
+  if (result.data.student?.studentCode !== 'A00123456') {
+    throw new Error(`Código de estudiante esperado A00123456, obtenido ${result.data.student?.studentCode}`);
   }
   if (result.data.student?.gpa !== 4.35) {
     throw new Error(`Promedio esperado 4.35, obtenido ${result.data.student?.gpa}`);

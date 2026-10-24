@@ -8,9 +8,9 @@ import {
 console.log('--- Testing Smart Academic Ingester ---');
 
 // TEST 1: Formato de Nombres
-const testName = titleCase('RODRIGUEZ GURRUTE LUIS ERNESTO');
-if (testName !== 'Rodriguez Gurrute Luis Ernesto') {
-  throw new Error(`titleCase failed: expected "Rodriguez Gurrute Luis Ernesto", got "${testName}"`);
+const testName = titleCase('GARCIA PEREZ JUAN CAMILO');
+if (testName !== 'Garcia Perez Juan Camilo') {
+  throw new Error(`titleCase failed: expected "Garcia Perez Juan Camilo", got "${testName}"`);
 }
 console.log('✓ titleCase passed');
 
@@ -27,7 +27,7 @@ Balance académico
 1110295145
 sep 8, 2026 11:30:25 PM
 RRBANBALACA - JASPER Página 1 de 2
-Estudiante: A00414805 - RODRIGUEZ GURRUTE LUIS ERNESTO
+Estudiante: A00123456 - GARCIA PEREZ JUAN CAMILO
 Semestre: 4
 Cohorte: 202510
 Promedio: 4.3
@@ -46,8 +46,8 @@ if (!parsedJasper) {
   throw new Error('parseJasperAcademicBalance returned null for valid Jasper text');
 }
 
-if (parsedJasper.profile.studentCode !== 'A00414805') {
-  throw new Error(`Expected studentCode A00414805, got ${parsedJasper.profile.studentCode}`);
+if (parsedJasper.profile.studentCode !== 'A00123456') {
+  throw new Error(`Expected studentCode A00123456, got ${parsedJasper.profile.studentCode}`);
 }
 
 if (parsedJasper.profile.gpa !== 4.3) {

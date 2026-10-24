@@ -16,7 +16,7 @@ async function testFullAcademicLifecycleE2E() {
   // PASO 1: Ingreso de Balance Jasper de Universidad Icesi
   console.log('[PASO 1]: Ingesta de Balance Oficial Icesi (Jasper)');
   const jasperSample = `SISTEMA DE REGISTRO ACADÉMICO - UNIVERSIDAD ICESI
-Estudiante: Luis Ernesto Rodriguez Gurrute  Código: A00414805  Programa: IND - Ingeniería Industrial
+Estudiante: Juan Camilo Garcia Perez  Código: A00123456  Programa: IND - Ingeniería Industrial
 Semestre Activo: Segundo Semestre De 2026 - PRE
 Cohorte: 202420  Promedio acumulado: 4.3
 

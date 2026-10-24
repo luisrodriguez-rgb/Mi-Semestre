@@ -49,7 +49,7 @@ const PALETTE = [
 ];
 
 /**
- * Normaliza nombres propios (e.g. "RODRIGUEZ GURRUTE LUIS ERNESTO" -> "Luis Ernesto Rodríguez Gurrute")
+ * Normaliza nombres propios (e.g. "GARCIA PEREZ JUAN CAMILO" -> "Juan Camilo García Pérez")
  */
 export function titleCase(str: string): string {
   if (!str) return '';
@@ -91,7 +91,7 @@ export function parseJasperAcademicBalance(text: string): ParsedAcademicData | n
   if (!hasJasperSignal) return null;
 
   // 1. Extraer Código y Nombre de Estudiante
-  let studentCode = 'A00414805';
+  let studentCode = 'EST-202610';
   let studentName = 'Estudiante Icesista';
   let documentId = '1110295145';
 
@@ -436,105 +436,13 @@ export function parseScheduleFreeText(text: string): ParsedAcademicData {
 }
 
 /**
- * Algoritmo extractor para imágenes de horario o balance.
+ * Ingesta de imagen: Desactivada para evitar alucinaciones y falsas promesas.
+ * Se orienta al estudiante a copiar el texto plano de Banner o usar la plantilla oficial.
  */
-export async function processAcademicImage(imageFile: File): Promise<ParsedAcademicData> {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      const img = new Image();
-
-      img.onload = () => {
-        const detectedSubjects: ParsedAcademicData['subjects'] = [
-          {
-            id: 'sub-img-opt',
-            code: 'IND 05359',
-            name: 'Optimización',
-            credits: 3,
-            color: PALETTE[0],
-            maxAbsences: 4,
-            professor: 'Docente Icesi',
-          },
-          {
-            id: 'sub-img-est',
-            code: 'CFT 11373',
-            name: 'Estadística Aplicada II',
-            credits: 3,
-            color: PALETTE[1],
-            maxAbsences: 4,
-            professor: 'Docente Icesi',
-          },
-          {
-            id: 'sub-img-fis',
-            code: 'CFT 11370',
-            name: 'Física II',
-            credits: 4,
-            color: PALETTE[2],
-            maxAbsences: 4,
-            professor: 'Docente Icesi',
-          },
-          {
-            id: 'sub-img-mat',
-            code: 'CFT 11356',
-            name: 'Matemáticas Aplicadas III',
-            credits: 4,
-            color: PALETTE[3],
-            maxAbsences: 4,
-            professor: 'Docente Icesi',
-          },
-          {
-            id: 'sub-img-optp',
-            code: 'IND 05358',
-            name: 'Optativa Profesional',
-            credits: 3,
-            color: PALETTE[4],
-            maxAbsences: 4,
-            professor: 'Docente Icesi',
-          },
-        ];
-
-        const detectedBlocks: ParsedAcademicData['scheduleBlocks'] = [
-          { subjectId: 'sub-img-opt', dayOfWeek: 1, startTime: '07:00', endTime: '09:00', location: 'Salón 204E' },
-          { subjectId: 'sub-img-opt', dayOfWeek: 3, startTime: '07:00', endTime: '09:00', location: 'Salón 204E' },
-          { subjectId: 'sub-img-est', dayOfWeek: 2, startTime: '09:00', endTime: '11:00', location: 'Aula 102A' },
-          { subjectId: 'sub-img-est', dayOfWeek: 4, startTime: '09:00', endTime: '11:00', location: 'Aula 102A' },
-          { subjectId: 'sub-img-fis', dayOfWeek: 1, startTime: '11:00', endTime: '13:00', location: 'Salón 301D' },
-          { subjectId: 'sub-img-fis', dayOfWeek: 3, startTime: '11:00', endTime: '13:00', location: 'Salón 301D' },
-          { subjectId: 'sub-img-mat', dayOfWeek: 2, startTime: '14:00', endTime: '16:00', location: 'Auditorio Varela' },
-          { subjectId: 'sub-img-mat', dayOfWeek: 4, startTime: '14:00', endTime: '16:00', location: 'Auditorio Varela' },
-          { subjectId: 'sub-img-optp', dayOfWeek: 5, startTime: '08:00', endTime: '11:00', location: 'Edificio C Lab 4' },
-        ];
-
-        resolve({
-          sourceType: 'image_ocr',
-          profile: {
-            name: 'Luis Ernesto Rodríguez G.',
-            studentCode: 'A00414805',
-            university: 'Universidad Icesi',
-            program: 'Ingeniería Industrial',
-            semesterNumber: 4,
-            gpa: 4.3,
-            cohort: '202510',
-          },
-          semester: {
-            name: 'Semestre 2026-2',
-            startDate: '2026-08-01',
-            endDate: '2026-12-05',
-            isActive: true,
-          },
-          subjects: detectedSubjects,
-          scheduleBlocks: detectedBlocks,
-          rawTextPreview: `Imagen analizada con éxito: ${imageFile.name} (${img.naturalWidth}x${img.naturalHeight}px)`,
-        });
-      };
-
-      img.src = dataUrl;
-    };
-
-    reader.readAsDataURL(imageFile);
-  });
+export async function processAcademicImage(_imageFile: File): Promise<ParsedAcademicData> {
+  throw new Error(
+    'La extracción directa desde imágenes no está disponible. Por favor copia y pega el texto de tu horario o usa la plantilla oficial de tu carrera.'
+  );
 }
 
 /**
@@ -545,7 +453,9 @@ export async function smartIngest(input: {
   imageFile?: File;
 }): Promise<ParsedAcademicData> {
   if (input.imageFile) {
-    return await processAcademicImage(input.imageFile);
+    throw new Error(
+      'La extracción directa desde imágenes no está disponible. Por favor copia y pega el texto de tu horario o usa la plantilla oficial de tu carrera.'
+    );
   }
 
   if (input.text && input.text.trim()) {
@@ -558,5 +468,5 @@ export async function smartIngest(input: {
     return parseScheduleFreeText(raw);
   }
 
-  throw new Error('No se proporcionó texto ni imagen válida.');
+  throw new Error('No se proporcionó texto de horario válido para procesar.');
 }
