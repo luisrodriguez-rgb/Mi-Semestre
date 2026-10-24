@@ -10,6 +10,7 @@ import {
   FixedRoutine,
   Semester,
   Profile,
+  Grade,
 } from '@/types';
 import {
   profileRepository,
@@ -20,6 +21,7 @@ import {
   examRepository,
   attendanceRepository,
   routineRepository,
+  gradeRepository,
 } from '@/lib/storage';
 import { seedDatabaseIfEmpty } from '@/lib/mockData';
 
@@ -33,6 +35,7 @@ export function useSemesterData() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [routines, setRoutines] = useState<FixedRoutine[]>([]);
+  const [grades, setGrades] = useState<Grade[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
@@ -51,6 +54,7 @@ export function useSemesterData() {
         allExams,
         allAttendance,
         allRoutines,
+        allGrades,
       ] = await Promise.all([
         profileRepository.getActiveProfile(),
         semesterRepository.getActive(),
@@ -61,6 +65,7 @@ export function useSemesterData() {
         examRepository.getAll(),
         attendanceRepository.getAll(),
         routineRepository.getAll(),
+        gradeRepository.getAll(),
       ]);
 
       setProfile(activeProfile || null);
@@ -72,6 +77,7 @@ export function useSemesterData() {
       setExams(allExams);
       setAttendance(allAttendance);
       setRoutines(allRoutines);
+      setGrades(allGrades);
 
       // Evaluar si requiere onboarding de primera vez
       const hasOnboardedFlag =
@@ -183,6 +189,7 @@ export function useSemesterData() {
     exams,
     attendance,
     routines,
+    grades,
     isLoading,
     needsOnboarding,
     refreshData: loadData,
