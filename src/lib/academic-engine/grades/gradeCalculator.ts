@@ -235,13 +235,17 @@ export function buildEvaluationPlanFromExams(
   const mappedGradeIds = new Set<string>();
 
   // 1. Mapear cada examen con su peso
+  // Prioridad de enlace:
+  // a) Por examId explícito en la nota (inmune a cambios de nombre del examen)
+  // b) Por id directo
+  // c) Por nombre (únicamente como respaldo para datos históricos sin examId)
   for (const exam of subjectExams) {
-    const matchedGrade = subjectGrades.find(
-      (g) =>
-        (g as any).examId === exam.id ||
-        g.id === exam.id ||
-        g.name.trim().toLowerCase() === exam.title.trim().toLowerCase()
-    );
+    const matchedGrade = subjectGrades.find((g) => {
+      if (g.examId) {
+        return g.examId === exam.id;
+      }
+      return g.id === exam.id || g.name.trim().toLowerCase() === exam.title.trim().toLowerCase();
+    });
 
     if (matchedGrade) {
       mappedGradeIds.add(matchedGrade.id);
@@ -252,29 +256,27 @@ export function buildEvaluationPlanFromExams(
       subjectId: subject.id,
       name: exam.title,
       weight: exam.weight || matchedGrade?.weight || 20,
-      grade: matchedGrade ? matchedGrade.value : null,
+      grade: matchedGrade ? (matchedGrade.value ?? null) : null,
       examId: exam.id,
       date: exam.date,
     });
   }
 
   // 2. Incorporar calificaciones que no vengan de exámenes (ej. "Talleres 20%", "Quices 15%")
+  // No descartar notas por tener nombres repetidos (ej. dos "Quiz" son dos notas distintas).
   for (const grade of subjectGrades) {
     if (mappedGradeIds.has(grade.id)) continue;
+    if (grade.examId && subjectExams.some((e) => e.id === grade.examId)) continue;
 
-    const alreadyMappedByName = items.some(
-      (it) => it.name.trim().toLowerCase() === grade.name.trim().toLowerCase()
-    );
-    if (!alreadyMappedByName) {
-      items.push({
-        id: grade.id,
-        subjectId: subject.id,
-        name: grade.name,
-        weight: grade.weight || 15,
-        grade: grade.value,
-      });
-      mappedGradeIds.add(grade.id);
-    }
+    items.push({
+      id: grade.id,
+      subjectId: subject.id,
+      name: grade.name,
+      weight: grade.weight || 15,
+      grade: typeof grade.value === 'number' ? grade.value : null,
+      examId: grade.examId,
+    });
+    mappedGradeIds.add(grade.id);
   }
 
   return items;
