@@ -117,8 +117,9 @@ export function GradeCalculatorModal() {
       id: `ev-custom-${Date.now()}`,
       subjectId: selectedSubject.id,
       name: `Nuevo componente (${evaluations.length + 1})`,
-      weight: 15,
+      weight: 0,
       grade: null,
+      hasMissingWeight: true,
     };
     setEvaluations((prev) => [...prev, newItem]);
     if (!simulatedItemId) {
@@ -137,18 +138,24 @@ export function GradeCalculatorModal() {
     if (!selectedSubject) return;
 
     try {
-      // 1. Guardar o actualizar calificaciones en gradeRepository
+      // 1. Guardar o actualizar calificaciones en gradeRepository (incluyendo componentes pendientes)
       const gradesToPersist: Grade[] = [];
       for (const item of evaluations) {
-        if (typeof item.grade === 'number' && !isNaN(item.grade)) {
-          gradesToPersist.push({
-            id: item.id.startsWith('ev-custom-') ? item.id : `gr-${item.id}`,
-            subjectId: selectedSubject.id,
-            name: item.name,
-            value: item.grade,
-            weight: item.weight,
-          });
+        let gradeId = item.id;
+        if (item.examId) {
+          gradeId = item.id.startsWith('gr-') ? item.id : `gr-${item.examId}`;
+        } else if (!gradeId.startsWith('gr-') && !gradeId.startsWith('ev-custom-')) {
+          gradeId = `gr-${item.id}`;
         }
+
+        gradesToPersist.push({
+          id: gradeId,
+          subjectId: selectedSubject.id,
+          name: item.name,
+          value: typeof item.grade === 'number' && !isNaN(item.grade) ? item.grade : null,
+          weight: typeof item.weight === 'number' ? item.weight : 0,
+          examId: item.examId,
+        });
       }
 
       await gradeRepository.deleteBySubject(selectedSubject.id);
@@ -156,15 +163,20 @@ export function GradeCalculatorModal() {
         await gradeRepository.bulkSave(gradesToPersist);
       }
 
-      // 2. Si un examen cambió su peso o nota, sincronizar
+      // 2. Si un examen cambió su peso o nombre, sincronizar
       for (const item of evaluations) {
         if (item.examId) {
           const originalExam = exams.find((e) => e.id === item.examId);
-          if (originalExam && originalExam.weight !== item.weight) {
-            await examRepository.save({
-              ...originalExam,
-              weight: item.weight,
-            });
+          if (originalExam) {
+            const hasWeightChanged = originalExam.weight !== item.weight;
+            const hasTitleChanged = originalExam.title !== item.name;
+            if (hasWeightChanged || hasTitleChanged) {
+              await examRepository.save({
+                ...originalExam,
+                weight: typeof item.weight === 'number' ? item.weight : 0,
+                title: item.name,
+              });
+            }
           }
         }
       }
@@ -499,7 +511,9 @@ export function GradeCalculatorModal() {
                   Total configurado: {currentStatus.totalConfiguredWeight}%{' '}
                   {currentStatus.weightsIncomplete && (
                     <span className="text-amber-600 dark:text-amber-400 font-semibold">
-                      (No suma 100% aún)
+                      {currentStatus.totalConfiguredWeight > 100
+                        ? `(Excede el 100% por ${(currentStatus.totalConfiguredWeight - 100).toFixed(0)}%)`
+                        : `(Faltan ${(100 - currentStatus.totalConfiguredWeight).toFixed(0)}% por definir)`}
                     </span>
                   )}
                 </p>
@@ -513,6 +527,16 @@ export function GradeCalculatorModal() {
                 <span>Agregar componente</span>
               </button>
             </div>
+
+            {/* Aviso si existen componentes sin porcentaje asignado */}
+            {currentStatus.hasMissingWeights && (
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>
+                  Hay componentes marcados <strong>sin porcentaje</strong>. Ingrésales su porcentaje (%) para incluirlos en el cálculo.
+                </span>
+              </div>
+            )}
 
             {/* Tabla de ítems */}
             <div className="border border-[var(--border)] rounded-2xl overflow-hidden bg-[var(--paper)]">
@@ -550,13 +574,27 @@ export function GradeCalculatorModal() {
                             type="number"
                             min="1"
                             max="100"
-                            value={item.weight}
-                            onChange={(e) =>
-                              handleUpdateItem(item.id, { weight: parseFloat(e.target.value) || 0 })
-                            }
-                            className="w-14 bg-[var(--surface)] border border-[var(--border)] rounded-lg px-2 py-1 text-center font-bold text-[var(--ink)] focus:outline-none focus:border-[#3b3abf]"
+                            placeholder="0"
+                            value={item.weight > 0 ? item.weight : ''}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value) || 0;
+                              handleUpdateItem(item.id, {
+                                weight: val,
+                                hasMissingWeight: val <= 0,
+                              });
+                            }}
+                            className={`w-14 bg-[var(--surface)] border rounded-lg px-2 py-1 text-center font-bold text-[var(--ink)] focus:outline-none focus:border-[#3b3abf] ${
+                              !item.weight || item.weight <= 0
+                                ? 'border-amber-500/60 bg-amber-500/5'
+                                : 'border-[var(--border)]'
+                            }`}
                           />
                           <span className="text-[var(--muted)]">%</span>
+                          {(!item.weight || item.weight <= 0) && (
+                            <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                              Sin %
+                            </span>
+                          )}
                         </div>
 
                         {/* Calificación obtenida */}
