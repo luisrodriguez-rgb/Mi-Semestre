@@ -126,8 +126,9 @@ export interface Grade {
   id: string;
   subjectId: string;
   name: string;
-  value: number; // Calificación obtenida
-  weight: number; // Porcentaje del corte (ej. 20%)
+  value?: number | null; // Calificacion obtenida (null o undefined si esta pendiente)
+  weight?: number;        // Porcentaje del corte (ej. 20)
+  examId?: string;        // ID del examen asociado (opcional)
 }
 
 export interface StudySession {
