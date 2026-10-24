@@ -18,6 +18,7 @@ export interface EvaluationItem {
   examId?: string;            // Vinculación opcional con Exam existente
   assignmentId?: string;      // Vinculación opcional con Assignment existente
   date?: string;              // Fecha límite o de realización
+  hasMissingWeight?: boolean; // Verdadero si el componente carece de porcentaje configurado
 }
 
 export type RoundingRule = 'standard' | 'icesi' | 'truncate';
@@ -61,6 +62,7 @@ export interface GradeCalculationResult {
   statusMessage: string;
   weightsIncomplete: boolean;         // true si totalConfiguredWeight !== 100
   isComplete: boolean;                // true si remainingWeight === 0
+  hasMissingWeights?: boolean;        // true si existen componentes sin porcentaje asignado
 }
 
 export interface GradeStatusInput {
@@ -84,8 +86,16 @@ export function calculateGradeStatus({
   passingGrade = 3.0,
   roundingRule = 'standard',
 }: GradeStatusInput): GradeCalculationResult {
+  const hasMissingWeights = evaluations.some(
+    (ev) => ev.hasMissingWeight || !ev.weight || ev.weight <= 0
+  );
+
+  const itemsWithWeight = evaluations.filter(
+    (ev) => typeof ev.weight === 'number' && ev.weight > 0
+  );
+
   const totalConfiguredWeight = roundGrade(
-    evaluations.reduce((acc, ev) => acc + (ev.weight || 0), 0),
+    itemsWithWeight.reduce((acc, ev) => acc + ev.weight, 0),
     2
   );
   const weightsIncomplete = Math.abs(totalConfiguredWeight - 100) > 0.001;
@@ -104,11 +114,12 @@ export function calculateGradeStatus({
       statusMessage: `Sin plan de evaluación configurado. Se requiere un promedio general de ${passingGrade.toFixed(1)} para aprobar.`,
       weightsIncomplete: true,
       isComplete: false,
+      hasMissingWeights: false,
     };
   }
 
-  // Filtrar ítems evaluados (que tienen una calificación numérica válida)
-  const evaluatedItems = evaluations.filter(
+  // Filtrar ítems evaluados (que tienen una calificación numérica válida y peso válido)
+  const evaluatedItems = itemsWithWeight.filter(
     (ev) => typeof ev.grade === 'number' && !isNaN(ev.grade) && ev.grade !== null
   );
 
@@ -137,8 +148,15 @@ export function calculateGradeStatus({
   const isComplete = remainingWeight <= 0.0001;
 
   let warningSuffix = '';
-  if (weightsIncomplete && totalConfiguredWeight < 100) {
-    warningSuffix = ` (Atención: los porcentajes configurados suman ${totalConfiguredWeight.toFixed(0)}%, faltan ${(100 - totalConfiguredWeight).toFixed(0)}% por definir).`;
+  if (weightsIncomplete) {
+    if (totalConfiguredWeight < 100) {
+      warningSuffix += ` (Atención: los porcentajes configurados suman ${totalConfiguredWeight.toFixed(0)}%, faltan ${(100 - totalConfiguredWeight).toFixed(0)}% por definir).`;
+    } else {
+      warningSuffix += ` (Atención: los porcentajes configurados suman ${totalConfiguredWeight.toFixed(0)}%, exceden el 100% por ${(totalConfiguredWeight - 100).toFixed(0)}%).`;
+    }
+  }
+  if (hasMissingWeights) {
+    warningSuffix += ` (Hay componentes sin porcentaje asignado, excluidos del cálculo hasta que se especifiquen).`;
   }
 
   // CASO 1: 100% Evaluado (Sin división por cero)
@@ -155,10 +173,11 @@ export function calculateGradeStatus({
       requiredGrade: null,
       status: passed ? 'APROBADA_ANTICIPADA' : 'COMPLETADA_REPROBADA',
       statusMessage: passed
-        ? `Materia completada y aprobada con nota final de ${currentAccumulatedScore.toFixed(2)} sobre 5.0.`
-        : `Materia completada no aprobada. Nota definitiva: ${currentAccumulatedScore.toFixed(2)} sobre 5.0 (nota mínima requerida: ${passingGrade.toFixed(1)}).`,
+        ? `Materia completada y aprobada con nota final de ${currentAccumulatedScore.toFixed(2)} sobre 5.0.${warningSuffix}`
+        : `Materia completada no aprobada. Nota definitiva: ${currentAccumulatedScore.toFixed(2)} sobre 5.0 (nota mínima requerida: ${passingGrade.toFixed(1)}).${warningSuffix}`,
       weightsIncomplete,
       isComplete: true,
+      hasMissingWeights,
     };
   }
 
@@ -177,6 +196,7 @@ export function calculateGradeStatus({
       statusMessage: `Materia aprobada anticipadamente: tu acumulado actual (${currentAccumulatedScore.toFixed(2)}) supera los ${passingGrade.toFixed(1)} requeridos, incluso obteniendo 0.0 en el ${remainingWeight.toFixed(0)}% restante.${warningSuffix}`,
       weightsIncomplete,
       isComplete: false,
+      hasMissingWeights,
     };
   }
 
@@ -215,6 +235,7 @@ export function calculateGradeStatus({
     statusMessage,
     weightsIncomplete,
     isComplete: false,
+    hasMissingWeights,
   };
 }
 
@@ -251,14 +272,22 @@ export function buildEvaluationPlanFromExams(
       mappedGradeIds.add(matchedGrade.id);
     }
 
+    const effectiveWeight =
+      typeof exam.weight === 'number' && exam.weight > 0
+        ? exam.weight
+        : typeof matchedGrade?.weight === 'number' && matchedGrade.weight > 0
+          ? matchedGrade.weight
+          : 0;
+
     items.push({
       id: exam.id,
       subjectId: subject.id,
       name: exam.title,
-      weight: exam.weight || matchedGrade?.weight || 20,
-      grade: matchedGrade ? (matchedGrade.value ?? null) : null,
+      weight: effectiveWeight,
+      grade: matchedGrade && typeof matchedGrade.value === 'number' ? matchedGrade.value : null,
       examId: exam.id,
       date: exam.date,
+      hasMissingWeight: effectiveWeight <= 0,
     });
   }
 
@@ -268,13 +297,17 @@ export function buildEvaluationPlanFromExams(
     if (mappedGradeIds.has(grade.id)) continue;
     if (grade.examId && subjectExams.some((e) => e.id === grade.examId)) continue;
 
+    const effectiveWeight =
+      typeof grade.weight === 'number' && grade.weight > 0 ? grade.weight : 0;
+
     items.push({
       id: grade.id,
       subjectId: subject.id,
       name: grade.name,
-      weight: grade.weight || 15,
+      weight: effectiveWeight,
       grade: typeof grade.value === 'number' ? grade.value : null,
       examId: grade.examId,
+      hasMissingWeight: effectiveWeight <= 0,
     });
     mappedGradeIds.add(grade.id);
   }
