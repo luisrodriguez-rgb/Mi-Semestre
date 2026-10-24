@@ -229,6 +229,41 @@ export interface ScheduleConflict {
   description: string;
 }
 
+export type GradeStatus =
+  | 'APROBADA_ANTICIPADA'
+  | 'TRAYECTORIA_SEGURA'
+  | 'EXIGE_ESFUERZO'
+  | 'RIESGO_CRITICO'
+  | 'INVIABLE_MATEMATICAMENTE'
+  | 'COMPLETADA_REPROBADA'
+  | 'SIN_PLAN';
+
+export interface EvaluationItem {
+  id: string;
+  subjectId: string;
+  name: string;
+  weight: number;
+  grade?: number | null;
+  examId?: string;
+  assignmentId?: string;
+  date?: string;
+}
+
+export interface GradeCalculationResult {
+  subjectId: string;
+  passingGrade: number;
+  totalConfiguredWeight: number;
+  evaluatedWeight: number;
+  remainingWeight: number;
+  currentAccumulatedScore: number;
+  currentWeightedGrade: number | null;
+  requiredGrade: number | null;
+  status: GradeStatus;
+  statusMessage: string;
+  weightsIncomplete: boolean;
+  isComplete: boolean;
+}
+
 export type RiskLevel = 'CRÍTICO' | 'ATENCIÓN' | 'ESTABLE';
 
 export interface RiskEvaluation {
@@ -240,6 +275,7 @@ export interface RiskEvaluation {
   deadlinePressure: number;
   workloadPressure: number;
   attendancePressure: number;
+  gradePressure?: number;
   signals: {
     daysUntilExam?: number | null;
     pendingTasksCount: number;
@@ -249,6 +285,10 @@ export interface RiskEvaluation {
     absencesCount: number;
     remainingAllowedAbsences: number;
     currentGrade?: number;
+    gradeStatus?: GradeStatus;
+    requiredGrade?: number | null;
+    currentAccumulatedScore?: number;
+    evaluatedWeight?: number;
   };
   reasons: string[];
 }

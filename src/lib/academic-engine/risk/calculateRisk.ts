@@ -1,4 +1,18 @@
-import { Subject, Exam, Assignment, AttendanceRecord, RiskEvaluation, RiskLevel } from '@/types';
+import {
+  Subject,
+  Exam,
+  Assignment,
+  AttendanceRecord,
+  RiskEvaluation,
+  RiskLevel,
+  Grade,
+  EvaluationItem,
+} from '@/types';
+import {
+  calculateGradeStatus,
+  buildEvaluationPlanFromExams,
+  GradeCalculationResult,
+} from '../grades/gradeCalculator';
 
 export interface SubjectRiskInputs {
   subject: Subject;
@@ -7,6 +21,8 @@ export interface SubjectRiskInputs {
   attendanceRecords: AttendanceRecord[];
   currentDate?: Date; // Por defecto hoy
   availableStudyMinutesThisWeek?: number;
+  evaluations?: EvaluationItem[];
+  grades?: Grade[];
 }
 
 export function calculateSubjectRisk({
@@ -16,11 +32,12 @@ export function calculateSubjectRisk({
   attendanceRecords,
   currentDate = new Date(),
   availableStudyMinutesThisWeek = 300, // 5 horas por defecto si no se especifica
+  evaluations,
+  grades = [],
 }: SubjectRiskInputs): RiskEvaluation {
   const reasons: string[] = [];
 
   // 1. DEADLINE PRESSURE (Presión de Exámenes Próximos)
-  // Filtrar exámenes futuros para esta materia
   const nowMs = currentDate.getTime();
   const upcomingExams = exams
     .filter((e) => e.subjectId === subject.id)
@@ -57,8 +74,6 @@ export function calculateSubjectRisk({
     0
   );
 
-  // Si hay un examen cercano (<= 7 días) y 0 tareas registradas,
-  // proyectar una carga base automática de estudio sugerido (240 min = 4 horas)
   let examStudyBufferMinutes = 0;
   if (nearestExam && nearestExam.diffDays <= 7 && tasksEstimatedMinutes === 0) {
     examStudyBufferMinutes = 240;
@@ -77,7 +92,6 @@ export function calculateSubjectRisk({
     workloadPressure += 15;
   }
 
-  // Si el trabajo pendiente supera el tiempo de estudio disponible
   if (totalEstimatedMinutes > availableStudyMinutesThisWeek && pendingTasks.length > 0) {
     workloadPressure += 15;
     reasons.push(`El trabajo estimado (${Math.round(totalEstimatedMinutes / 60)}h) supera el tiempo libre proyectado.`);
@@ -105,14 +119,66 @@ export function calculateSubjectRisk({
     reasons.push(`Te quedan ${remainingAbsences} inasistencias permitidas.`);
   }
 
+  // 4. GRADE PRESSURE (Evaluación de notas acumuladas y nota necesaria)
+  const activePlan = evaluations || buildEvaluationPlanFromExams(subject, exams, grades);
+  const gradeResult: GradeCalculationResult = calculateGradeStatus({
+    subjectId: subject.id,
+    evaluations: activePlan,
+    passingGrade: subject.passingGrade || 3.0,
+  });
+
+  let gradePressure = 0;
+  const evalFraction = gradeResult.evaluatedWeight / 100;
+
+  if (gradeResult.status === 'APROBADA_ANTICIPADA') {
+    gradePressure = 0;
+    reasons.push(gradeResult.statusMessage);
+  } else if (gradeResult.status === 'INVIABLE_MATEMATICAMENTE') {
+    gradePressure = 50;
+    reasons.push(gradeResult.statusMessage);
+  } else if (gradeResult.status === 'COMPLETADA_REPROBADA') {
+    gradePressure = 50;
+    reasons.push(gradeResult.statusMessage);
+  } else if (gradeResult.status === 'RIESGO_CRITICO') {
+    // Escala según el porcentaje evaluado (mientras más avanzado el semestre, mayor urgencia)
+    gradePressure = Math.round(30 + 20 * evalFraction);
+    reasons.push(gradeResult.statusMessage);
+  } else if (gradeResult.status === 'EXIGE_ESFUERZO') {
+    gradePressure = Math.round(20 * evalFraction);
+    reasons.push(gradeResult.statusMessage);
+  } else if (gradeResult.status === 'TRAYECTORIA_SEGURA' && gradeResult.evaluatedWeight > 0) {
+    gradePressure = 0;
+    if (gradeResult.requiredGrade !== null && gradeResult.requiredGrade > 2.5) {
+      reasons.push(`Trayectoria estable: necesitas ${gradeResult.requiredGrade.toFixed(2)} en lo restante.`);
+    }
+  }
+
   // Score compuesto (0 a 100)
-  const riskScore = Math.min(100, deadlinePressure + workloadPressure + attendancePressure);
+  const riskScore = Math.min(100, deadlinePressure + workloadPressure + attendancePressure + gradePressure);
 
   // Clasificación estricta: CRÍTICO | ATENCIÓN | ESTABLE (Cero emojis)
+  const isGradeCritical =
+    gradeResult.status === 'RIESGO_CRITICO' ||
+    gradeResult.status === 'INVIABLE_MATEMATICAMENTE' ||
+    gradeResult.status === 'COMPLETADA_REPROBADA' ||
+    (gradeResult.requiredGrade !== null && gradeResult.requiredGrade > 4.0);
+
+  const isGradeAttention = gradeResult.status === 'EXIGE_ESFUERZO';
+
   let level: RiskLevel = 'ESTABLE';
-  if (riskScore >= 50 || remainingAbsences <= 1 || (nearestExam && nearestExam.diffDays <= 3)) {
+  if (
+    riskScore >= 50 ||
+    remainingAbsences <= 1 ||
+    (nearestExam && nearestExam.diffDays <= 3) ||
+    isGradeCritical
+  ) {
     level = 'CRÍTICO';
-  } else if (riskScore >= 25 || (nearestExam && nearestExam.diffDays <= 7) || pendingTasks.length >= 2) {
+  } else if (
+    riskScore >= 25 ||
+    (nearestExam && nearestExam.diffDays <= 7) ||
+    pendingTasks.length >= 2 ||
+    isGradeAttention
+  ) {
     level = 'ATENCIÓN';
   }
 
@@ -129,6 +195,7 @@ export function calculateSubjectRisk({
     deadlinePressure,
     workloadPressure,
     attendancePressure,
+    gradePressure,
     signals: {
       daysUntilExam: nearestExam ? nearestExam.diffDays : null,
       pendingTasksCount: pendingTasks.length,
@@ -137,7 +204,11 @@ export function calculateSubjectRisk({
       attendanceRate,
       absencesCount: absences,
       remainingAllowedAbsences: remainingAbsences,
-      currentGrade: subject.currentGrade,
+      currentGrade: gradeResult.currentWeightedGrade ?? subject.currentGrade,
+      gradeStatus: gradeResult.status,
+      requiredGrade: gradeResult.requiredGrade,
+      currentAccumulatedScore: gradeResult.currentAccumulatedScore,
+      evaluatedWeight: gradeResult.evaluatedWeight,
     },
     reasons,
   };
