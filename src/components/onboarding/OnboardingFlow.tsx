@@ -21,7 +21,10 @@ import {
   Check,
   ChevronRight,
   BookOpen,
+  Calculator,
+  Sliders,
 } from 'lucide-react';
+import { calculateGradeStatus } from '@/lib/academic-engine';
 import { ingestAcademicEvidence } from '@/lib/importer/universal/pipeline';
 import { commitAcademicDataAtomically } from '@/lib/importer/universal/committer';
 import {
@@ -94,11 +97,37 @@ const POPULAR_PROGRAM_CHIPS = [
 export function OnboardingFlow({ onComplete, onSelectDemo }: OnboardingFlowProps) {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
 
-  // Paso 1: Identidad
+  // Paso 1: Identidad & Calculadora Instantánea
   const [studentName, setStudentName] = useState('');
   const [university] = useState('Universidad Icesi');
   const [program, setProgram] = useState('Ingeniería Industrial');
   const [semesterNumber, setSemesterNumber] = useState(4);
+
+  // Calculadora Rápida Interactiva de Supervivencia (Fase 4)
+  const [quickEvaluatedWeight, setQuickEvaluatedWeight] = useState(40);
+  const [quickWeightedGrade, setQuickWeightedGrade] = useState(2.8);
+
+  const quickGradeCalculation = React.useMemo(() => {
+    return calculateGradeStatus({
+      subjectId: 'onboarding-quick',
+      evaluations: [
+        {
+          id: 'ev-eval',
+          subjectId: 'onboarding-quick',
+          name: 'Evaluado hasta hoy',
+          weight: quickEvaluatedWeight,
+          grade: quickWeightedGrade,
+        },
+        {
+          id: 'ev-pending',
+          subjectId: 'onboarding-quick',
+          name: 'Restante por evaluar',
+          weight: Math.max(0, 100 - quickEvaluatedWeight),
+        },
+      ],
+      passingGrade: 3.0,
+    });
+  }, [quickEvaluatedWeight, quickWeightedGrade]);
 
   // Paso 2: Magic Drop & Texto
   const [magicTab, setMagicTab] = useState<'paste' | 'file' | 'template'>('paste');
@@ -495,7 +524,7 @@ export function OnboardingFlow({ onComplete, onSelectDemo }: OnboardingFlowProps
         {/* Timeline de Pasos Conectado y Elegante */}
         <div className="flex items-center justify-center gap-2 sm:gap-3 mb-7 select-none">
           {[
-            { step: 1, label: '1. Tu Carrera' },
+            { step: 1, label: '1. Calculadora & Carrera' },
             { step: 2, label: '2. Tu Horario' },
             { step: 3, label: '3. Tus Métricas' },
           ].map((item, idx) => (
@@ -526,7 +555,7 @@ export function OnboardingFlow({ onComplete, onSelectDemo }: OnboardingFlowProps
         </div>
 
         {/* ═════════════════════════════════════════════════════════════
-            PASO 1: EL GANCHO DE IDENTIDAD
+            PASO 1: CALCULADORA DE SUPERVIVENCIA & EL GANCHO DE IDENTIDAD
            ═════════════════════════════════════════════════════════════ */}
         {currentStep === 1 && (
           <div className="space-y-6 animate-in fade-in zoom-in-95 duration-400">
@@ -534,29 +563,142 @@ export function OnboardingFlow({ onComplete, onSelectDemo }: OnboardingFlowProps
             <div className="text-center space-y-2.5">
               <span className="inline-flex items-center gap-1.5 text-[11px] font-mono uppercase font-bold tracking-wider px-3.5 py-1 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 shadow-xs">
                 <Sparkles className="w-3 h-3 text-indigo-400" />
-                Configuración en 45 Segundos · Cero Formularios Pesados
+                Matemática Real · Cero Promedios Falsos
               </span>
               <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-white leading-tight">
-                Deja de adivinar qué estudiar en tus{' '}
+                ¿Cuánto necesitas para pasar?{' '}
                 <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-indigo-300 bg-clip-text text-transparent">
-                  huecos libres.
+                  Pruébalo en vivo.
                 </span>
               </h2>
               <p className="text-xs sm:text-sm text-[#94a3b8] max-w-lg mx-auto leading-relaxed">
-                El centro de control académico que descuenta traslados en el campus, visualiza tu tiempo libre y te dice exactamente qué hacer ahora.
+                Calcula exactamente qué nota necesitas en tus parciales restantes y organiza tus huecos de estudio sin autoengaños.
               </p>
+            </div>
 
-              {/* Micro-pills de diferenciadores reales */}
-              <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-                <span className="text-[10px] font-medium px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-white/80">
-                  -25 min traslados calculados
+            {/* ═════════════════════════════════════════════════════════════
+                CARD 1: CALCULADORA RÁPIDA DE SUPERVIVENCIA INTERACTIVA
+               ═════════════════════════════════════════════════════════════ */}
+            <div className="bg-gradient-to-br from-[#12163b]/95 via-[#0c102a]/95 to-[#171b48]/95 backdrop-blur-2xl border border-[#3b3abf]/50 rounded-3xl p-5 sm:p-7 space-y-4 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)]">
+              <div className="flex items-center justify-between gap-2 border-b border-[#232a58] pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-bold">
+                    <Calculator className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-black text-white tracking-tight">
+                      Calculadora Rápida: ¿Cuánto necesitas para pasar?
+                    </h3>
+                    <p className="text-[11px] text-[#94a3b8]">
+                      Ajusta los controles para ver la nota necesaria en tiempo real
+                    </p>
+                  </div>
+                </div>
+
+                <span className="text-[10px] font-mono font-bold uppercase px-2.5 py-1 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 shrink-0">
+                  En vivo
                 </span>
-                <span className="text-[10px] font-medium px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-white/80">
-                  Bloques de hueco calculados
-                </span>
-                <span className="text-[10px] font-medium px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-white/80">
-                  Margen de inasistencias Icesi
-                </span>
+              </div>
+
+              {/* Controles deslizantes interactivos */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                {/* Control 1: % Evaluado */}
+                <div className="space-y-1.5 bg-[#080b20]/60 p-3.5 rounded-2xl border border-[#232a58]/60">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-[#8b95c2]">Porcentaje evaluado:</span>
+                    <strong className="text-white text-sm">{quickEvaluatedWeight}%</strong>
+                  </div>
+                  <input
+                    type="range"
+                    min="10"
+                    max="90"
+                    step="5"
+                    value={quickEvaluatedWeight}
+                    onChange={(e) => setQuickEvaluatedWeight(Number(e.target.value))}
+                    className="w-full accent-[#5b5be8] cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] font-mono text-[#626c96]">
+                    <span>10% (Inicio)</span>
+                    <span>50% (Mitad)</span>
+                    <span>90% (Final)</span>
+                  </div>
+                </div>
+
+                {/* Control 2: Promedio en lo evaluado */}
+                <div className="space-y-1.5 bg-[#080b20]/60 p-3.5 rounded-2xl border border-[#232a58]/60">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-[#8b95c2]">Tu promedio en lo evaluado:</span>
+                    <strong className="text-indigo-300 text-sm">{quickWeightedGrade.toFixed(1)} / 5.0</strong>
+                  </div>
+                  <input
+                    type="range"
+                    min="1.0"
+                    max="5.0"
+                    step="0.1"
+                    value={quickWeightedGrade}
+                    onChange={(e) => setQuickWeightedGrade(Number(e.target.value))}
+                    className="w-full accent-[#5b5be8] cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] font-mono text-[#626c96]">
+                    <span>1.0</span>
+                    <span>3.0 (Aprobatoria Icesi)</span>
+                    <span>5.0</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Resultado del cálculo */}
+              <div className="p-4 rounded-2xl bg-[#080c24] border border-[#3b3abf]/40 space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <span className="text-xs font-mono text-[#8b95c2] uppercase font-bold">
+                    Diagnóstico académico
+                  </span>
+                  <span
+                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase self-start sm:self-auto ${
+                      (quickGradeCalculation.requiredGrade || 0) > 5.0
+                        ? 'bg-rose-950/40 text-rose-300 border border-rose-700/60'
+                        : (quickGradeCalculation.requiredGrade || 0) > 4.0
+                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                        : (quickGradeCalculation.requiredGrade || 0) > 3.0
+                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                        : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    }`}
+                  >
+                    {quickGradeCalculation.status === 'INVIABLE_MATEMATICAMENTE'
+                      ? 'Inviable (> 5.0)'
+                      : quickGradeCalculation.status === 'RIESGO_CRITICO'
+                      ? 'Riesgo Crítico'
+                      : quickGradeCalculation.status === 'EXIGE_ESFUERZO'
+                      ? 'Exige Esfuerzo'
+                      : 'Trayectoria Segura'}
+                  </span>
+                </div>
+
+                <div className="text-sm sm:text-base font-bold text-white leading-snug">
+                  Llevas{' '}
+                  <span className="text-indigo-300 font-black">
+                    {quickGradeCalculation.currentWeightedGrade?.toFixed(2)}
+                  </span>{' '}
+                  en lo evaluado ({quickEvaluatedWeight}% de la materia)
+                </div>
+
+                <p className="text-xs text-[#cbd5e1] font-mono leading-relaxed">
+                  {quickGradeCalculation.status === 'INVIABLE_MATEMATICAMENTE' ? (
+                    'Requerirías una nota superior a 5.0 en lo restante. Mi Semestre identifica esto preventivamente para que evalúes opciones de cancelación a tiempo y dediques tu tiempo a las materias que sí puedes salvar.'
+                  ) : (
+                    <>
+                      Necesitas promediar{' '}
+                      <strong className="text-indigo-300 font-bold">
+                        {quickGradeCalculation.requiredGrade?.toFixed(2)}
+                      </strong>{' '}
+                      en el {quickGradeCalculation.remainingWeight}% restante para asegurar la aprobación con 3.0.
+                    </>
+                  )}
+                </p>
+              </div>
+
+              <div className="text-center pt-1 text-xs text-[#94a3b8]">
+                <span>Mi Semestre automatiza este cálculo en tiempo real conectando tus parciales oficiales. Ingresa tus datos abajo para cargar tus materias:</span>
               </div>
             </div>
 
