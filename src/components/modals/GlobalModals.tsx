@@ -60,6 +60,10 @@ const CareerSwitchModal = dynamic(
   () => import('@/components/modals/CareerSwitchModal').then((m) => m.CareerSwitchModal),
   { ssr: false }
 );
+const GradeCalculatorModal = dynamic(
+  () => import('@/components/grades/GradeCalculatorModal').then((m) => m.GradeCalculatorModal),
+  { ssr: false }
+);
 
 export function GlobalModals() {
   return (
@@ -79,6 +83,7 @@ export function GlobalModals() {
       <CommandPalette />
       <ShareSemesterModal />
       <CareerSwitchModal />
+      <GradeCalculatorModal />
     </>
   );
 }

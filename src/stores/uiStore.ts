@@ -40,6 +40,8 @@ interface UIState {
   activeSubjectDetailId: string | null;
   isShareModalOpen: boolean;
   isCareerSwitchModalOpen: boolean;
+  isGradeCalculatorOpen: boolean;
+  gradeCalculatorSubjectId: string | null;
 
   focusSession: FocusSessionState;
   focusCompletionData: FocusCompletionData | null;
@@ -76,6 +78,8 @@ interface UIState {
   closeCommandPalette: () => void;
   toggleCommandPalette: () => void;
   setActiveSubjectDetailId: (id: string | null) => void;
+  openGradeCalculator: (subjectId?: string) => void;
+  closeGradeCalculator: () => void;
 
   startFocusSession: (
     taskTitle: string,
@@ -112,6 +116,8 @@ export const useUIStore = create<UIState>((set) => ({
   activeSubjectDetailId: null,
   isShareModalOpen: false,
   isCareerSwitchModalOpen: false,
+  isGradeCalculatorOpen: false,
+  gradeCalculatorSubjectId: null,
 
   focusSession: {
     isActive: false,
@@ -156,6 +162,8 @@ export const useUIStore = create<UIState>((set) => ({
   closeCommandPalette: () => set({ isCommandPaletteOpen: false }),
   toggleCommandPalette: () => set((state) => ({ isCommandPaletteOpen: !state.isCommandPaletteOpen })),
   setActiveSubjectDetailId: (id) => set({ activeSubjectDetailId: id }),
+  openGradeCalculator: (subjectId) => set({ isGradeCalculatorOpen: true, gradeCalculatorSubjectId: subjectId || null }),
+  closeGradeCalculator: () => set({ isGradeCalculatorOpen: false, gradeCalculatorSubjectId: null }),
 
   startFocusSession: (taskTitle, subjectName, minutes, taskId) =>
     set({
