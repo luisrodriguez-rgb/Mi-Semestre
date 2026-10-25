@@ -86,27 +86,34 @@ export function extractEvaluationItemsFromText(text: string): ExtractedEvaluatio
     let cleanName = rawLine;
 
     // Remover prefijos de semana/sesión (ej. "Semana 8: Parcial 2 (20%)" -> "Parcial 2 (20%)")
-    cleanName = cleanName.replace(/^(?:semana|sem|corte|clase|sesi[oó]n)\s*\d+\s*[:\-–—]\s*/i, '');
+    cleanName = cleanName.replace(/^(?:semana|sem|corte|clase|sesi[oó]n)\s*\d+\s*[:\-–—]\s*/i, ' ');
 
-    // Remover el bloque de porcentaje
-    cleanName = cleanName.replace(/(\d+(?:[.,]\d+)?)\s*%/g, '');
+    // Remover el bloque de porcentaje (ej. "20%", "10,00 %")
+    cleanName = cleanName.replace(/(\d+(?:[.,]\d+)?)\s*%/g, ' ');
 
-    // Remover bloque de nota explícita (ej. "nota 4")
+    // Remover bloque de nota explícita (ej. "nota 4", "calif: 3.8")
     cleanName = cleanName.replace(
       /(?:nota|calif(?:icaci[oó]n)?|sac[oó]|obtuvo|score)\s*[:\s]*[0-5](?:[.,]\d{1,2})?/gi,
-      ''
+      ' '
     );
 
-    // Remover decimales sueltos si coincidieron con la nota
+    // Remover el token exacto detectado como nota (ej. "4,20" o "3.1")
     if (grade !== null) {
-      cleanName = cleanName.replace(new RegExp(`\\b${grade}(?:[.,]0+)?\\b`, 'g'), '');
+      // Remover patrones numéricos con punto o coma para la nota encontrada
+      const gradeStr = grade.toString();
+      const [intPart, decPart = '0'] = gradeStr.split('.');
+      const pattern =
+        decPart === '0'
+          ? `\\b${intPart}(?:[.,]0+)?\\b`
+          : `\\b${intPart}[.,]${decPart}0*\\b`;
+      cleanName = cleanName.replace(new RegExp(pattern, 'g'), ' ');
     }
 
     // Remover palabras residuales de atributos
     cleanName = cleanName.replace(/(?:peso|ponderaci[oó]n|valor|calificaci[oó]n)[:\s]*/gi, ' ');
 
     // Remover paréntesis o corchetes vacíos resultantes de quitar el porcentaje: "()" o "[]"
-    cleanName = cleanName.replace(/\(\s*\)|\[\s*\]/g, '');
+    cleanName = cleanName.replace(/\(\s*\)|\[\s*\]/g, ' ');
 
     // Remover delimitadores de tabla y limpiar espacios
     cleanName = cleanName

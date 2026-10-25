@@ -115,12 +115,43 @@ if (items6[0].name.includes('(') || items6[0].name.includes(')')) {
 }
 console.log('✓ TEST 6: "Semana 8: Parcial 2 (20%)" extrae nombre limpio "Parcial 2" sin paréntesis vacíos');
 
-// TEST 7: hasAmbiguousExtraction detecta casos dudosos para conmutar a IA
-if (hasAmbiguousExtraction([], '')) {
-  console.log('✓ TEST 7: Detecta texto vacío como ambiguo');
+// TEST 8: Tablas de Moodle separadas por tab con comas en porcentajes y notas
+// "Quiz 1\t10,00 %\t4,20" debe dar nombre "Quiz 1", peso 10 y nota 4.2
+const moodleTabItem = 'Quiz 1\t10,00 %\t4,20';
+const items8 = extractEvaluationItemsFromText(moodleTabItem);
+if (items8.length !== 1) {
+  throw new Error(`TEST 8 Failed: Esperaba 1 ítem, obtenidos: ${items8.length}`);
 }
-if (hasAmbiguousExtraction([{ id: '1', name: 'Componente 1', weight: 0, grade: null }], 'Parciales')) {
-  console.log('✓ TEST 7.1: Detecta ítems sin porcentaje como ambiguos para invocar IA');
+if (items8[0].name !== 'Quiz 1') {
+  throw new Error(`TEST 8 Failed: Nombre esperado "Quiz 1", obtenido: "${items8[0].name}"`);
 }
+if (items8[0].weight !== 10) {
+  throw new Error(`TEST 8 Failed: Peso esperado 10, obtenido: ${items8[0].weight}`);
+}
+if (items8[0].grade !== 4.2) {
+  throw new Error(`TEST 8 Failed: Nota esperada 4.2, obtenida: ${items8[0].grade}`);
+}
+console.log('✓ TEST 8: "Quiz 1\\t10,00 %\\t4,20" extrae nombre limpio "Quiz 1", peso 10 y nota 4.2');
+
+// TEST 9: Moodle múltiple con tabuladores y notas con coma
+const moodleMultiTab = `
+Quiz 1\t10,00 %\t4,20
+Parcial 1\t20,00 %\t3,10
+Taller grupal\t15,50 %\t5,00
+`;
+const items9 = extractEvaluationItemsFromText(moodleMultiTab);
+if (items9.length !== 3) {
+  throw new Error(`TEST 9 Failed: Se esperaban 3 ítems, obtenidos: ${items9.length}`);
+}
+if (items9[0].name !== 'Quiz 1' || items9[0].grade !== 4.2) {
+  throw new Error(`TEST 9 Failed: Ítem 0 incorrecto: ${JSON.stringify(items9[0])}`);
+}
+if (items9[1].name !== 'Parcial 1' || items9[1].grade !== 3.1) {
+  throw new Error(`TEST 9 Failed: Ítem 1 incorrecto: ${JSON.stringify(items9[1])}`);
+}
+if (items9[2].name !== 'Taller grupal' || items9[2].grade !== 5.0 || items9[2].weight !== 15.5) {
+  throw new Error(`TEST 9 Failed: Ítem 2 incorrecto: ${JSON.stringify(items9[2])}`);
+}
+console.log('✓ TEST 9: Tabla multicomponente de Moodle procesada sin notas pegadas en los nombres');
 
 console.log('ALL GRADE EXTRACTOR TESTS PASSED SUCCESSFULLY!');
