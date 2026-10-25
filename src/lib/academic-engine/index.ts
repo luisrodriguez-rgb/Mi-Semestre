@@ -8,3 +8,4 @@ export * from './semester/semesterProgress';
 export * from './study/distributeStudySessions';
 export * from './planning/studyGapPlanner';
 export * from './grades/gradeCalculator';
+export * from './grades/gradeExtractor';
