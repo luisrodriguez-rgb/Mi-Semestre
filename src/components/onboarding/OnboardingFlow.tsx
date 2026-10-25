@@ -27,6 +27,7 @@ import {
 import { calculateGradeStatus } from '@/lib/academic-engine';
 import { ingestAcademicEvidence } from '@/lib/importer/universal/pipeline';
 import { commitAcademicDataAtomically } from '@/lib/importer/universal/committer';
+import { gradeRepository } from '@/lib/storage';
 import {
   IngestResult,
   ParsedAcademicData,
@@ -150,6 +151,10 @@ export function OnboardingFlow({ onComplete, onSelectDemo }: OnboardingFlowProps
   const [urgentExamTimeline, setUrgentExamTimeline] = useState<'2_days' | '7_days' | '14_days'>('2_days');
   const [isFinishing, setIsFinishing] = useState(false);
 
+  // Guardar cálculo rápido como acumulado inicial de una materia
+  const [saveQuickAccumulated, setSaveQuickAccumulated] = useState(true);
+  const [quickAccumulatedSubjectId, setQuickAccumulatedSubjectId] = useState<string>('');
+
   // Detectar NRCs en tiempo real al escribir/pegar
   useEffect(() => {
     if (pastedText.trim()) {
@@ -232,6 +237,7 @@ export function OnboardingFlow({ onComplete, onSelectDemo }: OnboardingFlowProps
     setIngestResult(syntheticResult);
     if (parsed.subjects.length > 0) {
       setSelectedUrgentSubjectId(parsed.subjects[0].id);
+      setQuickAccumulatedSubjectId(parsed.subjects[0].id);
     }
     setIsProcessing(false);
     setCurrentStep(3);
@@ -323,6 +329,7 @@ export function OnboardingFlow({ onComplete, onSelectDemo }: OnboardingFlowProps
 
       if (result.data.subjects.length > 0) {
         setSelectedUrgentSubjectId(result.data.subjects[0].id);
+        setQuickAccumulatedSubjectId(result.data.subjects[0].id);
       }
 
       setProcessingStage('Calculando tus huecos libres y margen de inasistencias...');
@@ -385,6 +392,7 @@ export function OnboardingFlow({ onComplete, onSelectDemo }: OnboardingFlowProps
     setIngestResult(syntheticResult);
     if (subjects.length > 0) {
       setSelectedUrgentSubjectId(subjects[0].id);
+      setQuickAccumulatedSubjectId(subjects[0].id);
     }
 
     setTimeout(() => {
@@ -433,6 +441,20 @@ export function OnboardingFlow({ onComplete, onSelectDemo }: OnboardingFlowProps
       }
 
       await commitAcademicDataAtomically(dataToCommit);
+
+      // Guardar el cálculo de la calculadora rápida como "Acumulado anterior" si el usuario lo eligió
+      if (saveQuickAccumulated && quickAccumulatedSubjectId) {
+        await gradeRepository.save({
+          id: `gr-quick-${Date.now()}`,
+          subjectId: quickAccumulatedSubjectId,
+          name: 'Acumulado anterior',
+          value: quickWeightedGrade,
+          weight: quickEvaluatedWeight,
+        });
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('semester-data-updated'));
+        }
+      }
 
       confetti({
         particleCount: 90,
@@ -1175,6 +1197,54 @@ export function OnboardingFlow({ onComplete, onSelectDemo }: OnboardingFlowProps
                   ))}
                 </div>
               </div>
+            </div>
+
+            {/* Opción de guardar el acumulado de la calculadora rápida */}
+            <div className="bg-[#0c102a]/85 backdrop-blur-2xl border border-indigo-500/40 rounded-3xl p-5 sm:p-6 space-y-3.5 shadow-xl">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center shrink-0 text-indigo-300">
+                    <Calculator className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white">
+                      Guardar nota de la calculadora rápida
+                    </h3>
+                    <p className="text-xs text-[#8b95c2] mt-0.5 leading-relaxed">
+                      En el paso 1 calculaste que llevas <strong className="text-white font-bold">{quickWeightedGrade.toFixed(1)}</strong> en el <strong className="text-white font-bold">{quickEvaluatedWeight}%</strong>. Puedes guardarlo directamente como el acumulado inicial de una materia.
+                    </p>
+                  </div>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
+                  <input
+                    type="checkbox"
+                    checked={saveQuickAccumulated}
+                    onChange={(e) => setSaveQuickAccumulated(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-[#181d45] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#5b5be8]" />
+                </label>
+              </div>
+
+              {saveQuickAccumulated && (
+                <div className="pt-2 border-t border-[#232a58]/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 animate-in fade-in duration-200">
+                  <span className="text-xs font-semibold text-[#8b95c2]">
+                    Guardar como acumulado de:
+                  </span>
+                  <select
+                    value={quickAccumulatedSubjectId}
+                    onChange={(e) => setQuickAccumulatedSubjectId(e.target.value)}
+                    className="bg-[#080b20] border border-[#232a58] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-400 font-semibold cursor-pointer max-w-full sm:max-w-xs"
+                  >
+                    {ingestResult.data.subjects.map((s) => (
+                      <option key={s.id} value={s.id} className="bg-[#0c102a] text-white">
+                        {s.name} ({s.code || 'Icesi'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             {/* BOTÓN FINAL DE ENTRADA AL DASHBOARD */}
