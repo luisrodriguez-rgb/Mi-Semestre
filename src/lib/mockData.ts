@@ -518,10 +518,23 @@ export async function seedDatabaseIfEmpty(force = false): Promise<boolean> {
   return false;
 }
 
-export async function resetDatabaseToDemo(): Promise<void> {
+export async function clearAllDatabaseTables(): Promise<void> {
   const { db } = await import('./storage/database');
-  await db.delete();
-  await db.open();
+  await Promise.all([
+    db.profiles.clear(),
+    db.semesters.clear(),
+    db.subjects.clear(),
+    db.scheduleBlocks.clear(),
+    db.routines.clear(),
+    db.exams.clear(),
+    db.assignments.clear(),
+    db.attendance.clear(),
+    db.grades.clear(),
+  ]);
+}
+
+export async function resetDatabaseToDemo(): Promise<void> {
+  await clearAllDatabaseTables();
   await profileRepository.save(demoIcesiProfile);
   await profileRepository.setActiveProfile(demoIcesiProfile.id);
   await semesterRepository.save(mockSemester);
@@ -533,13 +546,13 @@ export async function resetDatabaseToDemo(): Promise<void> {
   await attendanceRepository.bulkSave(mockAttendance);
   if (typeof window !== 'undefined') {
     localStorage.removeItem('mi_semestre_user_configured_v1');
+    localStorage.setItem('mi_semestre_demo_mode', 'true');
+    localStorage.setItem('mi_semestre_onboarded_v1', 'true');
   }
 }
 
 export async function resetDatabaseToCleanSlate(): Promise<void> {
-  const { db } = await import('./storage/database');
-  await db.delete();
-  await db.open();
+  await clearAllDatabaseTables();
   const cleanProfile: Profile = {
     id: `user-${Date.now()}`,
     name: 'Estudiante',
@@ -564,5 +577,7 @@ export async function resetDatabaseToCleanSlate(): Promise<void> {
   await semesterRepository.save(cleanSemester);
   if (typeof window !== 'undefined') {
     localStorage.setItem('mi_semestre_user_configured_v1', 'true');
+    localStorage.removeItem('mi_semestre_demo_mode');
+    localStorage.setItem('mi_semestre_onboarded_v1', 'true');
   }
 }

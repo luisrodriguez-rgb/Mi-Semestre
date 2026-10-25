@@ -107,25 +107,41 @@ export function ProfileModal({ onProfileUpdated }: ProfileModalProps) {
     window.dispatchEvent(new CustomEvent('semester-data-updated'));
   };
 
-  const handleLoadDemo = async () => {
-    if (confirm('¿Cargar la plantilla demostrativa oficial con materias y horarios de Icesi?')) {
+  const [confirmAction, setConfirmAction] = useState<'demo' | 'clean' | null>(null);
+  const [isExecutingAction, setIsExecutingAction] = useState(false);
+  const [actionFeedback, setActionFeedback] = useState<string | null>(null);
+
+  const handleExecuteLoadDemo = async () => {
+    setIsExecutingAction(true);
+    try {
       await resetDatabaseToDemo();
       await loadProfileData();
       onProfileUpdated?.();
       window.dispatchEvent(new CustomEvent('semester-data-updated'));
-      setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 3000);
+      setActionFeedback('Plantilla demo de Icesi cargada correctamente.');
+      setTimeout(() => setActionFeedback(null), 3500);
+      setConfirmAction(null);
+    } catch (err) {
+      console.error('Error al cargar plantilla demo:', err);
+    } finally {
+      setIsExecutingAction(false);
     }
   };
 
-  const handleCleanSlate = async () => {
-    if (confirm('¿Deseas reiniciar tu semestre y empezar con un espacio limpio?')) {
+  const handleExecuteCleanSlate = async () => {
+    setIsExecutingAction(true);
+    try {
       await resetDatabaseToCleanSlate();
       await loadProfileData();
       onProfileUpdated?.();
       window.dispatchEvent(new CustomEvent('semester-data-updated'));
-      setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 3000);
+      setActionFeedback('Semestre reiniciado con éxito. Espacio listo para tus materias.');
+      setTimeout(() => setActionFeedback(null), 3500);
+      setConfirmAction(null);
+    } catch (err) {
+      console.error('Error al reiniciar semestre:', err);
+    } finally {
+      setIsExecutingAction(false);
     }
   };
 
@@ -393,44 +409,147 @@ export function ProfileModal({ onProfileUpdated }: ProfileModalProps) {
               </button>
 
               {/* Acciones de Plantilla y Reset */}
-              <div className="pt-4 border-t border-[var(--border)] space-y-2">
+              <div className="pt-4 border-t border-[var(--border)] space-y-3">
                 <div className="text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider">
                   Acciones Rápidas de Espacio de Trabajo
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-                  <button
-                    type="button"
-                    onClick={handleLoadDemo}
-                    className="p-3 rounded-xl bg-[var(--paper)] border border-[var(--border)] hover:bg-[var(--surface-raised)] text-[var(--ink)] font-semibold transition-all flex items-center justify-between cursor-pointer group text-left"
-                  >
-                    <div>
-                      <div className="font-bold flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-[#3b3abf] dark:text-[#a0a0ff]" />
-                        <span>Cargar Plantilla Demo Icesi</span>
-                      </div>
-                      <div className="text-[10px] text-[var(--muted)] mt-0.5">
-                        Materias y horario demostrativo completo
-                      </div>
-                    </div>
-                  </button>
+                {/* Feedback de acción completada */}
+                {actionFeedback && (
+                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+                    <Check className="w-4 h-4 shrink-0" />
+                    <span>{actionFeedback}</span>
+                  </div>
+                )}
 
-                  <button
-                    type="button"
-                    onClick={handleCleanSlate}
-                    className="p-3 rounded-xl bg-[var(--paper)] border border-[var(--border)] hover:bg-rose-500/10 hover:border-rose-500/30 text-[var(--ink)] font-semibold transition-all flex items-center justify-between cursor-pointer group text-left"
-                  >
-                    <div>
-                      <div className="font-bold flex items-center gap-1.5 text-rose-600 dark:text-rose-400">
-                        <RefreshCw className="w-3.5 h-3.5" />
-                        <span>Empezar de Cero (Limpio)</span>
-                      </div>
-                      <div className="text-[10px] text-[var(--muted)] mt-0.5">
-                        Vaciar materias para ingresar las mías
+                {/* Bloque de confirmación: Cargar Demo */}
+                {confirmAction === 'demo' && (
+                  <div className="p-4 rounded-2xl bg-[#3b3abf]/10 border border-[#3b3abf]/30 space-y-3 animate-in fade-in">
+                    <div className="flex items-start gap-2.5">
+                      <Sparkles className="w-4 h-4 text-[#3b3abf] dark:text-[#a0a0ff] shrink-0 mt-0.5" />
+                      <div>
+                        <div className="text-xs font-bold text-[var(--ink)]">
+                          ¿Cargar la plantilla demostrativa oficial de Icesi?
+                        </div>
+                        <p className="text-[11px] text-[var(--muted)] mt-0.5 leading-relaxed">
+                          Se cargarán materias, horarios semanales, tareas y parciales de prueba con las carreras de la Universidad Icesi.
+                        </p>
                       </div>
                     </div>
-                  </button>
-                </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setConfirmAction(null)}
+                        disabled={isExecutingAction}
+                        className="px-3 py-1.5 rounded-xl text-xs font-semibold text-[var(--muted)] hover:text-[var(--ink)] cursor-pointer"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleExecuteLoadDemo}
+                        disabled={isExecutingAction}
+                        className="px-4 py-2 rounded-xl bg-[#3b3abf] hover:bg-[#2e2eb0] text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        {isExecutingAction ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Cargando plantilla...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Sí, cargar plantilla</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Bloque de confirmación: Empezar de Cero */}
+                {confirmAction === 'clean' && (
+                  <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 space-y-3 animate-in fade-in">
+                    <div className="flex items-start gap-2.5">
+                      <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                      <div>
+                        <div className="text-xs font-bold text-[var(--ink)]">
+                          ¿Reiniciar semestre y vaciar asignaturas?
+                        </div>
+                        <p className="text-[11px] text-[var(--muted)] mt-0.5 leading-relaxed">
+                          Se limpiarán todas las materias y notas registradas para que comiences con tu horario desde cero.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setConfirmAction(null)}
+                        disabled={isExecutingAction}
+                        className="px-3 py-1.5 rounded-xl text-xs font-semibold text-[var(--muted)] hover:text-[var(--ink)] cursor-pointer"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleExecuteCleanSlate}
+                        disabled={isExecutingAction}
+                        className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        {isExecutingAction ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Vaciando datos...</span>
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5" />
+                            <span>Sí, vaciar semestre</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Botones iniciales cuando no hay confirmación abierta */}
+                {confirmAction === null && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setConfirmAction('demo')}
+                      className="p-3 rounded-xl bg-[var(--paper)] border border-[var(--border)] hover:bg-[var(--surface-raised)] text-[var(--ink)] font-semibold transition-all flex items-center justify-between cursor-pointer group text-left"
+                    >
+                      <div>
+                        <div className="font-bold flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-[#3b3abf] dark:text-[#a0a0ff]" />
+                          <span>Cargar Plantilla Demo Icesi</span>
+                        </div>
+                        <div className="text-[10px] text-[var(--muted)] mt-0.5">
+                          Materias y horario demostrativo completo
+                        </div>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setConfirmAction('clean')}
+                      className="p-3 rounded-xl bg-[var(--paper)] border border-[var(--border)] hover:bg-rose-500/10 hover:border-rose-500/30 text-[var(--ink)] font-semibold transition-all flex items-center justify-between cursor-pointer group text-left"
+                    >
+                      <div>
+                        <div className="font-bold flex items-center gap-1.5 text-rose-600 dark:text-rose-400">
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          <span>Empezar de Cero (Limpio)</span>
+                        </div>
+                        <div className="text-[10px] text-[var(--muted)] mt-0.5">
+                          Vaciar materias para ingresar las mías
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                )}
               </div>
             </form>
           )}

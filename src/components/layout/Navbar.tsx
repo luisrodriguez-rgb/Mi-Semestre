@@ -84,11 +84,9 @@ export function Navbar() {
   ];
 
   const handleResetDemo = async () => {
-    if (confirm('¿Restablecer datos del semestre al estado de demostración?')) {
-      await resetDatabaseToDemo();
-      await refreshData();
-      window.location.reload();
-    }
+    await resetDatabaseToDemo();
+    await refreshData();
+    window.dispatchEvent(new CustomEvent('semester-data-updated'));
   };
 
   const formatTimer = (seconds: number) => {

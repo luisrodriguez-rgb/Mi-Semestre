@@ -27,6 +27,7 @@ export default function TasksPage() {
   const [filterSubject, setFilterSubject] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'completed'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [confirmingTaskId, setConfirmingTaskId] = useState<string | null>(null);
 
   const handleToggle = async (id: string) => {
     await assignmentRepository.toggleStatus(id);
@@ -35,11 +36,10 @@ export default function TasksPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('¿Eliminar esta tarea?')) {
-      await assignmentRepository.delete(id);
-      await refreshData();
-      window.dispatchEvent(new CustomEvent('semester-data-updated'));
-    }
+    await assignmentRepository.delete(id);
+    await refreshData();
+    window.dispatchEvent(new CustomEvent('semester-data-updated'));
+    setConfirmingTaskId(null);
   };
 
   const filteredTasks = assignments.filter((task) => {
@@ -307,13 +307,31 @@ export default function TasksPage() {
                       <Pencil className="w-4 h-4" />
                     </button>
 
-                    <button
-                      onClick={() => handleDelete(task.id)}
-                      className="p-2 rounded-xl text-[var(--muted)] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
-                      title="Eliminar tarea"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {confirmingTaskId === task.id ? (
+                      <div className="flex items-center gap-1 bg-rose-500/10 border border-rose-500/30 px-2 py-1 rounded-xl text-xs">
+                        <span className="text-[11px] text-rose-600 dark:text-rose-400 font-semibold">¿Borrar?</span>
+                        <button
+                          onClick={() => handleDelete(task.id)}
+                          className="px-2 py-0.5 rounded-lg bg-rose-600 text-white font-bold text-[10px] cursor-pointer hover:bg-rose-700"
+                        >
+                          Sí
+                        </button>
+                        <button
+                          onClick={() => setConfirmingTaskId(null)}
+                          className="px-1.5 py-0.5 text-[10px] text-[var(--muted)] hover:text-[var(--ink)] cursor-pointer"
+                        >
+                          No
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmingTaskId(task.id)}
+                        className="p-2 rounded-xl text-[var(--muted)] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
+                        title="Eliminar tarea"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
 

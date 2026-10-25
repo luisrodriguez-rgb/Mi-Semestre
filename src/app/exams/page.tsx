@@ -24,13 +24,13 @@ export default function ExamsPage() {
 
   const [filterSubject, setFilterSubject] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [confirmingExamId, setConfirmingExamId] = useState<string | null>(null);
 
   const handleDelete = async (id: string) => {
-    if (confirm('¿Eliminar este examen de la programación?')) {
-      await examRepository.delete(id);
-      await refreshData();
-      window.dispatchEvent(new CustomEvent('semester-data-updated'));
-    }
+    await examRepository.delete(id);
+    await refreshData();
+    window.dispatchEvent(new CustomEvent('semester-data-updated'));
+    setConfirmingExamId(null);
   };
 
   const filteredExams = exams.filter((exam) => {
@@ -212,13 +212,31 @@ export default function ExamsPage() {
                         <Pencil className="w-4 h-4" />
                       </button>
 
-                      <button
-                        onClick={() => handleDelete(exam.id)}
-                        className="p-2 text-[var(--muted)] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition-colors cursor-pointer"
-                        title="Eliminar examen"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {confirmingExamId === exam.id ? (
+                        <div className="flex items-center gap-1 bg-rose-500/10 border border-rose-500/30 px-2 py-1 rounded-xl text-xs">
+                          <span className="text-[11px] text-rose-600 dark:text-rose-400 font-semibold">¿Borrar?</span>
+                          <button
+                            onClick={() => handleDelete(exam.id)}
+                            className="px-2 py-0.5 rounded-lg bg-rose-600 text-white font-bold text-[10px] cursor-pointer hover:bg-rose-700"
+                          >
+                            Sí
+                          </button>
+                          <button
+                            onClick={() => setConfirmingExamId(null)}
+                            className="px-1.5 py-0.5 text-[10px] text-[var(--muted)] hover:text-[var(--ink)] cursor-pointer"
+                          >
+                            No
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmingExamId(exam.id)}
+                          className="p-2 text-[var(--muted)] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition-colors cursor-pointer"
+                          title="Eliminar examen"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
 
