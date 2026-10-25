@@ -12,7 +12,7 @@ import { WeeklyScheduleWidget } from '@/components/dashboard/WeeklyScheduleWidge
 import { RiskRadarWidget } from '@/components/dashboard/RiskRadarWidget';
 import { UpcomingEventsWidget } from '@/components/dashboard/UpcomingEventsWidget';
 import { RecentTasksWidget } from '@/components/dashboard/RecentTasksWidget';
-import { GradeCalculatorQuickCard } from '@/components/dashboard/GradeCalculatorQuickCard';
+import { SubjectsSummaryWidget } from '@/components/dashboard/SubjectsSummaryWidget';
 import { DashboardFooterQuote } from '@/components/dashboard/DashboardFooterQuote';
 import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow';
 
@@ -66,7 +66,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-4 sm:space-y-5 animate-in fade-in duration-200">
       {/* ═════════════════════════════════════════════════════════════
-          FILA 1: BANNER EDITORIAL + ¿QUÉ HAGO AHORA? + PROGRESO GENERAL
+          FILA 1: BANNER ACCIONABLE + ¿QUÉ HAGO AHORA? + TUS MATERIAS
          ═════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-5">
         {/* Columna Izquierda Ancha: Saludo y Centro de Decisión Operativa */}
@@ -79,15 +79,15 @@ export default function DashboardPage() {
             assignments={assignments}
             exams={exams}
           />
-          <GradeCalculatorQuickCard
+        </div>
+
+        {/* Columna Derecha: Tus Materias (Lista con promedio, meta y acceso a libreta) */}
+        <div className="xl:col-span-4 space-y-4">
+          <SubjectsSummaryWidget
             subjects={subjects}
             exams={exams}
             grades={grades}
           />
-        </div>
-
-        {/* Columna Derecha Estrecha: Tu Progreso General y Estado del Semestre */}
-        <div className="xl:col-span-4 space-y-4">
           <GeneralProgressCard
             progressPercentage={metrics.progressPercentage}
             currentWeek={metrics.currentWeek}
@@ -96,7 +96,6 @@ export default function DashboardPage() {
             assignments={assignments}
             exams={exams}
           />
-          <SemesterRiskStatusCard overallRisk="Medio" />
         </div>
       </div>
 

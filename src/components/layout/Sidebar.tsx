@@ -36,6 +36,58 @@ export function Sidebar() {
     { href: '/balance', label: 'Balance Académico', icon: GraduationCap },
   ];
 
+  const studentName = profile?.name || 'Diego Rodríguez';
+  const studentProgram = profile?.program || 'Ingeniería de Sistemas';
+  const initials = studentName
+    .split(' ')
+    .slice(0, 2)
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase();
+
+  return (
+    <aside className="hidden md:flex w-64 shrink-0 bg-[#0c102a] dark:bg-[#070919] text-white flex-col justify-between border-r border-[#1e2348] h-screen sticky top-0 overflow-y-auto transition-colors z-40 select-none">
+      <div>
+        {/* Logo Superior MI SEMESTRE | ICESI */}
+        <div className="p-6 pb-5 flex items-center gap-3 border-b border-[#1b2046]/50">
+          <img
+            src="/icon.png"
+            alt="MI SEMESTRE | ICESI"
+            className="w-9 h-9 object-contain drop-shadow-md"
+          />
+          <div>
+            <div className="font-black text-sm tracking-wider text-white flex items-center gap-1.5">
+              MI SEMESTRE <span className="text-[#656cf5] font-black">|</span>
+            </div>
+            <div className="text-[10px] font-mono tracking-widest text-[#7a85b8] uppercase font-bold">
+              ICESI
+            </div>
+          </div>
+        </div>
+
+        {/* Lista de Navegación Principal */}
+        <nav className="p-3 space-y-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = isCurrent(item.href);
+
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={`flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                  active
+                    ? 'bg-[#2b31a8] text-white shadow-md shadow-[#1b2046]/60 font-bold'
+                    : 'text-[#8b96c8] hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Icon className={`w-4 h-4 ${active ? 'text-white' : 'text-[#6b76ad]'}`} />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
         {/* Sección "MI SEMESTRE" & Multi-Semestre Switcher */}
         <div className="px-4 pt-4">
           <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider text-[#636f9e] font-bold pb-2">
