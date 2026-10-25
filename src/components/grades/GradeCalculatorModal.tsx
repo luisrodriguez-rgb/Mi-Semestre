@@ -9,6 +9,7 @@ import {
   EvaluationItem,
   GradeCalculationResult,
   extractEvaluationItemsFromText,
+  extractEvaluationPlanHybrid,
 } from '@/lib/academic-engine';
 import { gradeRepository, examRepository } from '@/lib/storage';
 import { Grade } from '@/types';
@@ -24,6 +25,7 @@ import {
   ClipboardPaste,
   HelpCircle,
   RotateCcw,
+  Loader2,
 } from 'lucide-react';
 
 type InputMode = 'detailed' | 'quick' | 'paste';
@@ -49,6 +51,7 @@ export function GradeCalculatorModal() {
   const [pasteRawText, setPasteRawText] = useState<string>('');
   const [pastePreviewItems, setPastePreviewItems] = useState<EditableEvaluationItem[]>([]);
   const [pasteError, setPasteError] = useState<string | null>(null);
+  const [isExtractingWithAI, setIsExtractingWithAI] = useState<boolean>(false);
 
   // Estado de auto-guardado
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -232,19 +235,11 @@ export function GradeCalculatorModal() {
   const headline = useMemo(() => {
     const passing = selectedSubject?.passingGrade || 3.0;
 
-    // Caso 1: Sin componentes o 0% evaluado
+    // Caso 1: Sin notas registradas aún (0% evaluado)
     if (currentStatus.evaluatedWeight === 0) {
-      if (currentStatus.totalConfiguredWeight < 100) {
-        return {
-          primary: 'Sin notas todavía.',
-          secondary: `Te falta definir el ${(100 - currentStatus.totalConfiguredWeight).toFixed(0)}% del curso para proyectar cuánto necesitas para pasar con ${passing.toFixed(1)}.`,
-          badgeColor: 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20',
-          badgeText: 'Sin notas todavía',
-        };
-      }
       return {
-        primary: 'Sin notas todavía.',
-        secondary: `Necesitas promediar ${passing.toFixed(1)} en el 100% de los componentes para aprobar la materia.`,
+        primary: 'Aún no tienes notas registradas en esta materia.',
+        secondary: `Anota tus notas y porcentajes para saber al instante cuánto necesitas para pasar con ${passing.toFixed(1)}.`,
         badgeColor: 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20',
         badgeText: 'Por comenzar',
       };
@@ -267,24 +262,15 @@ export function GradeCalculatorModal() {
     if (currentStatus.status === 'INVIABLE_MATEMATICAMENTE' || (currentStatus.requiredGrade !== null && currentStatus.requiredGrade > 5.0)) {
       return {
         primary: `Llevas ${avgStr} con el ${evalStr} evaluado. Requerirías más de 5.0 en lo restante.`,
-        secondary: `Matemáticamente el porcentaje restante no alcanza para llegar a ${passing.toFixed(1)}. Te recomendamos hablar con tu profesor o enfocar tu esfuerzo en salvar las demás materias.`,
+        secondary: currentStatus.weightsIncomplete && currentStatus.totalConfiguredWeight < 100
+          ? `Matemáticamente el porcentaje restante no alcanza para llegar a ${passing.toFixed(1)} (asumiendo que el ${(100 - currentStatus.totalConfiguredWeight).toFixed(0)}% restante aún no se ha evaluado).`
+          : `Matemáticamente el porcentaje restante no alcanza para llegar a ${passing.toFixed(1)}. Te recomendamos hablar con tu profesor o evaluar opciones de cancelación oportuna.`,
         badgeColor: 'bg-rose-950/40 text-rose-300 border-rose-700/60',
         badgeText: 'Inviable matemáticamente',
       };
     }
 
-    // Caso 4: Porcentajes incompletos (< 100%)
-    if (currentStatus.weightsIncomplete && currentStatus.totalConfiguredWeight < 100) {
-      const missingPct = (100 - currentStatus.totalConfiguredWeight).toFixed(0);
-      return {
-        primary: `Llevas ${avgStr} con el ${evalStr} evaluado. Te falta definir el ${missingPct}% del curso.`,
-        secondary: `Ingresa los porcentajes que faltan para poder proyectar exactamente cuánto necesitas sacar.`,
-        badgeColor: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30',
-        badgeText: 'Faltan porcentajes',
-      };
-    }
-
-    // Caso 5: Materia finalizada
+    // Caso 4: Materia finalizada
     if (currentStatus.isComplete) {
       const finalGrade = currentStatus.currentWeightedGrade !== null ? currentStatus.currentWeightedGrade : currentStatus.currentAccumulatedScore;
       const passed = finalGrade >= passing;
@@ -298,13 +284,17 @@ export function GradeCalculatorModal() {
       };
     }
 
-    // Caso 6: Estándar activo ("Llevas 3.4 con el 40% evaluado. Necesitas 2.7 en lo que falta.")
+    // Caso 5: Estándar activo (Ej: "Llevas 2.00 con el 35% evaluado. Necesitas 3.54 en el 65% que falta.")
     const reqStr = currentStatus.requiredGrade !== null ? currentStatus.requiredGrade.toFixed(2) : passing.toFixed(2);
     const effortLevel = (currentStatus.requiredGrade || 0) > 4.0;
+    const isIncompleteWeights = currentStatus.weightsIncomplete && currentStatus.totalConfiguredWeight < 100;
+    const missingWeight = (100 - currentStatus.totalConfiguredWeight).toFixed(0);
 
     return {
-      primary: `Llevas ${avgStr} con el ${evalStr} evaluado. Necesitas ${reqStr} en lo que falta.`,
-      secondary: effortLevel
+      primary: `Llevas ${avgStr} con el ${evalStr} evaluado. Necesitas ${reqStr} en el ${currentStatus.remainingWeight}% que falta.`,
+      secondary: isIncompleteWeights
+        ? `Asumiendo que el ${missingWeight}% restante aún no se ha evaluado.`
+        : effortLevel
         ? `La meta exige un desempeño alto (> 4.0) en el ${currentStatus.remainingWeight}% pendiente.`
         : `Tienes un margen favorable para asegurar tu aprobación con ${passing.toFixed(1)}.`,
       badgeColor: effortLevel
@@ -381,26 +371,42 @@ export function GradeCalculatorModal() {
     persistChanges(newPlan);
   };
 
-  // Procesar pegado de texto de sílabo / Moodle
-  const handleProcessPastedText = () => {
+  // Procesar pegado de texto de sílabo / Moodle (híbrido: determinístico + IA Gemini si hay dudas)
+  const handleProcessPastedText = async () => {
     setPasteError(null);
     if (!pasteRawText.trim()) {
       setPasteError('Por favor pega el texto de tu sílabo o de la tabla de calificaciones.');
       return;
     }
 
-    const extracted = extractEvaluationItemsFromText(pasteRawText);
-    if (extracted.length === 0) {
-      setPasteError('No pudimos detectar componentes o porcentajes claros en el texto. Prueba escribiendo los nombres con sus % (ej. Parcial 1 25%).');
-      return;
-    }
+    setIsExtractingWithAI(true);
+    try {
+      const { items } = await extractEvaluationPlanHybrid(
+        pasteRawText,
+        selectedSubject
+          ? { id: selectedSubject.id, name: selectedSubject.name, code: selectedSubject.code }
+          : undefined
+      );
 
-    setPastePreviewItems(
-      extracted.map((item) => ({
-        ...item,
-        subjectId: selectedSubject ? selectedSubject.id : '',
-      }))
-    );
+      if (items.length === 0) {
+        setPasteError(
+          'No pudimos detectar componentes o porcentajes claros en el texto. Prueba escribiendo los nombres con sus % (ej. Parcial 1 25%).'
+        );
+        return;
+      }
+
+      setPastePreviewItems(
+        items.map((item) => ({
+          ...item,
+          subjectId: selectedSubject ? selectedSubject.id : '',
+        }))
+      );
+    } catch (err) {
+      console.error('Error al procesar texto de sílabo:', err);
+      setPasteError('Ocurrió un error al procesar el texto. Por favor intenta de nuevo.');
+    } finally {
+      setIsExtractingWithAI(false);
+    }
   };
 
   // Confirmar y aplicar los ítems pegados a la libreta
@@ -485,11 +491,11 @@ export function GradeCalculatorModal() {
               </select>
             </div>
 
-            {/* Pestañas de modo de entrada */}
-            <div className="flex items-center gap-1 bg-[var(--surface)] p-1 rounded-xl border border-[var(--border)] text-xs font-medium">
+            {/* Pestañas de modo de entrada: Control segmentado que no se desborda en móvil */}
+            <div className="grid grid-cols-3 sm:flex items-center gap-1 bg-[var(--surface)] p-1 rounded-xl border border-[var(--border)] text-xs font-semibold shrink-0">
               <button
                 onClick={() => setInputMode('detailed')}
-                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-center transition-all cursor-pointer whitespace-nowrap ${
                   inputMode === 'detailed'
                     ? 'bg-[#3b3abf] text-white font-bold shadow-xs'
                     : 'text-[var(--muted)] hover:text-[var(--ink)]'
@@ -499,25 +505,25 @@ export function GradeCalculatorModal() {
               </button>
               <button
                 onClick={() => setInputMode('quick')}
-                className={`px-3 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap ${
                   inputMode === 'quick'
                     ? 'bg-[#3b3abf] text-white font-bold shadow-xs'
                     : 'text-[var(--muted)] hover:text-[var(--ink)]'
                 }`}
               >
                 <Sparkles className="w-3 h-3" />
-                <span>¿Cuánto llevas?</span>
+                <span>Rápido</span>
               </button>
               <button
                 onClick={() => setInputMode('paste')}
-                className={`px-3 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap ${
                   inputMode === 'paste'
                     ? 'bg-[#3b3abf] text-white font-bold shadow-xs'
                     : 'text-[var(--muted)] hover:text-[var(--ink)]'
                 }`}
               >
                 <ClipboardPaste className="w-3 h-3" />
-                <span>Pegar sílabo</span>
+                <span>Pegar</span>
               </button>
             </div>
           </div>
@@ -630,11 +636,21 @@ export function GradeCalculatorModal() {
               </button>
               <button
                 type="button"
+                disabled={isExtractingWithAI}
                 onClick={handleProcessPastedText}
-                className="px-4 py-2 rounded-xl bg-[#3b3abf] hover:bg-[#2e2eb0] text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                className="px-4 py-2 rounded-xl bg-[#3b3abf] hover:bg-[#2e2eb0] disabled:opacity-60 text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
               >
-                <ClipboardPaste className="w-3.5 h-3.5" />
-                <span>Analizar texto</span>
+                {isExtractingWithAI ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Analizando con IA...</span>
+                  </>
+                ) : (
+                  <>
+                    <ClipboardPaste className="w-3.5 h-3.5" />
+                    <span>Analizar texto</span>
+                  </>
+                )}
               </button>
             </div>
 

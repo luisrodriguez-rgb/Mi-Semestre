@@ -203,26 +203,43 @@ export function DecisionHeroCard({
         </div>
       </div>
 
-      {/* Grid de 2 columnas limpias: ESTADO Y TIEMPO (Fusionado) · ACCIÓN PRIORITARIA */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-        {/* COLUMNA 1: TU MOMENTO Y TIEMPO DISPONIBLE (Fusión limpia sin desgloses irrelevantes) */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-[#f8faff] dark:bg-[#141838] border border-[#e2e8f5] dark:border-[#1e2452] flex flex-col justify-between min-h-[190px]">
-          <div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-[#5a6491] dark:text-[#8e98c7] flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-[#3b43a8] dark:text-[#8e98ec]" />
-                <span>
-                  {focusSession.isActive
-                    ? 'Sesión de concentración'
-                    : currentBlockResult.currentClass
-                    ? `${currentBlockResult.currentClass.startTime} - ${currentBlockResult.currentClass.endTime}`
-                    : currentBlockResult.currentRoutine
-                    ? `${currentBlockResult.currentRoutine.startTime} - ${currentBlockResult.currentRoutine.endTime}`
-                    : hasClassesToday
-                    ? 'Franja libre'
-                    : 'Día sin clases'}
+      {/* Banner compacto de 1 línea cuando no hay clases programadas hoy */}
+      {!hasClassesToday && !focusSession.isActive && (
+        <div className="mt-3 py-2 px-3.5 rounded-xl bg-[#f8faff] dark:bg-[#141838] border border-[#e2e8f5] dark:border-[#1e2452] flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2 text-[#5a6491] dark:text-[#8e98c7]">
+            <Calendar className="w-3.5 h-3.5 text-[#3b43a8] dark:text-[#8e98ec]" />
+            <span className="font-bold text-[#0f1330] dark:text-white">Día sin clases</span>
+            <span className="hidden sm:inline">· Horario libre para avanzar a tu propio ritmo</span>
+          </div>
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-300">
+            Despejado
+          </span>
+        </div>
+      )}
+
+      {/* Grid: 2 columnas cuando hay clases o foco activo, 1 columna de ancho completo si el día está despejado */}
+      <div
+        className={`grid grid-cols-1 ${
+          hasClassesToday || focusSession.isActive ? 'md:grid-cols-2' : ''
+        } gap-4 mt-3`}
+      >
+        {/* COLUMNA 1: Solo visible cuando hay clases programadas o sesión de foco activa */}
+        {(hasClassesToday || focusSession.isActive) && (
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#f8faff] dark:bg-[#141838] border border-[#e2e8f5] dark:border-[#1e2452] flex flex-col justify-between min-h-[190px]">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-[#5a6491] dark:text-[#8e98c7] flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-[#3b43a8] dark:text-[#8e98ec]" />
+                  <span>
+                    {focusSession.isActive
+                      ? 'Sesión de concentración'
+                      : currentBlockResult.currentClass
+                      ? `${currentBlockResult.currentClass.startTime} - ${currentBlockResult.currentClass.endTime}`
+                      : currentBlockResult.currentRoutine
+                      ? `${currentBlockResult.currentRoutine.startTime} - ${currentBlockResult.currentRoutine.endTime}`
+                      : 'Franja libre'}
+                  </span>
                 </span>
-              </span>
 
               <span
                 className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${
@@ -324,6 +341,7 @@ export function DecisionHeroCard({
             </span>
           </div>
         </div>
+        )}
 
         {/* COLUMNA 2: SIGUIENTE ACCIÓN (Coherente y con chips limpios en español) */}
         <div className="p-4 sm:p-5 rounded-2xl bg-[#f8faff] dark:bg-[#141838] border border-[#e2e8f5] dark:border-[#1e2452] flex flex-col justify-between min-h-[190px]">
