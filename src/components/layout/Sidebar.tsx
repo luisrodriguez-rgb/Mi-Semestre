@@ -13,6 +13,7 @@ import {
   Settings,
   ListTodo,
   Calculator,
+  CalendarCheck,
 } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { useSemesterData } from '@/hooks/useSemesterData';
@@ -30,7 +31,8 @@ export function Sidebar() {
     { href: '/dashboard', label: '¿Qué hago ahora?', icon: Home },
     { href: '/schedule', label: 'Horario Semanal', icon: Calendar },
     { href: '/tasks', label: 'Tareas', icon: ListTodo },
-    { href: '/exams', label: 'Mis Notas', icon: CheckSquare },
+    { href: '/notas', label: 'Mis Notas', icon: CheckSquare },
+    { href: '/exams', label: 'Parciales', icon: CalendarCheck },
     { href: '/radar', label: 'Radar de Riesgo', icon: AlertTriangle },
     { href: '/timeline', label: 'Línea de Semanas', icon: Layers },
     { href: '/balance', label: 'Balance Académico', icon: GraduationCap },

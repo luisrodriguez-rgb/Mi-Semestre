@@ -12,7 +12,7 @@ export function MobileNav() {
   const navItems = [
     { href: '/dashboard', label: 'Ahora', icon: Clock },
     { href: '/schedule', label: 'Horario', icon: Calendar },
-    { href: '/exams', label: 'Notas', icon: CheckSquare },
+    { href: '/notas', label: 'Notas', icon: CheckSquare },
     { href: '/radar', label: 'Radar', icon: AlertTriangle },
     { href: '/balance', label: 'Balance', icon: GraduationCap },
   ];
