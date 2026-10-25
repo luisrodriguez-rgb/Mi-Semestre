@@ -41,7 +41,7 @@ export function SubjectsSummaryWidget({ subjects, exams, grades }: SubjectsSumma
           });
 
           // Determinar estado amigable y colores
-          let badgeText = 'Sin notas';
+          let badgeText = 'Por comenzar';
           let badgeColor = 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20';
           let subtitle = 'Sin notas · Toca para anotar';
 
@@ -59,13 +59,13 @@ export function SubjectsSummaryWidget({ subjects, exams, grades }: SubjectsSumma
               badgeText = 'Atención';
               badgeColor = 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30';
               subtitle = `Necesitas ${req.toFixed(1)} en el ${status.remainingWeight}% que falta`;
-            } else if (req <= 3.0) {
-              badgeText = 'En camino';
-              badgeColor = 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30';
+            } else if (req > 3.0) {
+              badgeText = 'Exige esfuerzo';
+              badgeColor = 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30';
               subtitle = `Necesitas ${req.toFixed(1)} en el ${status.remainingWeight}% que falta`;
             } else {
-              badgeText = 'Esfuerzo';
-              badgeColor = 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30';
+              badgeText = 'En camino';
+              badgeColor = 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30';
               subtitle = `Necesitas ${req.toFixed(1)} en el ${status.remainingWeight}% que falta`;
             }
           }

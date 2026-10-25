@@ -285,8 +285,10 @@ export function GradeCalculatorModal() {
     }
 
     // Caso 5: Estándar activo (Ej: "Llevas 2.00 con el 35% evaluado. Necesitas 3.54 en el 65% que falta.")
-    const reqStr = currentStatus.requiredGrade !== null ? currentStatus.requiredGrade.toFixed(2) : passing.toFixed(2);
-    const effortLevel = (currentStatus.requiredGrade || 0) > 4.0;
+    const req = currentStatus.requiredGrade !== null ? currentStatus.requiredGrade : passing;
+    const reqStr = req.toFixed(2);
+    const effortLevel = req > 4.0;
+    const moderateEffort = req > 3.0 && req <= 4.0;
     const isIncompleteWeights = currentStatus.weightsIncomplete && currentStatus.totalConfiguredWeight < 100;
     const missingWeight = (100 - currentStatus.totalConfiguredWeight).toFixed(0);
 
@@ -296,13 +298,19 @@ export function GradeCalculatorModal() {
         ? `Asumiendo que el ${missingWeight}% restante aún no se ha evaluado.`
         : effortLevel
         ? `La meta exige un desempeño alto (> 4.0) en el ${currentStatus.remainingWeight}% pendiente.`
+        : moderateEffort
+        ? `Exige esfuerzo para alcanzar la meta en el ${currentStatus.remainingWeight}% pendiente.`
         : `Tienes un margen favorable para asegurar tu aprobación con ${passing.toFixed(1)}.`,
       badgeColor: effortLevel
         ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30'
-        : (currentStatus.requiredGrade || 0) <= 3.0
-        ? 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30'
-        : 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30',
-      badgeText: effortLevel ? 'Exige esfuerzo alto' : 'En camino a pasar',
+        : moderateEffort
+        ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
+        : 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30',
+      badgeText: effortLevel
+        ? 'Exige esfuerzo alto'
+        : moderateEffort
+        ? 'Exige esfuerzo'
+        : 'En camino a pasar',
     };
   }, [currentStatus, selectedSubject]);
 
