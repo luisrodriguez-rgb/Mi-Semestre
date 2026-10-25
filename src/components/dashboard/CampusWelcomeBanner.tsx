@@ -55,6 +55,17 @@ export function CampusWelcomeBanner({ studentName }: CampusWelcomeBannerProps) {
     return { attentionCount, urgentItemsCount };
   }, [subjects, exams, assignments, grades]);
 
+  // Verificar si el estudiante ya registró alguna nota en el semestre
+  const hasAnyGrades = useMemo(() => {
+    return (
+      grades.some((g) => g.value !== null && g.value !== undefined) ||
+      subjects.some((sub) => {
+        const plan = buildEvaluationPlanFromExams(sub, exams, grades);
+        return plan.some((item) => item.grade !== null && item.grade !== undefined);
+      })
+    );
+  }, [grades, subjects, exams]);
+
   return (
     <div className="relative overflow-hidden rounded-2xl bg-[#0b102b] text-white border border-[#1c224b] shadow-xs py-4 px-5 sm:px-6 flex items-center justify-between transition-colors">
       {/* Texto de bienvenida reducido y accionable */}
@@ -63,7 +74,9 @@ export function CampusWelcomeBanner({ studentName }: CampusWelcomeBannerProps) {
           {greeting}, {firstName}!
         </h1>
         <p className="text-xs sm:text-[13px] text-[#cbd5e1] mt-1 leading-relaxed">
-          {attentionStats.attentionCount > 0
+          {!hasAnyGrades
+            ? 'Anota tus notas para ver cómo vas.'
+            : attentionStats.attentionCount > 0
             ? `${attentionStats.attentionCount} ${attentionStats.attentionCount === 1 ? 'materia requiere' : 'materias requieren'} atención prioritaria para asegurar aprobación.`
             : attentionStats.urgentItemsCount > 0
             ? `Tienes ${attentionStats.urgentItemsCount} ${attentionStats.urgentItemsCount === 1 ? 'evaluación o entrega programada' : 'evaluaciones o entregas programadas'} para los próximos 7 días.`
