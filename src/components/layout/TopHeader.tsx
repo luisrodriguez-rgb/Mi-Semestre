@@ -25,6 +25,7 @@ export function TopHeader() {
     openInbox,
     openCalendarModal,
     openShareModal,
+    openGradeCalculator,
     focusSession,
     tickFocusSession,
     togglePauseFocus,
@@ -186,6 +187,16 @@ export function TopHeader() {
             <kbd className="hidden md:inline font-mono text-[9px] px-1 py-0.2 bg-white dark:bg-[#141938] rounded border border-indigo-400/30">
               ⌘K
             </kbd>
+          </button>
+
+          {/* Botón + Nota */}
+          <button
+            onClick={() => openGradeCalculator()}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#3b3abf]/10 hover:bg-[#3b3abf]/20 text-[#3b3abf] dark:text-[#a0a0ff] border border-[#3b3abf]/30 text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+            title="Registrar calificación o componente"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Nota</span>
           </button>
 
           {/* Botón + Tarea */}
