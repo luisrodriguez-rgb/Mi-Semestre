@@ -237,7 +237,8 @@ export type GradeStatus =
   | 'RIESGO_CRITICO'
   | 'INVIABLE_MATEMATICAMENTE'
   | 'COMPLETADA_REPROBADA'
-  | 'SIN_PLAN';
+  | 'SIN_PLAN'
+  | 'SIN_NOTAS';
 
 export interface EvaluationItem {
   id: string;

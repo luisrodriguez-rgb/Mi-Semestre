@@ -712,4 +712,40 @@ if (statusCeil.status !== 'RIESGO_CRITICO') {
 }
 console.log('✓ TEST 21: Nota necesaria se redondea estrictamente hacia arriba (Math.ceil a 2 decimales)');
 
+// TEST 22: Con 0% evaluado, el estado debe ser neutro SIN_NOTAS (nunca TRAYECTORIA_SEGURA)
+const testPlanZeroEval: EvaluationItem[] = [
+  { id: 'ev-z1', subjectId: 'sub-zero', name: 'Parcial 1', weight: 35 },
+  { id: 'ev-z2', subjectId: 'sub-zero', name: 'Parcial 2', weight: 35 },
+  { id: 'ev-z3', subjectId: 'sub-zero', name: 'Final', weight: 30 },
+];
+const statusZeroEval = calculateGradeStatus({
+  subjectId: 'sub-zero',
+  evaluations: testPlanZeroEval,
+  passingGrade: 3.0,
+});
+if (statusZeroEval.status !== 'SIN_NOTAS') {
+  throw new Error(`TEST 22 Failed: Con 0% evaluado el status debe ser SIN_NOTAS, obtenido ${statusZeroEval.status}`);
+}
+if (!statusZeroEval.statusMessage.includes('Sin notas registradas todavía')) {
+  throw new Error(`TEST 22 Failed: Mensaje debe indicar neutralidad sin notas, obtenido: ${statusZeroEval.statusMessage}`);
+}
+console.log('✓ TEST 22: Con 0% evaluado se asigna estado neutro SIN_NOTAS sin emitir falsa tranquilidad');
+
+// TEST 23: Con % incompletos (<100%), mensaje claro de lo que falta por definir sin inventar metas ficticias
+const testPlanIncompleteWeights: EvaluationItem[] = [
+  { id: 'ev-inc1', subjectId: 'sub-inc', name: 'Parcial 1', weight: 35, grade: 3.2 },
+];
+const statusIncompleteWeights = calculateGradeStatus({
+  subjectId: 'sub-inc',
+  evaluations: testPlanIncompleteWeights,
+  passingGrade: 3.0,
+});
+if (statusIncompleteWeights.weightsIncomplete !== true) {
+  throw new Error('TEST 23 Failed: weightsIncomplete debe ser true');
+}
+if (!statusIncompleteWeights.statusMessage.includes('Te falta definir el 65% del curso')) {
+  throw new Error(`TEST 23 Failed: Mensaje debe indicar claramente que falta definir el 65% del curso, obtenido: ${statusIncompleteWeights.statusMessage}`);
+}
+console.log('✓ TEST 23: Porcentajes incompletos indican claramente el porcentaje pendiente por definir sin contradicciones');
+
 console.log('ALL GRADE CALCULATOR & RISK INTEGRATION TESTS PASSED SUCCESSFULLY!');

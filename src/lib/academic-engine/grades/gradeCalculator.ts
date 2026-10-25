@@ -7,7 +7,8 @@ export type GradeStatus =
   | 'RIESGO_CRITICO'          // Nota necesaria entre 4.0 y 5.0
   | 'INVIABLE_MATEMATICAMENTE' // Nota necesaria > 5.0 (matemáticamente imposible con nota máxima 5.0)
   | 'COMPLETADA_REPROBADA'    // 100% evaluado y acumulado < passingGrade
-  | 'SIN_PLAN';               // Sin componentes configurados
+  | 'SIN_PLAN'                // Sin componentes configurados
+  | 'SIN_NOTAS';              // Componentes configurados pero 0% evaluado (sin notas registradas)
 
 export interface EvaluationItem {
   id: string;
@@ -206,7 +207,33 @@ export function calculateGradeStatus({
     };
   }
 
-  // CASO 3: Cálculo de Nota Necesaria (siempre redondeada al alza a 2 decimales)
+  // CASO 3: Componentes configurados pero sin calificaciones aún (0% evaluado)
+  if (evaluatedWeight === 0) {
+    const missingCourseWeight = Math.max(0, 100 - totalConfiguredWeight);
+    const missingWeightsNotice = hasMissingWeights
+      ? ' (Hay componentes sin porcentaje asignado, excluidos del cálculo hasta que se especifiquen).'
+      : '';
+    const msg = weightsIncomplete && totalConfiguredWeight < 100
+      ? `Sin notas registradas todavía. Te falta definir el ${missingCourseWeight.toFixed(0)}% del curso.${missingWeightsNotice}`
+      : `Sin notas registradas todavía. Necesitas un promedio de ${passingGrade.toFixed(1)} en el curso para aprobar.${warningSuffix}`;
+    return {
+      subjectId,
+      passingGrade,
+      totalConfiguredWeight,
+      evaluatedWeight: 0,
+      remainingWeight,
+      currentAccumulatedScore: 0,
+      currentWeightedGrade: null,
+      requiredGrade: passingGrade,
+      status: 'SIN_NOTAS',
+      statusMessage: msg,
+      weightsIncomplete,
+      isComplete: false,
+      hasMissingWeights,
+    };
+  }
+
+  // CASO 4: Cálculo de Nota Necesaria en lo restante (siempre redondeada al alza a 2 decimales)
   const remainingFraction = remainingWeight / 100;
   const rawRequiredGrade = (passingGrade - rawAccumulated) / remainingFraction;
   const roundedRequiredGrade = ceilRequiredGrade(rawRequiredGrade, 2);
@@ -216,16 +243,24 @@ export function calculateGradeStatus({
 
   if (roundedRequiredGrade > 5.0) {
     status = 'INVIABLE_MATEMATICAMENTE';
-    statusMessage = `Matemáticamente inviable: requerirías una nota de ${roundedRequiredGrade.toFixed(1)} en el ${remainingWeight.toFixed(0)}% restante (la nota máxima posible es 5.0). Te recomendamos consultar con el profesor o evaluar opciones de cancelación oportuna.${warningSuffix}`;
+    statusMessage = weightsIncomplete && totalConfiguredWeight < 100
+      ? `Matemáticamente inviable con los componentes actuales. Te falta definir el ${(100 - totalConfiguredWeight).toFixed(0)}% del curso.`
+      : `Matemáticamente inviable: requerirías una nota de ${roundedRequiredGrade.toFixed(1)} en el ${remainingWeight.toFixed(0)}% restante (la nota máxima posible es 5.0). Te recomendamos consultar con el profesor o evaluar opciones de cancelación oportuna.${warningSuffix}`;
   } else if (roundedRequiredGrade > 4.0) {
     status = 'RIESGO_CRITICO';
-    statusMessage = `Riesgo académico alto: necesitas promediar ${roundedRequiredGrade.toFixed(2)} en el ${remainingWeight.toFixed(0)}% restante para pasar la materia. Se recomienda intensificar sesiones de estudio prioritarias.${warningSuffix}`;
+    statusMessage = weightsIncomplete && totalConfiguredWeight < 100
+      ? `Llevas ${currentWeightedGrade!.toFixed(2)} en el ${evaluatedWeight.toFixed(0)}% evaluado. Te falta definir el ${(100 - totalConfiguredWeight).toFixed(0)}% del curso para proyectar con exactitud.`
+      : `Riesgo académico alto: necesitas promediar ${roundedRequiredGrade.toFixed(2)} en el ${remainingWeight.toFixed(0)}% restante para pasar la materia. Se recomienda intensificar sesiones de estudio prioritarias.${warningSuffix}`;
   } else if (roundedRequiredGrade > 3.0) {
     status = 'EXIGE_ESFUERZO';
-    statusMessage = `Requiere esfuerzo sostenido: necesitas promediar ${roundedRequiredGrade.toFixed(2)} en el ${remainingWeight.toFixed(0)}% restante para asegurar la aprobación.${warningSuffix}`;
+    statusMessage = weightsIncomplete && totalConfiguredWeight < 100
+      ? `Llevas ${currentWeightedGrade!.toFixed(2)} en el ${evaluatedWeight.toFixed(0)}% evaluado. Te falta definir el ${(100 - totalConfiguredWeight).toFixed(0)}% del curso para proyectar con exactitud.`
+      : `Requiere esfuerzo sostenido: necesitas promediar ${roundedRequiredGrade.toFixed(2)} en el ${remainingWeight.toFixed(0)}% restante para asegurar la aprobación.${warningSuffix}`;
   } else {
     status = 'TRAYECTORIA_SEGURA';
-    statusMessage = `Vas por buen camino: necesitas promediar ${roundedRequiredGrade.toFixed(2)} en el ${remainingWeight.toFixed(0)}% restante para aprobar con ${passingGrade.toFixed(1)}.${warningSuffix}`;
+    statusMessage = weightsIncomplete && totalConfiguredWeight < 100
+      ? `Llevas ${currentWeightedGrade!.toFixed(2)} en el ${evaluatedWeight.toFixed(0)}% evaluado. Te falta definir el ${(100 - totalConfiguredWeight).toFixed(0)}% del curso para proyectar con exactitud.`
+      : `Vas por buen camino: necesitas promediar ${roundedRequiredGrade.toFixed(2)} en el ${remainingWeight.toFixed(0)}% restante para aprobar con ${passingGrade.toFixed(1)}.${warningSuffix}`;
   }
 
   return {
