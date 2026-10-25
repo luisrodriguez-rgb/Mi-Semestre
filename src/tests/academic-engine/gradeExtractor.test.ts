@@ -1,4 +1,7 @@
-import { extractEvaluationItemsFromText } from '../../lib/academic-engine/grades/gradeExtractor';
+import {
+  extractEvaluationItemsFromText,
+  hasAmbiguousExtraction,
+} from '../../lib/academic-engine/grades/gradeExtractor';
 
 console.log('--- Testing Grade & Syllabus Extractor ---');
 
@@ -58,6 +61,66 @@ console.log('✓ TEST 2: Filtrado de encabezados y extracción de tabla Moodle/B
 // TEST 3: Manejo de texto vacío o sin datos
 const items3 = extractEvaluationItemsFromText('');
 if (items3.length !== 0) {
-  throw new Error(`TEST 3 Failed: Esperaba 0 ítems para texto vacío`);
+  throw new Error('TEST 3 Failed: Esperaba 0 ítems para texto vacío');
 }
 console.log('✓ TEST 3: Manejo seguro de texto vacío');
+
+// TEST 4: "Plan de evaluación" (título) no debe crear un componente con 0%
+const titleText = `
+Plan de evaluación
+Parcial 1 30%
+Parcial 2 30%
+Proyecto 40%
+`;
+const items4 = extractEvaluationItemsFromText(titleText);
+if (items4.some((it) => it.name.toLowerCase().includes('plan de evaluaci'))) {
+  throw new Error('TEST 4 Failed: "Plan de evaluación" no debe crear un componente');
+}
+if (items4.length !== 3) {
+  throw new Error(`TEST 4 Failed: Se esperaban 3 componentes reales, obtenidos: ${items4.length}`);
+}
+console.log('✓ TEST 4: Título "Plan de evaluación" descartado sin crear componente ficticio');
+
+// TEST 5: "Parcial 1 25% nota 4" -> nombre "Parcial 1", nota 4.0 (número entero de nota detectado)
+const integerGradeText = 'Parcial 1 25% nota 4';
+const items5 = extractEvaluationItemsFromText(integerGradeText);
+if (items5.length !== 1) {
+  throw new Error(`TEST 5 Failed: Esperaba 1 ítem, obtenidos: ${items5.length}`);
+}
+if (items5[0].name !== 'Parcial 1') {
+  throw new Error(`TEST 5 Failed: Nombre esperado "Parcial 1", obtenido: "${items5[0].name}"`);
+}
+if (items5[0].weight !== 25) {
+  throw new Error(`TEST 5 Failed: Peso esperado 25, obtenido: ${items5[0].weight}`);
+}
+if (items5[0].grade !== 4.0) {
+  throw new Error(`TEST 5 Failed: Nota esperada 4.0, obtenida: ${items5[0].grade}`);
+}
+console.log('✓ TEST 5: "Parcial 1 25% nota 4" extrae nombre "Parcial 1" y nota entera 4.0');
+
+// TEST 6: "Semana 8: Parcial 2 (20%)" -> nombre "Parcial 2", sin paréntesis vacíos
+const weekParenthesesText = 'Semana 8: Parcial 2 (20%)';
+const items6 = extractEvaluationItemsFromText(weekParenthesesText);
+if (items6.length !== 1) {
+  throw new Error(`TEST 6 Failed: Esperaba 1 ítem, obtenidos: ${items6.length}`);
+}
+if (items6[0].name !== 'Parcial 2') {
+  throw new Error(`TEST 6 Failed: Nombre esperado "Parcial 2", obtenido: "${items6[0].name}"`);
+}
+if (items6[0].weight !== 20) {
+  throw new Error(`TEST 6 Failed: Peso esperado 20, obtenido: ${items6[0].weight}`);
+}
+if (items6[0].name.includes('(') || items6[0].name.includes(')')) {
+  throw new Error(`TEST 6 Failed: El nombre no debe contener paréntesis vacíos: "${items6[0].name}"`);
+}
+console.log('✓ TEST 6: "Semana 8: Parcial 2 (20%)" extrae nombre limpio "Parcial 2" sin paréntesis vacíos');
+
+// TEST 7: hasAmbiguousExtraction detecta casos dudosos para conmutar a IA
+if (hasAmbiguousExtraction([], '')) {
+  console.log('✓ TEST 7: Detecta texto vacío como ambiguo');
+}
+if (hasAmbiguousExtraction([{ id: '1', name: 'Componente 1', weight: 0, grade: null }], 'Parciales')) {
+  console.log('✓ TEST 7.1: Detecta ítems sin porcentaje como ambiguos para invocar IA');
+}
+
+console.log('ALL GRADE EXTRACTOR TESTS PASSED SUCCESSFULLY!');
