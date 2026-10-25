@@ -33,3 +33,18 @@ export const InboxExtractionSchema = z.object({
 });
 
 export type InboxExtraction = z.infer<typeof InboxExtractionSchema>;
+
+export const ExtractedGradeItemSchema = z.object({
+  name: z.string(),
+  weight: z.number().min(0).max(100),
+  grade: z.number().min(0).max(5.0).nullable(),
+});
+
+export type ExtractedGradeItem = z.infer<typeof ExtractedGradeItemSchema>;
+
+export const ExtractedGradesResponseSchema = z.object({
+  items: z.array(ExtractedGradeItemSchema),
+});
+
+export type ExtractedGradesResponse = z.infer<typeof ExtractedGradesResponseSchema>;
+

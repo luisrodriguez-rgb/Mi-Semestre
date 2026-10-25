@@ -162,7 +162,7 @@ export function hasAmbiguousExtraction(items: ExtractedEvaluationItem[], rawText
 
 /**
  * Extracción híbrida: intenta primero el motor determinístico offline;
- * si hay dudas o líneas sin %, consulta el endpoint de IA (/api/ai/extract).
+ * si hay dudas o líneas sin %, consulta el endpoint de IA (/api/ai/extract-grades).
  */
 export async function extractEvaluationPlanHybrid(
   rawText: string,
@@ -175,12 +175,12 @@ export async function extractEvaluationPlanHybrid(
   }
 
   try {
-    const res = await fetch('/api/ai/extract', {
+    const res = await fetch('/api/ai/extract-grades', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         rawText,
-        enrolledSubjects: subjectContext ? [subjectContext] : [],
+        subjectName: subjectContext?.name,
       }),
     });
 
@@ -190,17 +190,32 @@ export async function extractEvaluationPlanHybrid(
 
     const json = await res.json();
     if (json.success && Array.isArray(json.items) && json.items.length > 0) {
-      const aiItems: ExtractedEvaluationItem[] = json.items.map((it: any, idx: number) => ({
-        id: `ev-ai-${Date.now()}-${idx + 1}`,
-        name: it.title || `Componente ${idx + 1}`,
-        weight: typeof it.weight === 'number' && it.weight > 0 ? it.weight : 0,
-        grade: null,
-      }));
+      const items: ExtractedEvaluationItem[] = json.items.map((it: any, idx: number) => {
+        let grade = typeof it.grade === 'number' && !isNaN(it.grade) ? it.grade : null;
+        // Si la IA devolvió grade null, preservar la nota encontrada por el determinístico
+        if (grade === null) {
+          const match =
+            deterministicItems.find(
+              (det) =>
+                det.name.toLowerCase() === (it.name || '').toLowerCase() ||
+                (it.name || '').toLowerCase().includes(det.name.toLowerCase()) ||
+                det.name.toLowerCase().includes((it.name || '').toLowerCase())
+            ) || (deterministicItems.length === json.items.length ? deterministicItems[idx] : null);
 
-      // Si la IA extrajo componentes con peso, preferirlos
-      if (aiItems.some((it) => it.weight > 0)) {
-        return { items: aiItems, source: 'ai' };
-      }
+          if (match && match.grade !== null) {
+            grade = match.grade;
+          }
+        }
+
+        return {
+          id: it.id || `ev-ai-${Date.now()}-${idx + 1}`,
+          name: it.name || `Componente ${idx + 1}`,
+          weight: typeof it.weight === 'number' && it.weight >= 0 ? it.weight : 0,
+          grade,
+        };
+      });
+
+      return { items, source: json.source || 'ai' };
     }
   } catch (err) {
     console.warn('Fallback a extractor determinístico por error de red:', err);
