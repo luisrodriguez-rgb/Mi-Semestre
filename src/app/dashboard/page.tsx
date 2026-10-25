@@ -69,9 +69,17 @@ export default function DashboardPage() {
           FILA 1: BANNER ACCIONABLE + ¿QUÉ HAGO AHORA? + TUS MATERIAS
          ═════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-5">
-        {/* Columna Izquierda Ancha: Saludo y Centro de Decisión Operativa */}
+        {/* Columna Izquierda: Saludo y Centro de Decisión */}
         <div className="xl:col-span-8 space-y-4">
           <CampusWelcomeBanner studentName={profile?.name} />
+          {/* En móvil: Tus materias aparece antes de la decisión operativa */}
+          <div className="xl:hidden">
+            <SubjectsSummaryWidget
+              subjects={subjects}
+              exams={exams}
+              grades={grades}
+            />
+          </div>
           <DecisionHeroCard
             classes={scheduleBlocks}
             subjectsMap={subjectsMap}
@@ -81,13 +89,15 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* Columna Derecha: Tus Materias (Lista con promedio, meta y acceso a libreta) */}
+        {/* Columna Derecha Desktop: Tus Materias + Progreso General */}
         <div className="xl:col-span-4 space-y-4">
-          <SubjectsSummaryWidget
-            subjects={subjects}
-            exams={exams}
-            grades={grades}
-          />
+          <div className="hidden xl:block">
+            <SubjectsSummaryWidget
+              subjects={subjects}
+              exams={exams}
+              grades={grades}
+            />
+          </div>
           <GeneralProgressCard
             progressPercentage={metrics.progressPercentage}
             currentWeek={metrics.currentWeek}

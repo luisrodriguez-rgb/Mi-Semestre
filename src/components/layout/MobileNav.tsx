@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Clock, Calendar, AlertTriangle, Layers, User, GraduationCap } from 'lucide-react';
+import { Clock, Calendar, AlertTriangle, CheckSquare, User, GraduationCap } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 
 export function MobileNav() {
@@ -12,8 +12,8 @@ export function MobileNav() {
   const navItems = [
     { href: '/dashboard', label: 'Ahora', icon: Clock },
     { href: '/schedule', label: 'Horario', icon: Calendar },
+    { href: '/exams', label: 'Notas', icon: CheckSquare },
     { href: '/radar', label: 'Radar', icon: AlertTriangle },
-    { href: '/timeline', label: 'Semanas', icon: Layers },
     { href: '/balance', label: 'Balance', icon: GraduationCap },
   ];
 
