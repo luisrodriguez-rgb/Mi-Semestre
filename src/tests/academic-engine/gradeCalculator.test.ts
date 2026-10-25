@@ -731,9 +731,9 @@ if (!statusZeroEval.statusMessage.includes('Sin notas registradas todavía')) {
 }
 console.log('✓ TEST 22: Con 0% evaluado se asigna estado neutro SIN_NOTAS sin emitir falsa tranquilidad');
 
-// TEST 23: Con % incompletos (<100%), mensaje claro de lo que falta por definir sin inventar metas ficticias
+// TEST 23: Con % incompletos (<100%), calcula siempre la nota necesaria en el % restante
 const testPlanIncompleteWeights: EvaluationItem[] = [
-  { id: 'ev-inc1', subjectId: 'sub-inc', name: 'Parcial 1', weight: 35, grade: 3.2 },
+  { id: 'ev-inc1', subjectId: 'sub-inc', name: 'Parcial 1', weight: 35, grade: 2.0 },
 ];
 const statusIncompleteWeights = calculateGradeStatus({
   subjectId: 'sub-inc',
@@ -743,9 +743,13 @@ const statusIncompleteWeights = calculateGradeStatus({
 if (statusIncompleteWeights.weightsIncomplete !== true) {
   throw new Error('TEST 23 Failed: weightsIncomplete debe ser true');
 }
-if (!statusIncompleteWeights.statusMessage.includes('Te falta definir el 65% del curso')) {
-  throw new Error(`TEST 23 Failed: Mensaje debe indicar claramente que falta definir el 65% del curso, obtenido: ${statusIncompleteWeights.statusMessage}`);
+// Acumulado = 2.0 * 0.35 = 0.70. Falta 2.30 en el 65% restante -> 2.30 / 0.65 = 3.538... -> 3.54
+if (!statusIncompleteWeights.requiredGrade || Math.abs(statusIncompleteWeights.requiredGrade - 3.54) > 0.001) {
+  throw new Error(`TEST 23 Failed: Nota necesaria esperada 3.54, obtenida ${statusIncompleteWeights.requiredGrade}`);
 }
-console.log('✓ TEST 23: Porcentajes incompletos indican claramente el porcentaje pendiente por definir sin contradicciones');
+if (!statusIncompleteWeights.statusMessage.includes('asumiendo que el 65% restante aún no se ha evaluado')) {
+  throw new Error(`TEST 23 Failed: Mensaje debe indicar la aclaración del porcentaje no evaluado, obtenido: ${statusIncompleteWeights.statusMessage}`);
+}
+console.log('✓ TEST 23: Porcentajes incompletos calculan exactamente la nota necesaria asumiendo lo que falta por evaluar');
 
 console.log('ALL GRADE CALCULATOR & RISK INTEGRATION TESTS PASSED SUCCESSFULLY!');
