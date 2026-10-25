@@ -104,12 +104,16 @@ export function useSemesterData() {
     if (typeof window !== 'undefined') {
       localStorage.setItem('mi_semestre_demo_mode', 'true');
       localStorage.setItem('mi_semestre_user_configured_v1', 'true');
+      localStorage.setItem('mi_semestre_onboarded_v1', 'true');
     }
     const { resetDatabaseToDemo } = await import('@/lib/mockData');
     await resetDatabaseToDemo();
     setNeedsOnboarding(false);
     await loadData();
     window.dispatchEvent(new CustomEvent('semester-data-updated'));
+    if (typeof window !== 'undefined') {
+      window.location.href = '/dashboard';
+    }
   }, [loadData]);
 
   const completeOnboarding = useCallback(async () => {
@@ -120,6 +124,9 @@ export function useSemesterData() {
     setNeedsOnboarding(false);
     await loadData();
     window.dispatchEvent(new CustomEvent('semester-data-updated'));
+    if (typeof window !== 'undefined') {
+      window.location.href = '/dashboard';
+    }
   }, [loadData]);
 
   const resetToOnboarding = useCallback(async () => {

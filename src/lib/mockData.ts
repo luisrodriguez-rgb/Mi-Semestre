@@ -538,6 +538,7 @@ export async function resetDatabaseToDemo(): Promise<void> {
   await profileRepository.save(demoIcesiProfile);
   await profileRepository.setActiveProfile(demoIcesiProfile.id);
   await semesterRepository.save(mockSemester);
+  await semesterRepository.setActive(mockSemester.id);
   await subjectRepository.bulkSave(mockSubjects);
   await scheduleRepository.bulkSave(mockScheduleBlocks);
   await routineRepository.bulkSave(mockRoutines);

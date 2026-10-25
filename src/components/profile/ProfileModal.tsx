@@ -119,7 +119,12 @@ export function ProfileModal({ onProfileUpdated }: ProfileModalProps) {
       onProfileUpdated?.();
       window.dispatchEvent(new CustomEvent('semester-data-updated'));
       setActionFeedback('Plantilla demo de Icesi cargada correctamente.');
-      setTimeout(() => setActionFeedback(null), 3500);
+      setTimeout(() => {
+        setActionFeedback(null);
+        if (typeof window !== 'undefined') {
+          window.location.href = '/dashboard';
+        }
+      }, 500);
       setConfirmAction(null);
     } catch (err) {
       console.error('Error al cargar plantilla demo:', err);

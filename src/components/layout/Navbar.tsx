@@ -87,6 +87,9 @@ export function Navbar() {
     await resetDatabaseToDemo();
     await refreshData();
     window.dispatchEvent(new CustomEvent('semester-data-updated'));
+    if (typeof window !== 'undefined') {
+      window.location.href = '/dashboard';
+    }
   };
 
   const formatTimer = (seconds: number) => {
